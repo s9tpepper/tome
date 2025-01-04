@@ -24,7 +24,8 @@ use crate::components::{
     floating_windows::{
         app_theme_selector::AppThemeSelector, code_gen::CodeGen, commands::Commands,
         edit_endpoint_name::EditEndpointName, edit_project_name::EditProjectName,
-        endpoints_selector::EndpointsSelector, syntax_theme_selector::SyntaxThemeSelector,
+        endpoints_selector::EndpointsSelector, file_selector::FileSelector,
+        syntax_theme_selector::SyntaxThemeSelector,
     },
     focusable_section::FocusableSection,
     header_name_textinput::HeaderNameTextInput,
@@ -281,6 +282,7 @@ impl App {
         AppThemeSelector::register(&self.component_ids, builder)?;
         Commands::register(&self.component_ids, builder)?;
         CodeGen::register(&self.component_ids, builder)?;
+        FileSelector::register("postman_file_selector", &self.component_ids, builder)?;
 
         TextArea::register(
             &self.component_ids,

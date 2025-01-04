@@ -26,7 +26,10 @@ use crate::{
 };
 use crate::{requests::do_request, theme::get_app_theme_persisted};
 
-use super::floating_windows::endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages};
+use super::floating_windows::{
+    endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
+    file_selector::FileSelector,
+};
 use super::{
     add_header_window::AddHeaderWindow,
     app_layout::AppLayoutMessages,
@@ -91,6 +94,7 @@ pub enum FloatingWindow {
     EndpointsSelector,
     Commands,
     CodeGen,
+    PostmanFileSelector,
 }
 
 impl State for FloatingWindow {
@@ -110,6 +114,7 @@ impl State for FloatingWindow {
             FloatingWindow::EndpointsSelector => Some(CommonVal::Str("EndpointsSelector")),
             FloatingWindow::Commands => Some(CommonVal::Str("Commands")),
             FloatingWindow::CodeGen => Some(CommonVal::Str("CodeGen")),
+            FloatingWindow::PostmanFileSelector => Some(CommonVal::Str("PostmanFileSelector")),
         }
     }
 }
@@ -662,6 +667,17 @@ impl anathema::component::Component for DashboardComponent {
 
         if let Ok(component_ids) = self.component_ids.try_borrow() {
             match component {
+                "file_selector" => {
+                    FileSelector::handle_message(
+                        value,
+                        ident,
+                        state,
+                        context,
+                        elements,
+                        component_ids,
+                    );
+                }
+
                 "commands" => {
                     Commands::handle_message(value, ident, state, context, elements, component_ids);
                 }

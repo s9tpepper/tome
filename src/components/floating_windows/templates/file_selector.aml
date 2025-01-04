@@ -1,0 +1,15 @@
+align [alignment: "center"]
+  zstack [fill: " "]
+    vstack [width: 80]
+      container [height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground]
+        expand
+          hstack
+            text [bold: true] " Directory: " current_directory
+      border [sides: ["left", "bottom", "right"], background: app_theme.overlay_background, foreground: app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 80]
+        padding [padding: 1]
+          vstack [min_height: 3]
+            container [min_height: 5]
+              vstack [width: 80]
+                for directory in window_list
+                  container [fill: " ", width: 79, foreground: directory.row_color]
+                    text directory.name

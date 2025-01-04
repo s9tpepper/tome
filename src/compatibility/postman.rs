@@ -3,13 +3,33 @@ use std::{fs, time::SystemTime};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{fs::get_documents_dir, projects::PersistedProject};
+use crate::{
+    fs::get_documents_dir,
+    projects::{save_project, Header, PersistedEndpoint, PersistedProject},
+};
 
 const POSTMAN_JSON_SCHEMA: &str =
     "https://schema.getpostman.com/json/collection/v2.1.0/collection.json";
 
+pub fn export_postman(project: PersistedProject) -> anyhow::Result<()> {
+    let postman_json: PostmanJson = project.into();
+
+    let mut docs_dir = get_documents_dir()?;
+    docs_dir.push(format!("{}.json", postman_json.info.name));
+
+    let json = serde_json::to_string_pretty(&postman_json)?;
+
+    fs::write(docs_dir, json)?;
+
+    Ok(())
+}
+
+pub fn import_postman(postman: PostmanJson) -> anyhow::Result<()> {
+    save_project(postman.into())
+}
+
 #[derive(Default, Debug, Deserialize, Serialize)]
-struct PostmanJson {
+pub struct PostmanJson {
     info: PostmanInformation,
     item: Vec<PostmanItem>,
 }
@@ -37,13 +57,13 @@ struct PostmanRequest {
     body: Option<PostmanBody>,
 }
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 struct PostmanKV {
     key: String,
     value: String,
 }
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 enum PostmanBodyMode {
     #[serde(rename = "raw")]
     #[default]
@@ -63,10 +83,10 @@ enum PostmanBodyMode {
     GraphQL,
 }
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 struct GraphQL;
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 struct PostmanBody {
     mode: PostmanBodyMode,
 
@@ -86,6 +106,48 @@ fn create_uuid(seed: &str) -> String {
     let uid = Uuid::new_v5(&Uuid::NAMESPACE_URL, seed.as_bytes());
 
     uid.to_string()
+}
+
+// TODO: Update this when we add support for urlencoded, formdata, file, and graphql
+impl From<PostmanBody> for String {
+    fn from(postman_body: PostmanBody) -> Self {
+        match postman_body.mode {
+            PostmanBodyMode::Raw => postman_body.raw.unwrap_or("".to_string()),
+            PostmanBodyMode::UrlEncoded => todo!(),
+            PostmanBodyMode::FormData => todo!(),
+            _ => "".to_string(), // PostmanBodyMode::File => todo!(),
+                                 // PostmanBodyMode::GraphQL => todo!(),
+        }
+    }
+}
+
+impl From<PostmanJson> for PersistedProject {
+    fn from(postman_json: PostmanJson) -> Self {
+        let PostmanJson { info, item } = postman_json;
+        let endpoints = item
+            .iter()
+            .map(|postman_item| PersistedEndpoint {
+                name: postman_item.name.clone(),
+                url: postman_item.request.url.clone(),
+                method: postman_item.request.method.clone(),
+                headers: postman_item
+                    .request
+                    .header
+                    .iter()
+                    .map(|postman_kv| Header {
+                        name: postman_kv.key.clone(),
+                        value: postman_kv.value.clone(),
+                    })
+                    .collect(),
+                body: postman_item.request.body.clone().unwrap_or_default().into(),
+            })
+            .collect();
+
+        PersistedProject {
+            name: info.name,
+            endpoints,
+        }
+    }
 }
 
 impl From<PersistedProject> for PostmanJson {
@@ -161,17 +223,4 @@ impl From<PersistedProject> for PostmanJson {
 
         PostmanJson { info, item }
     }
-}
-
-pub fn export_postman(project: PersistedProject) -> anyhow::Result<()> {
-    let postman_json: PostmanJson = project.into();
-
-    let mut docs_dir = get_documents_dir()?;
-    docs_dir.push(format!("{}.json", postman_json.info.name));
-
-    let json = serde_json::to_string_pretty(&postman_json)?;
-
-    fs::write(docs_dir, json)?;
-
-    Ok(())
 }

@@ -127,6 +127,13 @@ impl DashboardMessageHandler for Commands {
                     context.set_focus("id", "codegen_window");
                 }
 
+                "i" => {
+                    state
+                        .floating_window
+                        .set(FloatingWindow::PostmanFileSelector);
+                    context.set_focus("id", "postman_file_selector");
+                }
+
                 "e" => {
                     state.floating_window.set(FloatingWindow::CodeGen);
                     context.set_focus("id", "codegen_window");

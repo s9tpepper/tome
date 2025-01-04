@@ -139,32 +139,6 @@ zstack [background: app_theme.background]
       method_selector__new->method_selector__new
     ) [id: "method_selector"]
 
-  if floating_window == "Error"
-    align [alignment: "center"]
-      container [background: "#fedbe2", max_height: 3]
-        padding [padding: 0]
-          @app_section [
-            border_color: "#ff77aa",
-            top_label: "ERROR",
-            show_top_label: true,
-            show_bottom_label: false
-          ]
-            $children
-              text error_message
-
-  if floating_window == "Message"
-    align [alignment: "center"]
-      container [background: "#e2ffe2", max_height: 3]
-        padding [padding: 0]
-          @app_section [
-            border_color: "#5bb450",
-            top_label: message_label,
-            show_top_label: true,
-            show_bottom_label: false
-          ]
-            $children
-              text message
-
   if floating_window == "EditHeaderSelector"
     @edit_header_selector (
       edit_header_selector__selection -> edit_header_selector__selection,
@@ -223,3 +197,35 @@ zstack [background: app_theme.background]
       codegen__selection -> codegen__selection,
       codegen__cancel -> codegen__cancel
     ) [id: "codegen_window"]
+
+  if floating_window == "PostmanFileSelector"
+    @postman_file_selector (
+      file_selector__cancel -> file_selector__cancel
+    ) [id: "postman_file_selector"]
+
+
+  if floating_window == "Error"
+    align [alignment: "center"]
+      container [background: "#fedbe2", max_height: 3]
+        padding [padding: 0]
+          @app_section [
+            border_color: "#ff77aa",
+            top_label: "ERROR",
+            show_top_label: true,
+            show_bottom_label: false
+          ]
+            $children
+              text error_message
+
+  if floating_window == "Message"
+    align [alignment: "center"]
+      container [background: "#e2ffe2", max_height: 3]
+        padding [padding: 0]
+          @app_section [
+            border_color: "#5bb450",
+            top_label: message_label,
+            show_top_label: true,
+            show_bottom_label: false
+          ]
+            $children
+              text message

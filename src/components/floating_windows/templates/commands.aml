@@ -2,13 +2,14 @@ align [alignment: "center"]
   container [background: app_theme.overlay_background]
     zstack
       border [foreground: app_theme.overlay_foreground ]
-        vstack [fill: " ", width: 24]
+        vstack [fill: " ", width: 26]
           padding [padding: 1]
             hstack [foreground: app_theme.foreground]
               vstack
                 text "• (G)enerate Code"
+                text "• (I)mport from Postman"
                 text "• (E)xport to Postman"
               vstack
                 text ""
-      container [width: 26, background: app_theme.overlay_heading, fill: " "]
+      container [width: 28, background: app_theme.overlay_heading, fill: " "]
         text [background: app_theme.overlay_heading, width: 80, bold: true] "  Commands"
