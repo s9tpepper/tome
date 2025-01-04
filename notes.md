@@ -10,10 +10,15 @@
 [ ] Screenshots for the README
 [x] Update the application name
 [ ] Do a pass through the keybindings, make sure they make sense
-[ ] (MVP) Import to Postman format
+[x] (MVP) Import to Postman format
 [x] (MVP) Export to Postman format
-[ ] (MVP) saving endpoint/project is not updating the project/endpoint name display
+[x] (MVP) saving endpoint/project is not updating the project/endpoint name display
+[ ] (MVP) Update the code generating/response saving to go into ~/Documents/tome/<PROJECT_NAME>/<ACTION_TYPE>
+[ ] (MVP) Add UI for choosing Body type (raw, form-data, etc)
 [ ] (MVP) Add form-data handling
+[ ] (MVP) Add file handling
+[ ] (MVP) Add x-www-form-urlencoded handling
+[ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 
 ### Post-Release
 [ ] Need a cool logo
@@ -68,7 +73,6 @@ Body
 
 ### Requests
 * [ ] (MVP?) Request dependencies/piping results from dependency
-* [ ] (MVP?) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 * [x] (MVP) Code generation (curl, TypeScript/JavaScript, Rust, PHP?, Go?, Python?)
 [ ] Code generation plugin framework, based on OpenAPI code generation plugins/tools, maybe?
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
