@@ -87,6 +87,8 @@ fn handle_successful_response(
         };
 
         if name.to_lowercase() == "content-type" {
+            // TODO: THis extension handling needs to be better than a split "/"
+            // eg: application/json, text/plain, etc etc
             if let Some((_, extension)) = value.to_string().split_once("/") {
                 ext = extension.to_string();
             }

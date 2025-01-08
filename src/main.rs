@@ -29,6 +29,7 @@ struct Cli {
     commands: Cmds,
 }
 
+#[quit::main]
 fn main() -> anyhow::Result<()> {
     let args = env::args().collect::<Vec<_>>();
 

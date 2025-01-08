@@ -414,18 +414,41 @@ impl DashboardComponent {
                     .unwrap_or(Duration::from_secs(1));
                 let name = format!("{endpoint_name}_{}.txt", duration.as_secs());
 
-                docs_dir.push(name);
-                let save_path = docs_dir.clone();
+                docs_dir.push(state.project.to_ref().name.to_ref().to_string());
+                let _ = fs::create_dir_all(&docs_dir);
 
-                match fs::write(docs_dir, response) {
-                    Ok(_) => {
-                        self.show_message(
-                            "Response Saved",
-                            format!("Saved to {save_path:?}").as_str(),
+                match fs::exists(&docs_dir) {
+                    Ok(docs_exist) => {
+                        if !docs_exist {
+                            self.show_error(
+                                "Couldn't create project directory to save response",
+                                state,
+                            );
+
+                            return;
+                        }
+
+                        docs_dir.push(name);
+
+                        let save_path = docs_dir.clone();
+
+                        match fs::write(docs_dir, response) {
+                            Ok(_) => {
+                                self.show_message(
+                                    "Response Saved",
+                                    format!("Saved to {save_path:?}").as_str(),
+                                    state,
+                                );
+                            }
+                            Err(err) => self.show_error(&err.to_string(), state),
+                        }
+                    }
+                    Err(_) => {
+                        self.show_error(
+                            "Couldn't create project directory to save response",
                             state,
                         );
                     }
-                    Err(err) => self.show_error(&err.to_string(), state),
                 }
             }
             Err(error) => self.show_error(&error.to_string(), state),

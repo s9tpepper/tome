@@ -24,8 +24,7 @@ use crate::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState, FloatingWindow},
         send_message,
     },
-    messages::confirm_delete_endpoint::ConfirmDeleteEndpoint,
-    projects::{save_project, PersistedEndpoint},
+    projects::save_project,
     theme::{get_app_theme, AppTheme},
 };
 

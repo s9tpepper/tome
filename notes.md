@@ -13,7 +13,7 @@
 [x] (MVP) Import to Postman format
 [x] (MVP) Export to Postman format
 [x] (MVP) saving endpoint/project is not updating the project/endpoint name display
-[ ] (MVP) Update the code generating/response saving to go into ~/Documents/tome/<PROJECT_NAME>/<ACTION_TYPE>
+[x] (MVP) Update the code generating/response saving to go into ~/Documents/tome/<PROJECT_NAME>/<ACTION_TYPE>
 [ ] (MVP) Add UI for choosing Body type (raw, form-data, etc)
 [ ] (MVP) Add form-data handling
 [ ] (MVP) Add file handling

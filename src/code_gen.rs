@@ -81,7 +81,7 @@ use std::error::Error;
         module.push_str(&method_code);
     });
 
-    write_code(&project.name, &module, "rs")
+    write_code(&project.name, &module, "rs", &project.name)
 }
 
 pub fn generate_web(project: PersistedProject, web_type: WebType) -> anyhow::Result<()> {
@@ -148,7 +148,7 @@ pub fn generate_web(project: PersistedProject, web_type: WebType) -> anyhow::Res
         WebType::TypeScript => "ts",
     };
 
-    write_code(&project.name, &module, extension)
+    write_code(&project.name, &module, extension, &project.name)
 }
 
 fn get_rust_method_template() -> anyhow::Result<String> {
@@ -190,11 +190,22 @@ fn get_method_template(web_type: &WebType) -> anyhow::Result<String> {
     }
 }
 
-fn write_code(name: &str, module: &str, extension: &str) -> anyhow::Result<()> {
+fn write_code(name: &str, module: &str, extension: &str, project: &str) -> anyhow::Result<()> {
     let mut docs_dir = get_documents_dir()?;
     let module_name = name.replace(" ", "_");
-    docs_dir.push(format!("{module_name}.{extension}"));
 
+    docs_dir.push(project);
+    let _ = fs::create_dir_all(&docs_dir);
+
+    let docs_dir_exists = fs::exists(&docs_dir)?;
+
+    if !docs_dir_exists {
+        return Err(anyhow::Error::msg(
+            "Couldn't create project directory for code generation",
+        ));
+    }
+
+    docs_dir.push(format!("{module_name}.{extension}"));
     fs::write(docs_dir, module)?;
 
     Ok(())
