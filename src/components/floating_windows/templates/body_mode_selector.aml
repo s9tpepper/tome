@@ -1,0 +1,21 @@
+align [alignment: "center"]
+  container [background: app_theme.overlay_background]
+    zstack
+      border [foreground: app_theme.overlay_foreground ]
+        vstack [fill: " ", width: 48]
+          padding [padding: 1]
+            hstack [foreground: app_theme.foreground]
+              vstack
+                text "•raw: (t)ext"
+                text "•raw: (J)avaScript"
+                text "•raw: J(S)ON"
+                text "•raw: (H)TML"
+                text "•raw: (X)ML"
+              vstack
+                text "  •(f)orm-data"
+                text "  •x-www-form-(u)rlencoded"
+                text "  •(b)inary"
+                text "  •(G)raphQL"
+                text "  •(N)one"
+      container [width: 50, background: app_theme.overlay_heading, fill: " "]
+        text [background: app_theme.overlay_heading, width: 80, bold: true] "  Body Mode"

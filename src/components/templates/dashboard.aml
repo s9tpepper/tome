@@ -203,6 +203,12 @@ zstack [background: app_theme.background]
       file_selector__cancel -> file_selector__cancel
     ) [id: "postman_file_selector"]
 
+  if floating_window == "BodyModeSelector"
+    @body_mode_selector (
+      body_mode_selector__selection -> body_mode_selector__selection,
+      body_mode_selector__cancel -> body_mode_selector__cancel
+    ) [id: "body_mode_selector"]
+
 
   if floating_window == "Error"
     align [alignment: "center"]

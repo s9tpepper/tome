@@ -14,13 +14,13 @@
 [x] (MVP) Export to Postman format
 [x] (MVP) saving endpoint/project is not updating the project/endpoint name display
 [x] (MVP) Update the code generating/response saving to go into ~/Documents/tome/<PROJECT_NAME>/<ACTION_TYPE>
-[ ] (MVP) Add UI for choosing Body type (raw, form-data, etc)
+[x] (MVP) Add UI for choosing Body type (raw, form-data, etc)
 [ ] (MVP) Add form-data handling
 [ ] (MVP) Add file handling
 [ ] (MVP) Add x-www-form-urlencoded handling
 [ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 [ ] (MVP) Fix extension handling in requests.rs:92
-[ ] (MVP) Pretty print responses that are minified
+[ ] (MVP?) Pretty print responses that are minified
 
 ### Post-Release
 [ ] Need a cool logo

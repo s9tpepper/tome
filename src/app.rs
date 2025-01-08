@@ -22,9 +22,16 @@ use crate::components::{
     edit_name_textinput::EditNameTextInput,
     edit_value_textinput::EditValueTextInput,
     floating_windows::{
-        app_theme_selector::AppThemeSelector, code_gen::CodeGen, commands::Commands,
-        edit_endpoint_name::EditEndpointName, edit_project_name::EditProjectName,
-        endpoints_selector::EndpointsSelector, file_selector::FileSelector,
+        app_theme_selector::AppThemeSelector,
+        body_mode_selector::{
+            BodyModeSelector, BodyModeSelectorState, BODY_MODE_SELECTOR_TEMPLATE,
+        },
+        code_gen::CodeGen,
+        commands::Commands,
+        edit_endpoint_name::EditEndpointName,
+        edit_project_name::EditProjectName,
+        endpoints_selector::EndpointsSelector,
+        file_selector::FileSelector,
         syntax_theme_selector::SyntaxThemeSelector,
     },
     focusable_section::FocusableSection,
@@ -154,6 +161,13 @@ impl App {
             METHOD_SELECTOR_TEMPLATE,
             || MethodSelector,
             MethodSelectorState::new,
+        )?;
+
+        builder.register_prototype(
+            "body_mode_selector",
+            BODY_MODE_SELECTOR_TEMPLATE,
+            || BodyModeSelector,
+            BodyModeSelectorState::new,
         )?;
 
         builder.register_prototype(

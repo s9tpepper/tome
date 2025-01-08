@@ -1,4 +1,5 @@
 pub mod app_theme_selector;
+pub mod body_mode_selector;
 pub mod code_gen;
 pub mod commands;
 pub mod edit_endpoint_name;

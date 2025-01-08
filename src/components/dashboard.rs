@@ -27,6 +27,7 @@ use crate::{
 use crate::{requests::do_request, theme::get_app_theme_persisted};
 
 use super::floating_windows::{
+    body_mode_selector::BodyModeSelector,
     endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
     file_selector::FileSelector,
 };
@@ -95,6 +96,7 @@ pub enum FloatingWindow {
     Commands,
     CodeGen,
     PostmanFileSelector,
+    BodyModeSelector,
 }
 
 impl State for FloatingWindow {
@@ -115,6 +117,7 @@ impl State for FloatingWindow {
             FloatingWindow::Commands => Some(CommonVal::Str("Commands")),
             FloatingWindow::CodeGen => Some(CommonVal::Str("CodeGen")),
             FloatingWindow::PostmanFileSelector => Some(CommonVal::Str("PostmanFileSelector")),
+            FloatingWindow::BodyModeSelector => Some(CommonVal::Str("BodyModeSelector")),
         }
     }
 }
@@ -128,6 +131,7 @@ pub struct DashboardState {
     pub response_headers: Value<List<HeaderState>>,
     pub response: Value<String>,
     pub response_body_window_label: Value<String>,
+    pub body_mode: Value<String>,
 
     pub error_message: Value<String>,
     pub message: Value<String>,
@@ -173,6 +177,7 @@ impl DashboardState {
             project: project.into(),
             endpoint_count: 0.into(),
             endpoint: Endpoint::new().into(),
+            body_mode: "None".to_string().into(),
 
             response: "".to_string().into(),
             message: "".to_string().into(),
@@ -560,6 +565,15 @@ impl DashboardComponent {
         state.floating_window.set(FloatingWindow::Commands);
         context.set_focus("id", "commands_window");
     }
+
+    fn open_body_mode_selector(
+        &self,
+        state: &mut DashboardState,
+        mut context: Context<'_, DashboardState>,
+    ) {
+        state.floating_window.set(FloatingWindow::BodyModeSelector);
+        context.set_focus("id", "body_mode_selector");
+    }
 }
 
 pub trait DashboardMessageHandler {
@@ -690,6 +704,15 @@ impl anathema::component::Component for DashboardComponent {
 
         if let Ok(component_ids) = self.component_ids.try_borrow() {
             match component {
+                "body_mode_selector" => BodyModeSelector::handle_message(
+                    value,
+                    ident,
+                    state,
+                    context,
+                    elements,
+                    component_ids,
+                ),
+
                 "file_selector" => {
                     FileSelector::handle_message(
                         value,
@@ -925,7 +948,9 @@ impl anathema::component::Component for DashboardComponent {
                     },
 
                     'y' => match main_display {
-                        DashboardDisplay::RequestBody => {}
+                        DashboardDisplay::RequestBody => {
+                            self.open_body_mode_selector(state, context)
+                        }
                         DashboardDisplay::RequestHeadersEditor => {}
                         DashboardDisplay::ResponseBody => {
                             // Copy response body to clipboard
