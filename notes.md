@@ -19,6 +19,8 @@
 [ ] (MVP) Add file handling
 [ ] (MVP) Add x-www-form-urlencoded handling
 [ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
+[ ] (MVP) Fix extension handling in requests.rs:92
+[ ] (MVP) Pretty print responses that are minified
 
 ### Post-Release
 [ ] Need a cool logo
