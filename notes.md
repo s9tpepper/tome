@@ -18,9 +18,14 @@
 [ ] (MVP) Add form-data handling
 [ ] (MVP) Add file handling
 [ ] (MVP) Add x-www-form-urlencoded handling
-[ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 [ ] (MVP) Fix extension handling in requests.rs:92
 [ ] (MVP?) Pretty print responses that are minified
+[ ] (MVP) Fix selected/unselected colors of floating windows with text lists, like file selector, apply theme colors
+[ ] (MVP) Fix auto-focus for popups that have inputs, so the first input is automatically in focus
+[ ] (MVP) Update cursor in text inputs to use a color from the app theme
+[ ] (MVP) Style the Success/Error popups with app theme colors
+[ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
+[ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
 
 ### Post-Release
 [ ] Need a cool logo
@@ -74,10 +79,8 @@ Body
 [x] (MVP) Rename Project dialogue
 
 ### Requests
-* [ ] (MVP?) Request dependencies/piping results from dependency
 * [x] (MVP) Code generation (curl, TypeScript/JavaScript, Rust, PHP?, Go?, Python?)
 [ ] Code generation plugin framework, based on OpenAPI code generation plugins/tools, maybe?
-[ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
 [ ] Import/Export OpenAPI
 
 ### Text Input
