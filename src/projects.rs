@@ -41,6 +41,7 @@ pub struct Endpoint {
     pub headers: Value<List<HeaderState>>,
     pub body: Value<String>,
     pub row_color: Value<String>,
+    pub row_fg_color: Value<String>,
     pub body_mode: Value<String>,
     pub raw_type: Value<String>,
 }
@@ -56,6 +57,7 @@ impl Endpoint {
             raw_type: String::from("text").into(),
             headers: List::from_iter(get_default_headers()),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
         }
     }
 
@@ -74,6 +76,7 @@ impl Endpoint {
             body_mode: self.body_mode.to_ref().to_string().into(),
             raw_type: self.raw_type.to_ref().to_string().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
             headers: List::from_iter(headers),
         }
     }
@@ -269,6 +272,7 @@ impl From<&PersistedEndpoint> for Endpoint {
             url: persisted_endpoint.url.clone().into(),
             method: persisted_endpoint.method.clone().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
             headers,
         }
     }

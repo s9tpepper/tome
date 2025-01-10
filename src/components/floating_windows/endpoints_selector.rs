@@ -184,9 +184,35 @@ impl EndpointsSelector {
             .for_each(|(index, mut endpoint)| {
                 let visible_index = selected_index.saturating_sub(first_index);
                 if index == visible_index {
-                    endpoint.row_color = SELECTED_ROW_COLOR.to_string().into();
+                    endpoint.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
+                    endpoint.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
                 } else {
-                    endpoint.row_color = DEFAULT_ROW_COLOR.to_string().into();
+                    endpoint.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+                    endpoint.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
                 }
 
                 new_list_state.push(endpoint);
