@@ -27,10 +27,6 @@ use super::{
 
 pub const PROJECT_WINDOW_TEMPLATE: &str = "./src/components/templates/project_window.aml";
 
-// TODO: Fix the default project row color to the correct gray
-const DEFAULT_PROJECT_ROW_COLOR: &str = "#333333";
-const SELECTED_PROJECT_ROW_COLOR: &str = "#FFFFFF";
-
 #[derive(Default, State)]
 pub struct ProjectWindowState {
     cursor: Value<u8>,
@@ -182,9 +178,35 @@ impl ProjectWindow {
             .for_each(|(index, mut project)| {
                 let visible_index = selected_index.saturating_sub(first_index);
                 if index == visible_index {
-                    project.row_color = SELECTED_PROJECT_ROW_COLOR.to_string().into();
+                    project.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
+                    project.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
                 } else {
-                    project.row_color = DEFAULT_PROJECT_ROW_COLOR.to_string().into();
+                    project.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+                    project.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
                 }
 
                 state.window_list.push(project);

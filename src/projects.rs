@@ -19,6 +19,7 @@ pub struct Project {
     pub name: Value<String>,
     pub endpoints: Value<List<Endpoint>>,
     pub row_color: Value<String>,
+    pub row_fg_color: Value<String>,
 }
 
 impl Project {
@@ -26,6 +27,7 @@ impl Project {
         Project {
             name: String::from(DEFAULT_PROJECT_NAME).into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
             endpoints: List::empty(),
         }
     }
@@ -244,6 +246,7 @@ impl From<&PersistedProject> for Project {
         Project {
             name: persisted_project.name.clone().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
             endpoints,
         }
     }

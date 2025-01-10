@@ -11,7 +11,7 @@ align [alignment: "center"]
         padding [padding: 1]
           vstack [height: 5, width: 80]
             for project in window_list
-              hstack [fill: "‧", foreground: project.row_color]
+              hstack [foreground: project.row_fg_color, background: project.row_color]
                 text project.name
                 spacer
 
