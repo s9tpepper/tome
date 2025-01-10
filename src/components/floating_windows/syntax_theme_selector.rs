@@ -7,8 +7,10 @@ use std::{
 };
 
 use crate::{
+    app_themes,
     components::response_renderer::{ResponseRendererMessages, CODE_SAMPLE},
     options::{get_syntax_theme, get_syntax_themes},
+    theme::{get_app_theme, AppTheme},
 };
 
 use anathema::{
@@ -39,10 +41,13 @@ pub struct SyntaxThemeSelectorState {
     code_sample: Value<String>,
     width: Value<f32>,
     height: Value<f32>,
+    app_theme: Value<AppTheme>,
 }
 
 impl SyntaxThemeSelectorState {
     pub fn new() -> Self {
+        let app_theme = get_app_theme();
+
         SyntaxThemeSelectorState {
             cursor: 0.into(),
             count: 0.into(),
@@ -54,6 +59,7 @@ impl SyntaxThemeSelectorState {
             code_sample: String::from(CODE_SAMPLE).into(),
             width: 0f32.into(),
             height: 0f32.into(),
+            app_theme: app_theme.into(),
         }
     }
 }
@@ -62,13 +68,17 @@ impl SyntaxThemeSelectorState {
 struct SyntaxTheme {
     name: Value<String>,
     row_color: Value<String>,
+    row_fg_color: Value<String>,
 }
 
 impl From<String> for SyntaxTheme {
     fn from(value: String) -> Self {
+        let app_theme = get_app_theme();
+
         SyntaxTheme {
             name: value.replace(".tmTheme", "").into(),
-            row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_color: app_theme.overlay_background,
+            row_fg_color: app_theme.overlay_foreground,
         }
     }
 }
@@ -192,10 +202,37 @@ impl SyntaxThemeSelector {
             .for_each(|(index, mut syntax_theme)| {
                 let visible_index = selected_index.saturating_sub(first_index);
                 if index == visible_index {
-                    syntax_theme.row_color = SELECTED_ROW_COLOR.to_string().into();
+                    syntax_theme.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
+                    syntax_theme.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+
                     theme_name = syntax_theme.name.to_ref().to_string();
                 } else {
-                    syntax_theme.row_color = DEFAULT_ROW_COLOR.to_string().into();
+                    syntax_theme.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+                    syntax_theme.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
                 }
 
                 new_list_state.push(syntax_theme);

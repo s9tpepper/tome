@@ -9,7 +9,7 @@ align [alignment: "center"]
                 text " Current Theme: " selected_item
 
           for theme in window_list
-            hstack [fill: "‧", foreground: theme.row_color]
+            hstack [width: 30, foreground: theme.row_fg_color, background: theme.row_color]
               text theme.name
 
           container [height: 1, background: "red", foreground: #131313]

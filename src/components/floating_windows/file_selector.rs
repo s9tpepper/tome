@@ -5,6 +5,7 @@ use std::{
     env,
     fs::{self, DirEntry, File},
     io::BufReader,
+    os::macos::raw::stat,
     path::PathBuf,
     rc::Rc,
 };
@@ -52,6 +53,7 @@ pub struct FileSelectorState {
 struct Entry {
     name: Value<String>,
     row_color: Value<String>,
+    row_fg_color: Value<String>,
 
     #[state_ignore]
     path_buf: PathBuf,
@@ -62,6 +64,7 @@ impl Clone for Entry {
         Self {
             name: Value::new(self.name.to_ref().to_string()),
             row_color: Value::new(self.row_color.to_ref().to_string()),
+            row_fg_color: Value::new(self.row_fg_color.to_ref().to_string()),
             path_buf: self.path_buf.clone(),
         }
     }
@@ -72,9 +75,12 @@ impl From<DirEntry> for Entry {
         let path = dir_entry.path();
         let name = path.to_str().unwrap_or_default();
 
+        let app_theme = get_app_theme();
+
         Entry {
             name: name.to_string().into(),
-            row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_color: app_theme.overlay_background.into(),
+            row_fg_color: app_theme.overlay_foreground.into(),
             path_buf: dir_entry.path(),
         }
     }
@@ -152,7 +158,20 @@ impl FileSelector {
                     0,
                     Entry {
                         name: "..".to_string().into(),
-                        row_color: DEFAULT_ROW_COLOR.to_string().into(),
+                        row_fg_color: state
+                            .app_theme
+                            .to_ref()
+                            .overlay_foreground
+                            .to_ref()
+                            .clone()
+                            .into(),
+                        row_color: state
+                            .app_theme
+                            .to_ref()
+                            .overlay_background
+                            .to_ref()
+                            .clone()
+                            .into(),
                         path_buf: parent_path_buf,
                     },
                 );
@@ -267,9 +286,35 @@ impl FileSelector {
             .for_each(|(index, mut entry)| {
                 let visible_index = selected_index.saturating_sub(first_index);
                 if index == visible_index {
-                    entry.row_color = SELECTED_ROW_COLOR.to_string().into();
+                    entry.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
+                    entry.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
                 } else {
-                    entry.row_color = DEFAULT_ROW_COLOR.to_string().into();
+                    entry.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+                    entry.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
                 }
 
                 new_list_state.push(entry);

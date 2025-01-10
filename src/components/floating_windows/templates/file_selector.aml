@@ -11,5 +11,5 @@ align [alignment: "center"]
             container [min_height: 5]
               vstack [width: 80]
                 for directory in window_list
-                  container [fill: " ", width: 79, foreground: directory.row_color]
+                  container [fill: " ", width: 79, foreground: directory.row_fg_color, background: directory.row_color]
                     text directory.name
