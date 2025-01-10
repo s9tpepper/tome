@@ -5,6 +5,7 @@ use std::{
 };
 
 use anathema::prelude::Context;
+use mime::Mime;
 use ureq::Response;
 use ureq_multipart::MultipartBuilder;
 
@@ -120,6 +121,16 @@ fn get_content_type(endpoint: &PersistedEndpoint) -> Option<String> {
     }
 }
 
+fn get_extension(content_type: &str) -> String {
+    let mime: Mime = content_type.parse().unwrap_or(mime::TEXT_PLAIN);
+
+    let name = mime.subtype();
+    match name.as_str() {
+        "plain" => "txt".to_string(),
+        ext => ext.to_string(),
+    }
+}
+
 fn handle_successful_response(
     response: Response,
     state: &mut DashboardState,
@@ -143,11 +154,7 @@ fn handle_successful_response(
         };
 
         if name.to_lowercase() == "content-type" {
-            // TODO: THis extension handling needs to be better than a split "/"
-            // eg: application/json, text/plain, etc etc
-            if let Some((_, extension)) = value.to_string().split_once("/") {
-                ext = extension.to_string();
-            }
+            ext = get_extension(value);
         }
 
         state.response_headers.push(HeaderState {

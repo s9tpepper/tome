@@ -10,6 +10,7 @@ arboard = "3.4.1"
 clap = { version = "4.5.17", features = ["derive", "env", "cargo"] }
 directories = "5.0.1"
 log = "0.4.22"
+mime = "0.3.17"
 quit = "2.0.0"
 serde = { version = "1.0.217", features = ["alloc", "derive", "serde_derive"] }
 serde_derive = "1.0.217"

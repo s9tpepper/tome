@@ -1591,6 +1591,7 @@ dependencies = [
  "clap",
  "directories",
  "log",
+ "mime",
  "quit",
  "serde",
  "serde_derive",

@@ -15,10 +15,10 @@
 [x] (MVP) saving endpoint/project is not updating the project/endpoint name display
 [x] (MVP) Update the code generating/response saving to go into ~/Documents/tome/<PROJECT_NAME>/<ACTION_TYPE>
 [x] (MVP) Add UI for choosing Body type (raw, form-data, etc)
-[ ] (MVP) Add form-data handling
-[ ] (MVP) Add file handling
-[ ] (MVP) Add x-www-form-urlencoded handling
-[ ] (MVP) Fix extension handling in requests.rs:92
+[x] (MVP) Add form-data handling
+[x] (MVP) Add file handling
+[x] (MVP) Add x-www-form-urlencoded handling
+[x] (MVP) Fix extension handling in requests.rs:92
 [ ] (MVP?) Pretty print responses that are minified
 [ ] (MVP) Fix selected/unselected colors of floating windows with text lists, like file selector, apply theme colors
 [ ] (MVP) Fix auto-focus for popups that have inputs, so the first input is automatically in focus
