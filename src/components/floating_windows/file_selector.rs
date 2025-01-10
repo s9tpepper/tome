@@ -32,10 +32,6 @@ use crate::{
 pub const FILE_SELECTOR_TEMPLATE: &str =
     "./src/components/floating_windows/templates/file_selector.aml";
 
-// TODO: Fix the default project row color to the correct gray
-const DEFAULT_ROW_COLOR: &str = "#333333";
-const SELECTED_ROW_COLOR: &str = "#FFFFFF";
-
 #[derive(Debug, Default, State)]
 pub struct FileSelectorState {
     current_directory: Value<String>,
@@ -79,8 +75,8 @@ impl From<DirEntry> for Entry {
 
         Entry {
             name: name.to_string().into(),
-            row_color: app_theme.overlay_background.into(),
-            row_fg_color: app_theme.overlay_foreground.into(),
+            row_color: app_theme.overlay_background,
+            row_fg_color: app_theme.overlay_foreground,
             path_buf: dir_entry.path(),
         }
     }
