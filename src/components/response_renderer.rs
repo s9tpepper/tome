@@ -25,7 +25,7 @@ use crate::{
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
 };
 
-use super::syntax_highlighter::{highlight, Instruction, Parser};
+use super::syntax_highlighter::highlight;
 
 const TEMPLATE: &str = "./src/components/templates/response_renderer.aml";
 const SYNTAX_TEMPLATE: &str = "./src/components/templates/syntax_highlighter_renderer.aml";
@@ -40,9 +40,6 @@ enum ScrollDirection {
 pub struct ResponseRenderer {
     #[allow(unused)]
     component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-    syntax_highlighter_cursor: Pos,
-    foreground: Hex,
-    background: Hex,
     text_filter: TextFilter,
     theme: Option<Theme>,
 
@@ -88,9 +85,6 @@ impl ResponseRenderer {
     pub fn new(component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>) -> Self {
         ResponseRenderer {
             component_ids,
-            syntax_highlighter_cursor: Pos::ZERO,
-            foreground: Hex::from((255, 255, 255)),
-            background: Hex::BLACK,
             text_filter: TextFilter {
                 ..Default::default()
             },
@@ -152,98 +146,6 @@ impl ResponseRenderer {
             .set(app_theme.bottom_bar_foreground);
     }
 
-    fn update_cursor(
-        &mut self,
-        state: &mut ResponseRendererState,
-        overflow: &mut Overflow,
-        size: Size,
-    ) {
-        // Make sure there are enough lines and spans
-        while self.syntax_highlighter_cursor.y as usize >= state.lines.len() {
-            state.lines.push_back(Line::empty());
-        }
-
-        {
-            let mut lines = state.lines.to_mut();
-            let line = lines
-                .get_mut(self.syntax_highlighter_cursor.y as usize)
-                .unwrap();
-
-            let spans = &mut line.to_mut().spans;
-            while self.syntax_highlighter_cursor.x as usize > spans.len() {
-                spans.push_back(Span::empty());
-            }
-        }
-
-        let mut screen_cursor = self.syntax_highlighter_cursor - overflow.offset();
-
-        if screen_cursor.y < 0 {
-            overflow.scroll_up_by(-screen_cursor.y);
-            screen_cursor.y = 0;
-        }
-
-        if screen_cursor.y >= size.height as i32 {
-            // let offset = screen_cursor.y + 1 - size.height as i32;
-            let offset = screen_cursor.y - size.height as i32;
-            overflow.scroll_down_by(offset);
-            screen_cursor.y = size.height as i32 - 1;
-        }
-
-        state.screen_cursor_x.set(screen_cursor.x);
-        state.screen_cursor_y.set(screen_cursor.y);
-        state.buf_cursor_x.set(self.syntax_highlighter_cursor.x);
-        state.buf_cursor_y.set(self.syntax_highlighter_cursor.y);
-    }
-
-    pub fn apply_inst(
-        &mut self,
-        inst: &Instruction,
-        state: &mut ResponseRendererState,
-        elements: &mut Elements<'_, '_>,
-    ) {
-        state.current_instruction.set(Some(format!("{inst:?}")));
-        elements.by_tag("overflow").first(|el, _| {
-            let size = el.size();
-            let vp = el.to::<Overflow>();
-
-            match inst {
-                Instruction::Type(c, bold) => {
-                    {
-                        let mut lines = state.lines.to_mut();
-                        let line = lines.get_mut(self.syntax_highlighter_cursor.y as usize);
-
-                        if line.is_none() {
-                            return;
-                        }
-
-                        let line = line.unwrap();
-                        let mut line = line.to_mut();
-                        // let spans = line.spans.len();
-
-                        line.spans.insert(
-                            self.syntax_highlighter_cursor.x as usize,
-                            Span::new(c.to_string(), self.foreground, self.background, *bold),
-                        );
-                        self.syntax_highlighter_cursor.x += 1;
-                    }
-
-                    self.update_cursor(state, vp, size);
-                }
-                Instruction::SetForeground(hex) => self.foreground = *hex,
-                Instruction::SetBackground(hex) => self.background = *hex,
-                Instruction::Newline { x } => {
-                    self.syntax_highlighter_cursor.x = *x;
-                    self.syntax_highlighter_cursor.y += 1;
-                    self.update_cursor(state, vp, size);
-                }
-                Instruction::SetX(x) => {
-                    self.syntax_highlighter_cursor.x = *x;
-                    self.update_cursor(state, vp, size);
-                }
-            }
-        });
-    }
-
     // NOTE: Renders initial response when its new
     // TODO: Make this work for scrolling the response
     fn render_response(
@@ -285,7 +187,7 @@ impl ResponseRenderer {
 
     fn scroll_response(
         &mut self,
-        elements: &mut Elements<'_, '_>,
+        _elements: &mut Elements<'_, '_>,
         state: &mut ResponseRendererState,
         offset: usize,
     ) {
@@ -341,7 +243,7 @@ impl ResponseRenderer {
 
         info!("viewable_response: {viewable_response}");
 
-        self.set_response(state, viewable_response, Some(theme), elements);
+        self.set_response(state, viewable_response, Some(theme));
     }
 
     // NOTE: This one is now the one setting the response in the response text area with the syntax
@@ -351,7 +253,6 @@ impl ResponseRenderer {
         state: &mut ResponseRendererState,
         viewable_response: String,
         theme: Option<String>,
-        _: &mut Elements<'_, '_>,
     ) {
         loop {
             if state.lines.len() == 0 {
@@ -601,30 +502,6 @@ struct Span {
     original_foreground: Value<Option<Hex>>,
 }
 
-impl Span {
-    pub fn new(c: String, foreground: Hex, background: Hex, bold: bool) -> Self {
-        Self {
-            text: c.into(),
-            foreground: foreground.into(),
-            background: background.into(),
-            original_background: None.into(),
-            original_foreground: None.into(),
-            bold: bold.into(),
-        }
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            text: " ".to_string().into(),
-            foreground: Hex::from((255, 255, 255)).into(),
-            background: Hex::from((0, 0, 0)).into(),
-            original_background: None.into(),
-            original_foreground: None.into(),
-            bold: false.into(),
-        }
-    }
-}
-
 #[derive(Default, State)]
 pub struct ResponseRendererState {
     scroll_position: Value<usize>,
@@ -841,39 +718,21 @@ impl Component for ResponseRenderer {
                 }
 
                 ResponseRendererMessages::SyntaxPreview(theme) => {
-                    loop {
-                        if state.lines.len() == 0 {
-                            break;
-                        }
-
-                        state.lines.remove(0);
+                    if theme.is_none() {
+                        return;
                     }
 
                     if self.code_sample.is_none() {
                         self.code_sample = Some(String::from(CODE_SAMPLE));
+                    }
+
+                    if self.code_ext.is_none() {
                         self.code_ext = Some(String::from("rs"));
                     }
 
+                    self.extension = self.code_ext.clone().unwrap();
                     let code = self.code_sample.clone().unwrap();
-                    let ext = self.code_ext.as_ref().unwrap();
-                    let (highlighted_lines, parsed_theme) = highlight(&code, ext, theme);
-
-                    // NOTE: Maybe remove this if its not useful
-                    if self.theme.is_none() {
-                        self.theme = Some(parsed_theme.clone());
-                    }
-
-                    if let Some(color) = parsed_theme.settings.background {
-                        let hex_color = format!("#{:02X}{:02X}{:02X}", color.r, color.g, color.b);
-                        state.response_background.set(hex_color);
-                    }
-
-                    let instructions = Parser::new(highlighted_lines).instructions();
-                    for instruction in instructions {
-                        self.apply_inst(&instruction, state, &mut elements);
-                    }
-
-                    state.viewable_response.set(code.to_string());
+                    self.set_response(state, code, theme);
                 }
             },
             Err(_) => {}
