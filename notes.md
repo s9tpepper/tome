@@ -20,7 +20,7 @@
 [x] (MVP) Add x-www-form-urlencoded handling
 [x] (MVP) Fix extension handling in requests.rs:92
 [ ] (MVP?) Pretty print responses that are minified
-[ ] (MVP) Fix selected/unselected colors of floating windows with text lists, like file selector, apply theme colors
+[x] (MVP) Fix selected/unselected colors of floating windows with text lists, like file selector, apply theme colors
 [ ] (MVP) Fix auto-focus for popups that have inputs, so the first input is automatically in focus
 [ ] (MVP) Update cursor in text inputs to use a color from the app theme
 [ ] (MVP) Style the Success/Error popups with app theme colors
