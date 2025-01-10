@@ -131,7 +131,6 @@ pub struct DashboardState {
     pub response_headers: Value<List<HeaderState>>,
     pub response: Value<String>,
     pub response_body_window_label: Value<String>,
-    pub body_mode: Value<String>,
 
     pub error_message: Value<String>,
     pub message: Value<String>,
@@ -177,7 +176,6 @@ impl DashboardState {
             project: project.into(),
             endpoint_count: 0.into(),
             endpoint: Endpoint::new().into(),
-            body_mode: "None".to_string().into(),
 
             response: "".to_string().into(),
             message: "".to_string().into(),

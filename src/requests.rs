@@ -6,6 +6,7 @@ use std::{
 
 use anathema::prelude::Context;
 use ureq::Response;
+use ureq_multipart::MultipartBuilder;
 
 use crate::{
     components::{
@@ -24,11 +25,10 @@ pub fn do_request(
 ) -> anyhow::Result<()> {
     let endpoint: PersistedEndpoint = (&*state.endpoint.to_ref()).into();
 
+    let content_type = get_content_type(&endpoint);
     let url = endpoint.url.clone();
     let method = endpoint.method.clone();
     let headers = endpoint.headers;
-
-    let mut content_type = String::new();
 
     let mut request = ureq::request(&method, &url);
     for header_value in headers.iter() {
@@ -36,24 +36,60 @@ pub fn do_request(
         let header_name = header.name.to_string();
         let header_value = header.value.to_string();
 
-        if header_name.to_lowercase() == "content-type" {
-            content_type.push_str(header_value.as_str());
+        // NOTE: Skip content-type header, this should be calculated based
+        // on the body mode and/or raw type
+        if header_name == "content-type" {
+            continue;
         }
 
         request = request.set(&header_name, &header_value);
     }
 
-    let response = match content_type.as_str() {
-        "application/json" => {
-            let req_body = endpoint.body.clone();
+    let response = match content_type {
+        Some(content_type) => match content_type.as_str() {
+            "application/json"
+            | "application/javascript"
+            | "text/plain"
+            | "text/html"
+            | "text/xml" => {
+                let req_body = endpoint.body.clone();
 
-            request.send_string(&req_body)
-        }
+                request.send_string(&req_body)
+            }
 
-        // TODO: Figure out how to support form k/v pairs in the request body builder interface
-        // "multipart/form" => request.send_form("")
-        //
-        _ => request.send_string(""),
+            "x-www-form-urlencoded" => {
+                let form: Vec<(&str, &str)> = endpoint
+                    .body
+                    .split("\n")
+                    .filter_map(|entry| entry.split_once("="))
+                    .collect();
+
+                request.send_form(&form)
+            }
+
+            "multipart/form-data" => {
+                let form: Vec<(&str, &str)> = endpoint
+                    .body
+                    .split("\n")
+                    .filter_map(|entry| entry.split_once("="))
+                    .collect();
+
+                // TODO: Come back to this to remove/handle the .expect() call
+                let mut builder = MultipartBuilder::new();
+                builder = form.into_iter().fold(builder, |builder, (k, v)| {
+                    builder
+                        .add_text(k, v)
+                        .expect("Should not error while adding headers?")
+                });
+
+                let (content_type, data) = builder.finish().unwrap();
+                request.set("Content-Type", &content_type).send_bytes(&data)
+            }
+
+            _ => request.send_string(""),
+        },
+
+        None => request.send_string(""),
     };
 
     match response {
@@ -62,6 +98,26 @@ pub fn do_request(
     }?;
 
     Ok(())
+}
+
+fn get_content_type(endpoint: &PersistedEndpoint) -> Option<String> {
+    match endpoint.body_mode.as_str() {
+        "none" => None,
+        "formdata" => Some("multipart/form-data".to_string()),
+        "x-www-form-urlencoded" => Some("application/x-www-form-urlencoded".to_string()),
+        "graphql" => Some("application/json".to_string()),
+        "raw" => match endpoint.raw_type.to_lowercase().as_str() {
+            "text" => Some("text/plain".to_string()),
+            "javascript" => Some("application/javascript".to_string()),
+            "json" => Some("application/json".to_string()),
+            "html" => Some("text/html".to_string()),
+            "xml" => Some("text/xml".to_string()),
+
+            _ => None,
+        },
+
+        _ => None,
+    }
 }
 
 fn handle_successful_response(

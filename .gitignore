@@ -5,3 +5,5 @@ node_modules
 .eslintrc.json
 .prettierrc.json
 tsconfig.json
+*.log
+xml.json

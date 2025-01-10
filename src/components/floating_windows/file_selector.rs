@@ -321,9 +321,11 @@ impl FileSelector {
                     self.send_error_message(error_message, context);
                 }
             },
-            Err(_) => {
+            Err(deserialize_error) => {
+                let err = deserialize_error.to_string();
                 let error_message = format!(
-                    "Could not deserialize the JSON file at {}",
+                    "Could not deserialize the JSON file at {}\n{}",
+                    err,
                     entry.path_buf.to_string_lossy()
                 );
 

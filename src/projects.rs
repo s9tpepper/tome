@@ -39,6 +39,8 @@ pub struct Endpoint {
     pub headers: Value<List<HeaderState>>,
     pub body: Value<String>,
     pub row_color: Value<String>,
+    pub body_mode: Value<String>,
+    pub raw_type: Value<String>,
 }
 
 impl Endpoint {
@@ -48,6 +50,8 @@ impl Endpoint {
             url: String::from("").into(),
             method: String::from("GET").into(),
             body: String::from("").into(),
+            body_mode: String::from("raw").into(),
+            raw_type: String::from("text").into(),
             headers: List::from_iter(get_default_headers()),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
         }
@@ -65,6 +69,8 @@ impl Endpoint {
             url: self.url.to_ref().to_string().into(),
             method: self.method.to_ref().to_string().into(),
             body: self.body.to_ref().to_string().into(),
+            body_mode: self.body_mode.to_ref().to_string().into(),
+            raw_type: self.raw_type.to_ref().to_string().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             headers: List::from_iter(headers),
         }
@@ -99,6 +105,8 @@ pub struct PersistedEndpoint {
     pub method: String,
     pub headers: Vec<Header>,
     pub body: String,
+    pub body_mode: String,
+    pub raw_type: String,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -191,6 +199,8 @@ impl From<&Endpoint> for PersistedEndpoint {
             url: endpoint.url.to_ref().to_string(),
             method: endpoint.method.to_ref().to_string(),
             body: endpoint.body.to_ref().to_string(),
+            body_mode: endpoint.body_mode.to_ref().to_string(),
+            raw_type: endpoint.raw_type.to_ref().to_string(),
             headers,
         }
     }
@@ -251,6 +261,8 @@ impl From<&PersistedEndpoint> for Endpoint {
         Endpoint {
             name: persisted_endpoint.name.clone().into(),
             body: persisted_endpoint.body.clone().into(),
+            body_mode: persisted_endpoint.body_mode.clone().into(),
+            raw_type: persisted_endpoint.raw_type.clone().into(),
             url: persisted_endpoint.url.clone().into(),
             method: persisted_endpoint.method.clone().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),

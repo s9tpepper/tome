@@ -1,10 +1,9 @@
-use std::{fmt::Display, str::FromStr, time::SystemTime};
+use std::{fmt::Display, str::FromStr};
 
 use anathema::{
     component::{Component, KeyCode},
-    default_widgets::Padding,
-    state::{CommonVal, State, Value},
-    widgets::{AnyWidget, Elements},
+    state::{State, Value},
+    widgets::Elements,
 };
 
 use crate::{
@@ -48,7 +47,7 @@ impl DashboardMessageHandler for BodyModeSelector {
         ident: impl Into<String>,
         state: &mut DashboardState,
         mut context: anathema::prelude::Context<'_, DashboardState>,
-        mut elements: Elements<'_, '_>,
+        _elements: Elements<'_, '_>,
         _component_ids: std::cell::Ref<
             '_,
             std::collections::HashMap<String, anathema::component::ComponentId<String>>,
@@ -64,7 +63,17 @@ impl DashboardMessageHandler for BodyModeSelector {
             "body_mode_selector__selection" => {
                 let value = &*value.to_common_str();
 
-                state.body_mode.set(value.to_string());
+                match value {
+                    "Text" | "JavaScript" | "Json" | "Html" | "Xml" => {
+                        state.endpoint.to_mut().body_mode.set("raw".to_string());
+                        state.endpoint.to_mut().raw_type.set(value.to_string());
+                    }
+
+                    _ => {
+                        state.endpoint.to_mut().raw_type.set("".to_string());
+                        state.endpoint.to_mut().body_mode.set(value.to_string());
+                    }
+                }
 
                 context.set_focus("id", "app");
             }
@@ -136,7 +145,7 @@ impl Component for BodyModeSelector {
 }
 
 #[derive(Default)]
-enum BodyMode {
+pub enum BodyMode {
     #[default]
     None,
     Text,
@@ -151,7 +160,7 @@ enum BodyMode {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct BodyModeParseError;
+pub struct BodyModeParseError;
 
 impl FromStr for BodyMode {
     type Err = BodyModeParseError;
