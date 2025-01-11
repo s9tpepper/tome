@@ -122,6 +122,20 @@ impl DashboardMessageHandler for Commands {
         match event.as_str() {
             #[allow(clippy::single_match)]
             "commands__selection" => match value.to_string().as_str() {
+                "a" => {
+                    state
+                        .floating_window
+                        .set(FloatingWindow::AddProjectVariable);
+                    context.set_focus("id", "add_project_variable_window");
+                }
+
+                "v" => {
+                    state
+                        .floating_window
+                        .set(FloatingWindow::ViewProjectVariables);
+                    context.set_focus("id", "view_project_variables_window");
+                }
+
                 "g" => {
                     state.floating_window.set(FloatingWindow::CodeGen);
                     context.set_focus("id", "codegen_window");

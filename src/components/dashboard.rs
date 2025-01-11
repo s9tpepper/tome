@@ -97,6 +97,8 @@ pub enum FloatingWindow {
     CodeGen,
     PostmanFileSelector,
     BodyModeSelector,
+    AddProjectVariable,
+    ViewProjectVariables,
 }
 
 impl State for FloatingWindow {
@@ -118,6 +120,8 @@ impl State for FloatingWindow {
             FloatingWindow::CodeGen => Some(CommonVal::Str("CodeGen")),
             FloatingWindow::PostmanFileSelector => Some(CommonVal::Str("PostmanFileSelector")),
             FloatingWindow::BodyModeSelector => Some(CommonVal::Str("BodyModeSelector")),
+            FloatingWindow::AddProjectVariable => Some(CommonVal::Str("AddProjectVariable")),
+            FloatingWindow::ViewProjectVariables => Some(CommonVal::Str("ViewProjectVariables")),
         }
     }
 }

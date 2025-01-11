@@ -209,6 +209,14 @@ zstack [background: app_theme.background]
       body_mode_selector__cancel -> body_mode_selector__cancel
     ) [id: "body_mode_selector"]
 
+  if floating_window == "AddProjectVariable"
+    align [alignment: "center"]
+      text "add project variable window here"
+
+  if floating_window == "ViewProjectVariables"
+    align [alignment: "center"]
+      text "view project variables window here"
+
   if floating_window == "Error"
     align [alignment: "center"]
       vstack [fill: " ", background: app_theme.overlay_background]
