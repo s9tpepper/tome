@@ -10,9 +10,9 @@ align [alignment: "center"]
               zstack
                 border [foreground: border_color, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 60]
                   expand [axis: "horizontal"]
-                    @editheadername (
+                    @edit_header_name_input (
                       text_change -> edit_header_name_update,
-                      textarea_focus -> edit_name_input_focus
+                      escape -> edit_header_name_input_focus
                     ) [id: "edit_header_name_input_id"]
                 text "╭─(N)ame:"
 
@@ -20,7 +20,10 @@ align [alignment: "center"]
               zstack
                 border [foreground: border_color, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 60]
                   expand [axis: "horizontal"]
-                    @editheadervalue (text_change -> edit_header_value_update, textarea_focus -> edit_value_input_focus) [id: "edit_header_value_input_id"]
+                    @edit_header_value_input (
+                      text_change -> edit_header_value_update,
+                      escape -> edit_header_value_input_focus
+                    ) [id: "edit_header_value_input_id"]
                 text "╭─(V)alue:"
 
     vstack [height: 10]

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::ComponentId,
@@ -10,7 +10,7 @@ use simplelog::{Config, WriteLogger};
 
 use crate::{
     components::{
-        add_header_window::{AddHeaderWindow, AddHeaderWindowState, ADD_HEADER_WINDOW_TEMPLATE},
+        add_header_window::AddHeaderWindow,
         app_layout::AppLayoutComponent,
         app_section::{AppSection, AppSectionState, APP_SECTION_TEMPLATE},
         confirm_action_window::ConfirmActionWindow,
@@ -20,8 +20,6 @@ use crate::{
         },
         edit_header_window::EditHeaderWindow,
         edit_input::EditInput,
-        edit_name_textinput::EditNameTextInput,
-        edit_value_textinput::EditValueTextInput,
         floating_windows::{
             app_theme_selector::AppThemeSelector,
             body_mode_selector::{
@@ -265,6 +263,23 @@ impl App {
             vec![String::from("dashboard")],
         )?;
 
+        EditInput::register(
+            &self.component_ids,
+            builder,
+            "edit_header_name_input",
+            Some(TEXTINPUT_TEMPLATE),
+            None,
+            vec![],
+        )?;
+        EditInput::register(
+            &self.component_ids,
+            builder,
+            "edit_header_value_input",
+            Some(TEXTINPUT_TEMPLATE),
+            None,
+            vec![],
+        )?;
+
         ResponseRenderer::register(
             &self.component_ids,
             builder,
@@ -279,8 +294,6 @@ impl App {
         EditHeaderWindow::register(&self.component_ids, builder)?;
         HeaderNameTextInput::register(&self.component_ids, builder)?;
         HeaderValueTextInput::register(&self.component_ids, builder)?;
-        EditNameTextInput::register(&self.component_ids, builder)?;
-        EditValueTextInput::register(&self.component_ids, builder)?;
 
         ProjectWindow::register(&self.component_ids, builder)?;
         EndpointsSelector::register(&self.component_ids, builder)?;

@@ -168,6 +168,10 @@ impl Component for EditHeaderWindow {
 
                 context.publish("edit_header__value_update", |state| &state.value)
             }
+
+            "edit_header_name_input_focus" | "edit_header_value_input_focus" => {
+                context.set_focus("id", "edit_header_window");
+            }
             _ => {}
         }
     }
