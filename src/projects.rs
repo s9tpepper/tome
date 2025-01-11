@@ -1,4 +1,4 @@
-use anathema::state::{List, State, Value};
+use anathema::state::{self, List, State, Value};
 use serde::{Deserialize, Serialize};
 use std::{fs, ops::Deref};
 
@@ -20,6 +20,38 @@ pub struct Project {
     pub endpoints: Value<List<Endpoint>>,
     pub row_color: Value<String>,
     pub row_fg_color: Value<String>,
+    pub variable: Value<List<ProjectVariable>>,
+}
+
+#[derive(Default, Debug)]
+pub enum ProjectVariableType {
+    #[default]
+    String,
+    Boolean,
+    Any,
+    Number,
+}
+
+impl State for ProjectVariableType {
+    fn to_common(&self) -> Option<state::CommonVal<'_>> {
+        match self {
+            ProjectVariableType::String => Some(state::CommonVal::Str("String")),
+            ProjectVariableType::Boolean => Some(state::CommonVal::Str("Boolean")),
+            ProjectVariableType::Any => Some(state::CommonVal::Str("Any")),
+            ProjectVariableType::Number => Some(state::CommonVal::Str("Number")),
+        }
+    }
+}
+
+#[derive(State, Default, Debug)]
+pub struct ProjectVariable {
+    pub id: Value<String>,
+    pub key: Value<String>,
+    pub value: Value<String>,
+    pub r#type: Value<ProjectVariableType>,
+    pub name: Value<String>,
+    pub system: Value<bool>,
+    pub disabled: Value<bool>,
 }
 
 impl Project {
@@ -29,6 +61,7 @@ impl Project {
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
             endpoints: List::empty(),
+            variable: List::empty(),
         }
     }
 }
@@ -101,6 +134,27 @@ impl HeaderState {
 pub struct PersistedProject {
     pub name: String,
     pub endpoints: Vec<PersistedEndpoint>,
+    pub variable: Vec<PersistedVariable>,
+}
+
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+pub enum VariableType {
+    #[default]
+    String,
+    Boolean,
+    Any,
+    Number,
+}
+
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+pub struct PersistedVariable {
+    pub id: Option<String>,
+    pub key: Option<String>,
+    pub value: Option<String>,
+    pub r#type: Option<VariableType>,
+    pub name: Option<String>,
+    pub system: Option<bool>,
+    pub disabled: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -224,7 +278,31 @@ impl From<&Project> for PersistedProject {
             });
 
         let name = project.name.to_ref().clone();
-        PersistedProject { name, endpoints }
+        let variable = project
+            .variable
+            .to_ref()
+            .iter()
+            .map(|pv| PersistedVariable {
+                id: Some(pv.to_ref().id.to_ref().to_string()),
+                key: Some(pv.to_ref().key.to_ref().to_string()),
+                value: Some(pv.to_ref().value.to_ref().to_string()),
+                r#type: Some(match pv.to_ref().id.to_ref().to_string().as_str() {
+                    "String" => VariableType::String,
+                    "Boolean" => VariableType::Boolean,
+                    "Number" => VariableType::Number,
+                    _ => VariableType::Any,
+                }),
+                name: Some(pv.to_ref().name.to_ref().to_string()),
+                system: Some(*pv.to_ref().system.to_ref()),
+                disabled: Some(*pv.to_ref().disabled.to_ref()),
+            })
+            .collect();
+
+        PersistedProject {
+            name,
+            endpoints,
+            variable,
+        }
     }
 }
 
@@ -246,11 +324,34 @@ impl From<&PersistedProject> for Project {
                 .map(|persisted_endpoint| persisted_endpoint.into()),
         );
 
+        let variable = persisted_project
+            .variable
+            .iter()
+            .map(|pv| ProjectVariable {
+                id: pv.id.clone().unwrap_or_default().into(),
+                key: pv.key.clone().unwrap_or_default().into(),
+                value: pv.value.clone().unwrap_or_default().into(),
+                r#type: match &pv.r#type {
+                    Some(vt) => match vt {
+                        VariableType::String => ProjectVariableType::String.into(),
+                        VariableType::Boolean => ProjectVariableType::Boolean.into(),
+                        VariableType::Any => ProjectVariableType::Any.into(),
+                        VariableType::Number => ProjectVariableType::Number.into(),
+                    },
+                    None => ProjectVariableType::Any.into(),
+                },
+                name: pv.name.clone().unwrap_or_default().into(),
+                system: pv.system.unwrap_or_default().into(),
+                disabled: pv.disabled.unwrap_or_default().into(),
+            })
+            .collect();
+
         Project {
             name: persisted_project.name.clone().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
             endpoints,
+            variable,
         }
     }
 }

@@ -9,7 +9,7 @@ use void::Void;
 
 use crate::{
     fs::get_documents_dir,
-    projects::{Header, PersistedEndpoint, PersistedProject},
+    projects::{Header, PersistedEndpoint, PersistedProject, PersistedVariable, VariableType},
 };
 
 const POSTMAN_JSON_SCHEMA: &str =
@@ -32,6 +32,31 @@ pub fn export_postman(project: PersistedProject) -> anyhow::Result<()> {
 pub struct PostmanJson {
     info: PostmanInformation,
     item: Vec<PostmanItem>,
+    variable: Option<Vec<PostmanVariable>>,
+}
+
+#[derive(Default, Debug, Deserialize, Serialize)]
+enum PostmanVariableType {
+    #[default]
+    #[serde(rename = "string")]
+    String,
+    #[serde(rename = "boolean")]
+    Boolean,
+    #[serde(rename = "any")]
+    Any,
+    #[serde(rename = "number")]
+    Number,
+}
+
+#[derive(Default, Debug, Deserialize, Serialize)]
+struct PostmanVariable {
+    id: Option<String>,
+    key: Option<String>,
+    value: Option<String>,
+    r#type: Option<PostmanVariableType>,
+    name: Option<String>,
+    system: Option<bool>,
+    disabled: Option<bool>,
 }
 
 #[derive(Default, Debug, Deserialize, Serialize)]
@@ -216,7 +241,7 @@ fn create_uuid(seed: &str) -> String {
 // TODO: Fix the cloning if possible in this from implementation
 impl From<PostmanJson> for PersistedProject {
     fn from(postman_json: PostmanJson) -> Self {
-        let PostmanJson { info, item } = postman_json;
+        let PostmanJson { info, item, .. } = postman_json;
         let endpoints = item
             .iter()
             .map(|postman_item| {
@@ -291,9 +316,34 @@ impl From<PostmanJson> for PersistedProject {
             })
             .collect();
 
+        let variable = match postman_json.variable {
+            Some(postman_variables) => postman_variables
+                .iter()
+                .map(|postman_variable| PersistedVariable {
+                    id: postman_variable.id.clone(),
+                    key: postman_variable.key.clone(),
+                    value: postman_variable.value.clone(),
+                    r#type: match &postman_variable.r#type {
+                        Some(pvt) => match pvt {
+                            PostmanVariableType::String => Some(VariableType::String),
+                            PostmanVariableType::Boolean => Some(VariableType::Boolean),
+                            PostmanVariableType::Any => Some(VariableType::Any),
+                            PostmanVariableType::Number => Some(VariableType::Number),
+                        },
+                        None => None,
+                    },
+                    name: postman_variable.name.clone(),
+                    system: postman_variable.system,
+                    disabled: postman_variable.disabled,
+                })
+                .collect(),
+            None => vec![],
+        };
+
         PersistedProject {
             name: info.name,
             endpoints,
+            variable,
         }
     }
 }
@@ -377,6 +427,40 @@ impl From<PersistedProject> for PostmanJson {
             })
             .collect();
 
-        PostmanJson { info, item }
+        let variable = project
+            .variable
+            .iter()
+            .map(|var| {
+                Some(PostmanVariable {
+                    id: var.id.clone(),
+                    key: var.key.clone(),
+                    value: var.value.clone(),
+                    r#type: match &var.r#type {
+                        Some(variable_type) => match variable_type {
+                            crate::projects::VariableType::String => {
+                                Some(PostmanVariableType::String)
+                            }
+                            crate::projects::VariableType::Boolean => {
+                                Some(PostmanVariableType::Boolean)
+                            }
+                            crate::projects::VariableType::Any => Some(PostmanVariableType::Any),
+                            crate::projects::VariableType::Number => {
+                                Some(PostmanVariableType::Number)
+                            }
+                        },
+                        None => None,
+                    },
+                    name: var.name.clone(),
+                    system: var.system,
+                    disabled: var.disabled,
+                })
+            })
+            .collect();
+
+        PostmanJson {
+            info,
+            item,
+            variable,
+        }
     }
 }
