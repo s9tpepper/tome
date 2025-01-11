@@ -17,17 +17,25 @@ pub struct InputState {
     pub fg_color: Value<String>,
     pub bg_color: Value<String>,
     pub focused: Value<bool>,
+    pub cursor_selected_fg: Value<String>,
+    pub cursor_selected_bg: Value<String>,
+    pub cursor_unselected_fg: Value<String>,
+    pub cursor_unselected_bg: Value<String>,
 }
 
 impl InputState {
-    pub fn new() -> Self {
+    pub fn new(fg_color: &str, bg_color: &str) -> Self {
         InputState {
             input: String::from("").into(),
             cursor_prefix: String::from("").into(),
             cursor_char: String::from("").into(),
             cursor_position: 0.into(),
-            fg_color: String::from("white").into(),
-            bg_color: String::from("").into(),
+            fg_color: String::from(fg_color).into(),
+            bg_color: String::from(bg_color).into(),
+            cursor_selected_fg: String::from(bg_color).into(),
+            cursor_selected_bg: String::from(fg_color).into(),
+            cursor_unselected_fg: String::from(fg_color).into(),
+            cursor_unselected_bg: String::from("").into(),
             focused: false.into(),
         }
     }
@@ -111,8 +119,12 @@ pub trait InputReceiver {
         };
 
         state.cursor_char.set(cursor_char.to_string());
-        state.fg_color.set("black".to_string());
-        state.bg_color.set("white".to_string());
+        state
+            .fg_color
+            .set(state.cursor_selected_fg.to_ref().to_string());
+        state
+            .bg_color
+            .set(state.cursor_selected_bg.to_ref().to_string());
         state.focused.set(true);
 
         context.publish("textarea_focus", |state| &state.focused);
@@ -125,11 +137,12 @@ pub trait InputReceiver {
         _: Elements<'_, '_>,
         mut context: Context<'_, InputState>,
     ) {
-        let cursor_char = ' ';
-
-        state.cursor_char.set(cursor_char.to_string());
-        state.fg_color.set("white".to_string());
-        state.bg_color.set("".to_string());
+        state
+            .fg_color
+            .set(state.cursor_unselected_fg.to_ref().to_string());
+        state
+            .bg_color
+            .set(state.cursor_unselected_bg.to_ref().to_string());
         state.focused.set(false);
 
         context.publish("textarea_focus", |state| &state.focused);
@@ -192,8 +205,12 @@ pub trait InputReceiver {
             KeyCode::Esc => {
                 // disable the cursor
                 state.cursor_char.set("".to_string());
-                state.fg_color.set("white".to_string());
-                state.bg_color.set("".to_string());
+                state
+                    .fg_color
+                    .set(state.cursor_selected_fg.to_ref().to_string());
+                state
+                    .bg_color
+                    .set(state.cursor_unselected_bg.to_ref().to_string());
                 state.focused.set(false);
 
                 context.publish("escape", |state| &state.focused);

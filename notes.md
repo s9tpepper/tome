@@ -21,8 +21,9 @@
 [x] (MVP) Fix extension handling in requests.rs:92
 [ ] (MVP?) Pretty print responses that are minified
 [x] (MVP) Fix selected/unselected colors of floating windows with text lists, like file selector, apply theme colors
-[ ] (MVP) Fix auto-focus for popups that have inputs, so the first input is automatically in focus
-[ ] (MVP) Update cursor in text inputs to use a color from the app theme
+[x] (MVP) Fix auto-focus for popups that have inputs, so the first input is automatically in focus
+[x] (MVP) Update cursor in text inputs to use a color from the app theme
+[ ] (MVP) Refactor out old textinput components for the newer shared edit_input.rs
 [ ] (MVP) Style the Success/Error popups with app theme colors
 [ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests

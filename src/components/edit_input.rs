@@ -9,6 +9,8 @@ use anathema::{
 
 const TEMPLATE: &str = "./src/components/templates/edit_input.aml";
 
+use crate::theme::{get_app_theme, AppTheme};
+
 use super::{
     dashboard::DashboardMessages,
     inputs::{InputReceiver, InputState},
@@ -21,6 +23,8 @@ pub struct EditInput {
     component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
     pub listeners: Vec<String>,
     input_for: Option<String>,
+    #[allow(dead_code)]
+    app_theme: AppTheme,
 }
 
 impl EditInput {
@@ -35,6 +39,12 @@ impl EditInput {
         let name: String = ident.into();
         let input_template = template.unwrap_or(TEMPLATE);
 
+        let app_theme = get_app_theme();
+        let state = InputState::new(
+            &app_theme.foreground.to_ref(),
+            &app_theme.background.to_ref(),
+        );
+
         let app_id = builder.register_component(
             name.clone(),
             input_template,
@@ -42,8 +52,9 @@ impl EditInput {
                 component_ids: ids.clone(),
                 listeners,
                 input_for,
+                app_theme,
             },
-            InputState::new(),
+            state,
         )?;
 
         let mut ids_ref = ids.borrow_mut();

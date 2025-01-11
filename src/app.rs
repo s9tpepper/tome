@@ -8,47 +8,50 @@ use anathema::{
 use log::{info, LevelFilter};
 use simplelog::{Config, WriteLogger};
 
-use crate::components::{
-    add_header_window::{AddHeaderWindow, AddHeaderWindowState, ADD_HEADER_WINDOW_TEMPLATE},
-    app_layout::AppLayoutComponent,
-    app_section::{AppSection, AppSectionState, APP_SECTION_TEMPLATE},
-    confirm_action_window::ConfirmActionWindow,
-    dashboard::DashboardComponent,
-    edit_header_selector::{
-        EditHeaderSelector, EditHeaderSelectorState, EDIT_HEADER_SELECTOR_TEMPLATE,
-    },
-    edit_header_window::EditHeaderWindow,
-    edit_input::EditInput,
-    edit_name_textinput::EditNameTextInput,
-    edit_value_textinput::EditValueTextInput,
-    floating_windows::{
-        app_theme_selector::AppThemeSelector,
-        body_mode_selector::{
-            BodyModeSelector, BodyModeSelectorState, BODY_MODE_SELECTOR_TEMPLATE,
+use crate::{
+    components::{
+        add_header_window::{AddHeaderWindow, AddHeaderWindowState, ADD_HEADER_WINDOW_TEMPLATE},
+        app_layout::AppLayoutComponent,
+        app_section::{AppSection, AppSectionState, APP_SECTION_TEMPLATE},
+        confirm_action_window::ConfirmActionWindow,
+        dashboard::DashboardComponent,
+        edit_header_selector::{
+            EditHeaderSelector, EditHeaderSelectorState, EDIT_HEADER_SELECTOR_TEMPLATE,
         },
-        code_gen::CodeGen,
-        commands::Commands,
-        edit_endpoint_name::EditEndpointName,
-        edit_project_name::EditProjectName,
-        endpoints_selector::EndpointsSelector,
-        file_selector::FileSelector,
-        syntax_theme_selector::SyntaxThemeSelector,
+        edit_header_window::EditHeaderWindow,
+        edit_input::EditInput,
+        edit_name_textinput::EditNameTextInput,
+        edit_value_textinput::EditValueTextInput,
+        floating_windows::{
+            app_theme_selector::AppThemeSelector,
+            body_mode_selector::{
+                BodyModeSelector, BodyModeSelectorState, BODY_MODE_SELECTOR_TEMPLATE,
+            },
+            code_gen::CodeGen,
+            commands::Commands,
+            edit_endpoint_name::EditEndpointName,
+            edit_project_name::EditProjectName,
+            endpoints_selector::EndpointsSelector,
+            file_selector::FileSelector,
+            syntax_theme_selector::SyntaxThemeSelector,
+        },
+        focusable_section::FocusableSection,
+        header_name_textinput::HeaderNameTextInput,
+        header_value_textinput::HeaderValueTextInput,
+        menu_item::{MenuItem, MenuItemState, MENU_ITEM_TEMPLATE},
+        method_selector::{MethodSelector, MethodSelectorState, METHOD_SELECTOR_TEMPLATE},
+        options::OptionsView,
+        project_window::ProjectWindow,
+        request_body_section::REQUEST_BODY_SECTION_TEMPLATE,
+        request_headers_editor::{
+            RequestHeadersEditor, RequestHeadersEditorState, REQUEST_HEADERS_EDITOR_TEMPLATE,
+        },
+        response_renderer::ResponseRenderer,
+        row::{Row, RowState, ROW_TEMPLATE},
+        textarea::{TextArea, TextAreaInputState, TEXTAREA_TEMPLATE},
+        textinput::{InputState, TextInput, TEXTINPUT_TEMPLATE},
     },
-    focusable_section::FocusableSection,
-    header_name_textinput::HeaderNameTextInput,
-    header_value_textinput::HeaderValueTextInput,
-    menu_item::{MenuItem, MenuItemState, MENU_ITEM_TEMPLATE},
-    method_selector::{MethodSelector, MethodSelectorState, METHOD_SELECTOR_TEMPLATE},
-    options::OptionsView,
-    project_window::ProjectWindow,
-    request_body_section::REQUEST_BODY_SECTION_TEMPLATE,
-    request_headers_editor::{
-        RequestHeadersEditor, RequestHeadersEditorState, REQUEST_HEADERS_EDITOR_TEMPLATE,
-    },
-    response_renderer::ResponseRenderer,
-    row::{Row, RowState, ROW_TEMPLATE},
-    textarea::{TextArea, TextAreaInputState, TEXTAREA_TEMPLATE},
-    textinput::{InputState, TextInput, TEXTINPUT_TEMPLATE},
+    theme::get_app_theme,
 };
 
 const RESPONSE_FILTER_INPUT: &str = "./src/components/templates/response_filter_input.aml";
@@ -136,24 +139,24 @@ impl App {
         builder.register_prototype(
             "response_body_area",
             TEXTAREA_TEMPLATE,
-            move || TextArea {
-                component_ids: component_ids.clone(),
-                listeners: vec![],
-                input_for: None,
+            move || {
+                let app_theme = get_app_theme();
+                TextArea {
+                    component_ids: component_ids.clone(),
+                    listeners: vec![],
+                    input_for: None,
+                    app_theme,
+                }
             },
-            TextAreaInputState::new,
-        )?;
+            || {
+                let app_theme = get_app_theme();
+                let x = app_theme.foreground.to_ref().to_string();
+                let y = app_theme.background.to_ref().to_string();
+                let fg = x.as_str();
+                let bg = y.as_str();
 
-        component_ids = self.component_ids.clone();
-        builder.register_prototype(
-            "textarea",
-            TEXTAREA_TEMPLATE,
-            move || TextArea {
-                component_ids: component_ids.clone(),
-                listeners: vec![],
-                input_for: None,
+                TextAreaInputState::new(fg, bg)
             },
-            TextAreaInputState::new,
         )?;
 
         builder.register_prototype(

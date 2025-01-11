@@ -20,6 +20,8 @@ use anathema::{
 use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
+use crate::theme::{get_app_theme, AppTheme};
+
 use super::dashboard::DashboardMessages;
 
 pub const TEXTAREA_TEMPLATE: &str = "./src/components/templates/textarea.aml";
@@ -30,6 +32,7 @@ pub struct TextArea {
     pub input_for: Option<String>,
     pub listeners: Vec<String>,
     pub component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+    pub app_theme: AppTheme,
 }
 
 #[derive(Default, anathema::state::State)]
@@ -43,6 +46,10 @@ pub struct TextAreaInputState {
     text_color: Value<String>,
     fg_color: Value<String>,
     bg_color: Value<String>,
+    cursor_selected_fg: Value<String>,
+    cursor_selected_bg: Value<String>,
+    cursor_unselected_fg: Value<String>,
+    cursor_unselected_bg: Value<String>,
     focused: Value<bool>,
     width: Value<usize>,
     height: Value<usize>,
@@ -65,16 +72,20 @@ impl Coordinates {
 }
 
 impl TextAreaInputState {
-    pub fn new() -> Self {
+    pub fn new(fg_color: &str, bg_color: &str) -> Self {
         TextAreaInputState {
             input: String::from("").into(),
             cursor_prefix: String::from("").into(),
             cursor_char: String::from("").into(),
             cursor_position: Coordinates::new(0, 0).into(),
             line_count: 1.into(),
-            text_color: String::from("white").into(),
-            fg_color: String::from("white").into(),
+            text_color: String::from(fg_color).into(),
+            fg_color: String::from(fg_color).into(),
             bg_color: String::from("").into(),
+            cursor_selected_fg: String::from(bg_color).into(),
+            cursor_selected_bg: String::from(fg_color).into(),
+            cursor_unselected_fg: String::from(fg_color).into(),
+            cursor_unselected_bg: String::from("").into(),
             focused: false.into(),
             log_output: String::from("").into(),
             width: 0.into(),
@@ -201,8 +212,12 @@ impl anathema::component::Component for TextArea {
         _: Elements<'_, '_>,
         mut context: Context<'_, Self::State>,
     ) {
-        state.fg_color.set("black".to_string());
-        state.bg_color.set("white".to_string());
+        state
+            .fg_color
+            .set(state.cursor_selected_fg.to_ref().to_string());
+        state
+            .bg_color
+            .set(state.cursor_selected_bg.to_ref().to_string());
         state.focused.set(true);
 
         context.publish("textarea_focus", |state| &state.focused);
@@ -215,8 +230,12 @@ impl anathema::component::Component for TextArea {
         mut context: Context<'_, Self::State>,
     ) {
         state.cursor_char.set("".to_string());
-        state.fg_color.set("white".to_string());
-        state.bg_color.set("".to_string());
+        state
+            .fg_color
+            .set(state.cursor_unselected_fg.to_ref().to_string());
+        state
+            .bg_color
+            .set(state.cursor_unselected_bg.to_ref().to_string());
         state.focused.set(false);
 
         context.publish("textarea_focus", |state| &state.focused);
@@ -370,6 +389,12 @@ impl TextArea {
         let name: String = ident.into();
         let input_template = template.unwrap_or(TEXTAREA_TEMPLATE);
 
+        let app_theme = get_app_theme();
+        let state = TextAreaInputState::new(
+            &app_theme.foreground.to_ref(),
+            &app_theme.background.to_ref(),
+        );
+
         let app_id = builder.register_component(
             name.clone(),
             input_template,
@@ -377,8 +402,9 @@ impl TextArea {
                 component_ids: ids.clone(),
                 listeners,
                 input_for,
+                app_theme,
             },
-            TextAreaInputState::new(),
+            state,
         )?;
 
         let mut ids_ref = ids.borrow_mut();
