@@ -216,7 +216,7 @@ zstack [background: app_theme.background]
           text " Error"
         container [width: 40]
           padding [padding: 1]
-            text [foreground: app_theme.menu_color_3, width: 40, wrap: "break"] error_message
+            text [foreground: app_theme.menu_color_3, width: 40, wrap: "wrap"] error_message
 
   if floating_window == "Message"
     align [alignment: "center"]
@@ -225,4 +225,4 @@ zstack [background: app_theme.background]
           text " " message_label
         container [width: 40]
           padding [padding: 1]
-            text [foreground: app_theme.menu_color_5, width: 40, wrap: "break"] message
+            text [foreground: app_theme.menu_color_5, width: 40, wrap: "wrap"] message
