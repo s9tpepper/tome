@@ -34,8 +34,6 @@ use crate::{
             syntax_theme_selector::SyntaxThemeSelector,
         },
         focusable_section::FocusableSection,
-        header_name_textinput::HeaderNameTextInput,
-        header_value_textinput::HeaderValueTextInput,
         menu_item::{MenuItem, MenuItemState, MENU_ITEM_TEMPLATE},
         method_selector::{MethodSelector, MethodSelectorState, METHOD_SELECTOR_TEMPLATE},
         options::OptionsView,
@@ -280,6 +278,23 @@ impl App {
             vec![],
         )?;
 
+        EditInput::register(
+            &self.component_ids,
+            builder,
+            "headernameinput",
+            Some(TEXTINPUT_TEMPLATE),
+            None,
+            vec![],
+        )?;
+        EditInput::register(
+            &self.component_ids,
+            builder,
+            "headervalueinput",
+            Some(TEXTINPUT_TEMPLATE),
+            None,
+            vec![],
+        )?;
+
         ResponseRenderer::register(
             &self.component_ids,
             builder,
@@ -292,9 +307,6 @@ impl App {
         )?;
         AppLayoutComponent::register(&self.component_ids, builder)?;
         EditHeaderWindow::register(&self.component_ids, builder)?;
-        HeaderNameTextInput::register(&self.component_ids, builder)?;
-        HeaderValueTextInput::register(&self.component_ids, builder)?;
-
         ProjectWindow::register(&self.component_ids, builder)?;
         EndpointsSelector::register(&self.component_ids, builder)?;
 

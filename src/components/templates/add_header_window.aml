@@ -13,7 +13,7 @@ align [alignment: "center"]
                     expand [axis: "horizontal"]
                       @headernameinput (
                         text_change -> header_name_update,
-                        textarea_focus -> name_input_focus
+                        escape -> name_input_focus
                       ) [id: "header_name_input"]
                   text "╭─(N)ame:"
 
@@ -23,7 +23,7 @@ align [alignment: "center"]
                     expand [axis: "horizontal"]
                       @headervalueinput (
                         text_change -> header_value_update,
-                        textarea_focus -> value_input_focus
+                        escape -> value_input_focus
                       ) [id: "header_value_input"]
                   text "╭─(V)alue:"
 

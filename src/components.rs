@@ -12,8 +12,6 @@ pub mod edit_header_window;
 pub mod edit_input;
 pub mod floating_windows;
 pub mod focusable_section;
-pub mod header_name_textinput;
-pub mod header_value_textinput;
 pub mod inputs;
 pub mod menu_item;
 pub mod method_selector;

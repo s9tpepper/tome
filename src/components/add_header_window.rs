@@ -168,6 +168,11 @@ impl Component for AddHeaderWindow {
 
                 context.publish("add_header__value_update", |state| &state.value)
             }
+
+            "name_input_focus" | "value_input_focus" => {
+                context.set_focus("id", "add_header_window");
+            }
+
             _ => {}
         }
     }
