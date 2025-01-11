@@ -122,6 +122,23 @@ impl Component for EditHeaderWindow {
     type State = EditHeaderWindowState;
     type Message = String;
 
+    fn message(
+        &mut self,
+        message: Self::Message,
+        _: &mut Self::State,
+        _: Elements<'_, '_>,
+        mut context: anathema::prelude::Context<'_, Self::State>,
+    ) {
+        #[allow(clippy::single_match)]
+        match message.as_str() {
+            "open" => {
+                context.set_focus("id", "edit_header_name_input_id");
+            }
+
+            _ => {}
+        }
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,

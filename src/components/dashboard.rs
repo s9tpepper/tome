@@ -572,6 +572,26 @@ impl DashboardComponent {
         state.floating_window.set(FloatingWindow::BodyModeSelector);
         context.set_focus("id", "body_mode_selector");
     }
+
+    fn open_add_header_window(
+        &self,
+        state: &mut DashboardState,
+        mut context: Context<'_, DashboardState>,
+    ) {
+        state.floating_window.set(FloatingWindow::AddHeader);
+        context.set_focus("id", "add_header_window");
+
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+
+        let _ = send_message(
+            "add_header_window",
+            "open".to_string(),
+            &ids,
+            context.emitter,
+        );
+    }
 }
 
 pub trait DashboardMessageHandler {
@@ -938,8 +958,7 @@ impl anathema::component::Component for DashboardComponent {
                         DashboardDisplay::RequestBody => {}
                         DashboardDisplay::RequestHeadersEditor => {
                             // Open header window
-                            state.floating_window.set(FloatingWindow::AddHeader);
-                            context.set_focus("id", "add_header_window");
+                            self.open_add_header_window(state, context);
                         }
                         DashboardDisplay::ResponseBody => {}
                         DashboardDisplay::ResponseHeaders => {}

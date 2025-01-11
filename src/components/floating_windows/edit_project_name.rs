@@ -92,7 +92,7 @@ impl Component for EditProjectName {
         message: Self::Message,
         state: &mut Self::State,
         _: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         if let Ok(msg) = serde_json::from_str::<EditProjectNameMessages>(&message) {
             match msg {
@@ -120,6 +120,8 @@ impl Component for EditProjectName {
                             context.emitter,
                         );
                     }
+
+                    context.set_focus("id", "project_name_input");
                 }
             }
         }

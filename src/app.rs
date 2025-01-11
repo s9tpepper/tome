@@ -192,13 +192,6 @@ impl App {
         )?;
 
         builder.register_prototype(
-            "add_header_window",
-            ADD_HEADER_WINDOW_TEMPLATE,
-            || AddHeaderWindow,
-            AddHeaderWindowState::new,
-        )?;
-
-        builder.register_prototype(
             "edit_header_selector",
             EDIT_HEADER_SELECTOR_TEMPLATE,
             || EditHeaderSelector,
@@ -215,6 +208,8 @@ impl App {
         builder: &mut RuntimeBuilder<TuiBackend, ()>,
     ) -> anyhow::Result<()> {
         self.register_prototypes(builder)?;
+
+        AddHeaderWindow::register(&self.component_ids, builder)?;
 
         FocusableSection::register(
             &self.component_ids,

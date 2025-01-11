@@ -10,7 +10,10 @@ align [alignment: "center"]
               zstack
                 border [foreground: border_color, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 60]
                   expand [axis: "horizontal"]
-                    @editheadername (text_change -> edit_header_name_update, textarea_focus -> edit_name_input_focus) [id: "edit_header_name_input_id"]
+                    @editheadername (
+                      text_change -> edit_header_name_update,
+                      textarea_focus -> edit_name_input_focus
+                    ) [id: "edit_header_name_input_id"]
                 text "╭─(N)ame:"
 
             container [height: 3, max_height: 3]

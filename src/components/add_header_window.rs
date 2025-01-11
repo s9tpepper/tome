@@ -1,7 +1,13 @@
-use std::{cell::Ref, collections::HashMap};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+};
 
 use anathema::{
     component::{self, Component, ComponentId, KeyCode},
+    prelude::TuiBackend,
+    runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
 };
@@ -16,7 +22,33 @@ use super::dashboard::{DashboardMessageHandler, FloatingWindow};
 pub const ADD_HEADER_WINDOW_TEMPLATE: &str = "./src/components/templates/add_header_window.aml";
 
 #[derive(Default)]
-pub struct AddHeaderWindow;
+pub struct AddHeaderWindow {
+    #[allow(unused)]
+    pub component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+}
+
+impl AddHeaderWindow {
+    pub fn register(
+        ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+    ) -> anyhow::Result<()> {
+        let name: String = "add_header_window".to_string();
+
+        let app_id = builder.register_component(
+            name.clone(),
+            ADD_HEADER_WINDOW_TEMPLATE,
+            AddHeaderWindow {
+                component_ids: ids.clone(),
+            },
+            AddHeaderWindowState::new(),
+        )?;
+
+        let mut ids_ref = ids.borrow_mut();
+        ids_ref.insert(name, app_id);
+
+        Ok(())
+    }
+}
 
 impl AddHeaderWindow {
     fn update_app_theme(&self, state: &mut AddHeaderWindowState) {
@@ -88,7 +120,7 @@ impl DashboardMessageHandler for AddHeaderWindow {
 
 impl Component for AddHeaderWindow {
     type State = AddHeaderWindowState;
-    type Message = ();
+    type Message = String;
 
     fn on_focus(
         &mut self,
@@ -97,6 +129,23 @@ impl Component for AddHeaderWindow {
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
+    }
+
+    fn message(
+        &mut self,
+        message: Self::Message,
+        _: &mut Self::State,
+        _: Elements<'_, '_>,
+        mut context: anathema::prelude::Context<'_, Self::State>,
+    ) {
+        #[allow(clippy::single_match)]
+        match message.as_str() {
+            "open" => {
+                context.set_focus("id", "header_name_input");
+            }
+
+            _ => {}
+        }
     }
 
     fn receive(
@@ -108,15 +157,6 @@ impl Component for AddHeaderWindow {
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match ident {
-            // "name_input_focus" => match value.to_bool() {
-            //     true => {}
-            //     false => {} // false => context.set_focus("id", "add_header_window"),
-            // },
-            //
-            // "value_input_focus" => match value.to_bool() {
-            //     true => {}
-            //     false => {} // false => context.set_focus("id", "add_header_window"),
-            // },
             "header_name_update" => {
                 state.name.set(value.to_string());
 

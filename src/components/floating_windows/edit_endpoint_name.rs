@@ -92,7 +92,7 @@ impl Component for EditEndpointName {
         message: Self::Message,
         state: &mut Self::State,
         _: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         if let Ok(msg) = serde_json::from_str::<EditEndpointNameMessages>(&message) {
             match msg {
@@ -120,6 +120,8 @@ impl Component for EditEndpointName {
                             context.emitter,
                         );
                     }
+
+                    context.set_focus("id", "endpoint_name_input");
                 }
             }
         }
