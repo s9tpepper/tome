@@ -458,8 +458,7 @@ impl Component for FileSelector {
         self.update_app_theme(state);
 
         let Ok(path_buf) = env::current_dir() else {
-            println!("How did we get here? Can't read the current working directory");
-            panic!("at the disco!");
+            return;
         };
 
         self.read_directory(path_buf, state, context);

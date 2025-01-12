@@ -1,6 +1,7 @@
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
+    ops::Deref,
     rc::Rc,
 };
 
@@ -18,11 +19,14 @@ use crate::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState, FloatingWindow},
         send_message,
     },
-    projects::PersistedProject,
+    projects::{self, PersistedProject, PersistedVariable, ProjectVariable},
     theme::{get_app_theme, AppTheme},
 };
 
-use super::add_project_variable::AddProjectVariableMessages;
+use super::{
+    add_project_variable::AddProjectVariableMessages,
+    project_variables::{ProjectVariables, ProjectVariablesMessages},
+};
 
 const TEMPLATE: &str = "./src/components/floating_windows/templates/commands.aml";
 
@@ -149,6 +153,32 @@ impl DashboardMessageHandler for Commands {
                         .floating_window
                         .set(FloatingWindow::ViewProjectVariables);
                     context.set_focus("id", "project_variables");
+
+                    let variables: Vec<PersistedVariable> = state
+                        .project
+                        .to_ref()
+                        .variable
+                        .to_ref()
+                        .iter()
+                        .map(|vpv| {
+                            let pv = vpv.to_ref();
+                            let persisted_var: PersistedVariable = pv.as_ref().into();
+
+                            persisted_var
+                        })
+                        .collect();
+
+                    let project_variables_messages = ProjectVariablesMessages::SetList(variables);
+                    let Ok(message) = serde_json::to_string(&project_variables_messages) else {
+                        return;
+                    };
+
+                    let _ = send_message(
+                        "project_variables",
+                        message,
+                        &component_ids,
+                        context.emitter,
+                    );
                 }
 
                 "g" => {

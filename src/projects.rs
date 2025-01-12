@@ -185,6 +185,46 @@ pub struct PersistedVariable {
     pub disabled: Option<bool>,
 }
 
+impl From<&ProjectVariable> for PersistedVariable {
+    fn from(project_variable: &ProjectVariable) -> Self {
+        PersistedVariable {
+            id: Some(project_variable.id.to_ref().to_string()),
+            key: Some(project_variable.key.to_ref().to_string()),
+            value: Some(project_variable.value.to_ref().to_string()),
+            private: Some(project_variable.private.to_ref().to_string()),
+            r#type: Some(match *project_variable.r#type.to_ref() {
+                ProjectVariableType::String => VariableType::String,
+                ProjectVariableType::Boolean => VariableType::Boolean,
+                ProjectVariableType::Any => VariableType::Any,
+                ProjectVariableType::Number => VariableType::Number,
+            }),
+            name: Some(project_variable.name.to_ref().to_string()),
+            system: Some(*project_variable.system.to_ref()),
+            disabled: Some(*project_variable.disabled.to_ref()),
+        }
+    }
+}
+
+impl From<ProjectVariable> for PersistedVariable {
+    fn from(project_variable: ProjectVariable) -> Self {
+        PersistedVariable {
+            id: Some(project_variable.id.to_ref().to_string()),
+            key: Some(project_variable.key.to_ref().to_string()),
+            value: Some(project_variable.value.to_ref().to_string()),
+            private: Some(project_variable.private.to_ref().to_string()),
+            r#type: Some(match *project_variable.r#type.to_ref() {
+                ProjectVariableType::String => VariableType::String,
+                ProjectVariableType::Boolean => VariableType::Boolean,
+                ProjectVariableType::Any => VariableType::Any,
+                ProjectVariableType::Number => VariableType::Number,
+            }),
+            name: Some(project_variable.name.to_ref().to_string()),
+            system: Some(*project_variable.system.to_ref()),
+            disabled: Some(*project_variable.disabled.to_ref()),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PersistedEndpoint {
     pub name: String,

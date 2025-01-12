@@ -4,18 +4,25 @@ align [alignment: "center"]
       container [fill: " ", height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground]
         expand
           hstack
-            text [bold: true] " Project Variables "
+            text [bold: true] " Project Variables"
       border [sides: ["left", "right", "bottom"], background: app_theme.overlay_background, foreground: app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 80]
-        padding [padding: 1]
-          vstack [height: 5, width: 80]
+        padding [fill: " ", padding: 1]
+          vstack [height: 6, width: 80]
+            hstack [width: 80, background: app_theme.overlay_heading, foreground: app_theme.overlay_background]
+              container [width: 30]
+                text "Name"
+              container [width: 30]
+                text "Public"
+              text "Private"
             for variable in window_list
-              hstack [foreground: project.row_fg_color, background: project.row_color]
-                text variable.name
-                  span variable.public
-                  span "*********"
-                spacer
+              hstack [width: 80, background: variable.row_color, foreground: variable.row_fg_color]
+                container [width: 30]
+                  text variable.name
+                container [width: 30]
+                  text variable.value
+                text "*********"
 
-    vstack [height: 9, width: 80]
+    vstack [height: 10, width: 80]
       spacer
       container [height: 1, max_width: 78]
         hstack

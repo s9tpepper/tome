@@ -12,17 +12,11 @@ use anathema::{
     state::{List, State, Value},
     widgets::Elements,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::{
-        dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
-        send_message,
-        textarea::TextAreaMessages,
-    },
-    messages::confirm_delete_project::ConfirmDeleteProject,
-    projects::{
-        get_projects, Endpoint, PersistedProject, PersistedVariable, Project, ProjectVariable,
-    },
+    components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
+    projects::{PersistedVariable, ProjectVariable},
     theme::{get_app_theme, AppTheme},
 };
 
@@ -57,6 +51,11 @@ impl ProjectVariablesState {
             app_theme: app_theme.into(),
         }
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum ProjectVariablesMessages {
+    SetList(Vec<PersistedVariable>),
 }
 
 #[derive(Default)]
@@ -214,7 +213,7 @@ impl ProjectVariables {
 
 impl DashboardMessageHandler for ProjectVariables {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
+        _value: anathema::state::CommonVal<'_>,
         ident: impl Into<String>,
         state: &mut DashboardState,
         mut context: anathema::prelude::Context<'_, DashboardState>,
@@ -385,14 +384,27 @@ impl Component for ProjectVariables {
 
     fn message(
         &mut self,
-        _: Self::Message,
-        _: &mut Self::State,
+        message: Self::Message,
+        state: &mut Self::State,
         _: anathema::widgets::Elements<'_, '_>,
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
-        // println!("Received message in project window: {message}");
+        let Ok(project_variables_messages) =
+            serde_json::from_str::<ProjectVariablesMessages>(&message)
+        else {
+            return;
+        };
 
-        // NOTE: The currently selected project might need to be sent from the dashboard
-        // when opening the project window after choosing a project
+        match project_variables_messages {
+            ProjectVariablesMessages::SetList(vec) => {
+                self.variables_list = vec;
+
+                let first_index = 0;
+                let last_index = 4;
+                let selected_index = 0;
+
+                self.update_project_list(first_index, last_index, selected_index, state);
+            }
+        }
     }
 }
