@@ -8,6 +8,7 @@ use uuid::Uuid;
 use void::Void;
 
 use crate::{
+    components::floating_windows::add_project_variable::Variable,
     fs::get_documents_dir,
     projects::{Header, PersistedEndpoint, PersistedProject, PersistedVariable, VariableType},
 };
@@ -57,6 +58,44 @@ struct PostmanVariable {
     name: Option<String>,
     system: Option<bool>,
     disabled: Option<bool>,
+}
+
+impl From<PostmanVariable> for PersistedVariable {
+    fn from(postman_variable: PostmanVariable) -> Self {
+        PersistedVariable {
+            id: postman_variable.id,
+            key: postman_variable.key,
+            value: postman_variable.value,
+            private: None,
+            r#type: match postman_variable.r#type {
+                Some(pt) => match pt {
+                    PostmanVariableType::String => Some(VariableType::String),
+                    PostmanVariableType::Boolean => Some(VariableType::Boolean),
+                    PostmanVariableType::Any => Some(VariableType::Any),
+                    PostmanVariableType::Number => Some(VariableType::Number),
+                },
+                None => None,
+            },
+            name: postman_variable.name,
+            system: postman_variable.system,
+            disabled: postman_variable.disabled,
+        }
+    }
+}
+
+impl From<PersistedVariable> for Variable {
+    fn from(value: PersistedVariable) -> Self {
+        let mut variable = Variable {
+            name: value.key.unwrap_or_default().into(),
+            public: value.value.unwrap_or_default().into(),
+            private: value.private.unwrap_or_default().into(),
+            common: String::from(""),
+        };
+
+        variable.update_common();
+
+        variable
+    }
 }
 
 #[derive(Default, Debug, Deserialize, Serialize)]
@@ -335,6 +374,7 @@ impl From<PostmanJson> for PersistedProject {
                     name: postman_variable.name.clone(),
                     system: postman_variable.system,
                     disabled: postman_variable.disabled,
+                    private: None,
                 })
                 .collect(),
             None => vec![],

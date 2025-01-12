@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc};
 
 use anathema::{
     component::ComponentId,
@@ -21,6 +21,7 @@ use crate::{
         edit_header_window::EditHeaderWindow,
         edit_input::EditInput,
         floating_windows::{
+            add_project_variable::AddProjectVariable,
             app_theme_selector::AppThemeSelector,
             body_mode_selector::{
                 BodyModeSelector, BodyModeSelectorState, BODY_MODE_SELECTOR_TEMPLATE,
@@ -67,11 +68,11 @@ impl App {
     fn logger(&self) {
         // TODO: Move this log file into the application directory
         // TODO: Enable this block with an env var
-        // let _ = WriteLogger::init(
-        //     LevelFilter::Info,
-        //     Config::default(),
-        //     File::create("my_rust_binary.log").unwrap(),
-        // );
+        let _ = WriteLogger::init(
+            LevelFilter::Info,
+            Config::default(),
+            File::create("my_rust_binary.log").unwrap(),
+        );
 
         info!("Logging has been enabled");
     }
@@ -246,6 +247,33 @@ impl App {
         EditInput::register(
             &self.component_ids,
             builder,
+            "add_project_variable_name",
+            None,
+            None,
+            vec![],
+        )?;
+
+        EditInput::register(
+            &self.component_ids,
+            builder,
+            "add_project_variable_public_value",
+            None,
+            None,
+            vec![],
+        )?;
+
+        EditInput::register(
+            &self.component_ids,
+            builder,
+            "add_project_variable_private_value",
+            None,
+            None,
+            vec![],
+        )?;
+
+        EditInput::register(
+            &self.component_ids,
+            builder,
             "response_filter_input",
             Some(RESPONSE_FILTER_INPUT),
             None,
@@ -319,6 +347,7 @@ impl App {
         AppThemeSelector::register(&self.component_ids, builder)?;
         Commands::register(&self.component_ids, builder)?;
         CodeGen::register(&self.component_ids, builder)?;
+        AddProjectVariable::register(&self.component_ids, builder)?;
         FileSelector::register("postman_file_selector", &self.component_ids, builder)?;
 
         TextArea::register(

@@ -22,6 +22,8 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
+use super::add_project_variable::AddProjectVariableMessages;
+
 const TEMPLATE: &str = "./src/components/floating_windows/templates/commands.aml";
 
 #[derive(Default)]
@@ -126,7 +128,20 @@ impl DashboardMessageHandler for Commands {
                     state
                         .floating_window
                         .set(FloatingWindow::AddProjectVariable);
-                    context.set_focus("id", "add_project_variable_window");
+                    context.set_focus("id", "add_project_variable");
+
+                    let Ok(message) =
+                        serde_json::to_string(&AddProjectVariableMessages::InitialFocus)
+                    else {
+                        return;
+                    };
+
+                    let _ = send_message(
+                        "add_project_variable",
+                        message,
+                        &component_ids,
+                        context.emitter,
+                    );
                 }
 
                 "v" => {

@@ -27,6 +27,7 @@ use crate::{
 use crate::{requests::do_request, theme::get_app_theme_persisted};
 
 use super::floating_windows::{
+    add_project_variable::AddProjectVariable,
     body_mode_selector::BodyModeSelector,
     endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
     file_selector::FileSelector,
@@ -726,6 +727,15 @@ impl anathema::component::Component for DashboardComponent {
 
         if let Ok(component_ids) = self.component_ids.try_borrow() {
             match component {
+                "add_project_variable" => AddProjectVariable::handle_message(
+                    value,
+                    ident,
+                    state,
+                    context,
+                    elements,
+                    component_ids,
+                ),
+
                 "body_mode_selector" => BodyModeSelector::handle_message(
                     value,
                     ident,

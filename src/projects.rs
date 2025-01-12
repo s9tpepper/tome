@@ -52,6 +52,27 @@ pub struct ProjectVariable {
     pub name: Value<String>,
     pub system: Value<bool>,
     pub disabled: Value<bool>,
+    pub private: Value<String>,
+}
+
+impl From<PersistedVariable> for ProjectVariable {
+    fn from(persisted_variable: PersistedVariable) -> Self {
+        ProjectVariable {
+            id: persisted_variable.id.unwrap_or_default().into(),
+            key: persisted_variable.key.unwrap_or_default().into(),
+            value: persisted_variable.value.unwrap_or_default().into(),
+            r#type: match persisted_variable.r#type.unwrap_or_default() {
+                VariableType::String => ProjectVariableType::String.into(),
+                VariableType::Boolean => ProjectVariableType::Boolean.into(),
+                VariableType::Any => ProjectVariableType::Any.into(),
+                VariableType::Number => ProjectVariableType::Number.into(),
+            },
+            name: persisted_variable.name.unwrap_or_default().into(),
+            system: persisted_variable.system.unwrap_or_default().into(),
+            disabled: persisted_variable.disabled.unwrap_or_default().into(),
+            private: persisted_variable.private.unwrap_or_default().into(),
+        }
+    }
 }
 
 impl Project {
@@ -151,6 +172,7 @@ pub struct PersistedVariable {
     pub id: Option<String>,
     pub key: Option<String>,
     pub value: Option<String>,
+    pub private: Option<String>,
     pub r#type: Option<VariableType>,
     pub name: Option<String>,
     pub system: Option<bool>,
@@ -286,15 +308,16 @@ impl From<&Project> for PersistedProject {
                 id: Some(pv.to_ref().id.to_ref().to_string()),
                 key: Some(pv.to_ref().key.to_ref().to_string()),
                 value: Some(pv.to_ref().value.to_ref().to_string()),
-                r#type: Some(match pv.to_ref().id.to_ref().to_string().as_str() {
-                    "String" => VariableType::String,
-                    "Boolean" => VariableType::Boolean,
-                    "Number" => VariableType::Number,
-                    _ => VariableType::Any,
+                r#type: Some(match *pv.to_ref().r#type.to_ref() {
+                    ProjectVariableType::String => VariableType::String,
+                    ProjectVariableType::Boolean => VariableType::Boolean,
+                    ProjectVariableType::Any => VariableType::Any,
+                    ProjectVariableType::Number => VariableType::Number,
                 }),
                 name: Some(pv.to_ref().name.to_ref().to_string()),
                 system: Some(*pv.to_ref().system.to_ref()),
                 disabled: Some(*pv.to_ref().disabled.to_ref()),
+                private: Some(pv.to_ref().private.to_ref().to_string()),
             })
             .collect();
 
@@ -343,6 +366,7 @@ impl From<&PersistedProject> for Project {
                 name: pv.name.clone().unwrap_or_default().into(),
                 system: pv.system.unwrap_or_default().into(),
                 disabled: pv.disabled.unwrap_or_default().into(),
+                private: pv.private.clone().unwrap_or_default().into(),
             })
             .collect();
 
