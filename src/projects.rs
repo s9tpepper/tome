@@ -53,6 +53,9 @@ pub struct ProjectVariable {
     pub system: Value<bool>,
     pub disabled: Value<bool>,
     pub private: Value<String>,
+
+    pub row_fg_color: Value<String>,
+    pub row_color: Value<String>,
 }
 
 impl From<PersistedVariable> for ProjectVariable {
@@ -71,6 +74,9 @@ impl From<PersistedVariable> for ProjectVariable {
             system: persisted_variable.system.unwrap_or_default().into(),
             disabled: persisted_variable.disabled.unwrap_or_default().into(),
             private: persisted_variable.private.unwrap_or_default().into(),
+
+            row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
         }
     }
 }
@@ -367,6 +373,8 @@ impl From<&PersistedProject> for Project {
                 system: pv.system.unwrap_or_default().into(),
                 disabled: pv.disabled.unwrap_or_default().into(),
                 private: pv.private.clone().unwrap_or_default().into(),
+                row_color: "".to_string().into(),
+                row_fg_color: "".to_string().into(),
             })
             .collect();
 

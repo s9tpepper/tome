@@ -218,7 +218,11 @@ zstack [background: app_theme.background]
 
   if floating_window == "ViewProjectVariables"
     align [alignment: "center"]
-      text "view project variables window here"
+      @project_variables (
+        project_variables__cancel -> project_variables__cancel,
+        project_variables__selection -> project_variables__selection,
+        project_variables__delete -> project_variables__delete
+      ) [id: "project_variables"]
 
   if floating_window == "Error"
     align [alignment: "center"]

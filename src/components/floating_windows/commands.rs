@@ -148,7 +148,7 @@ impl DashboardMessageHandler for Commands {
                     state
                         .floating_window
                         .set(FloatingWindow::ViewProjectVariables);
-                    context.set_focus("id", "view_project_variables_window");
+                    context.set_focus("id", "project_variables");
                 }
 
                 "g" => {

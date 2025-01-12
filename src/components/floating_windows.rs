@@ -7,4 +7,5 @@ pub mod edit_endpoint_name;
 pub mod edit_project_name;
 pub mod endpoints_selector;
 pub mod file_selector;
+pub mod project_variables;
 pub mod syntax_theme_selector;

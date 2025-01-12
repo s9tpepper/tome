@@ -31,6 +31,7 @@ use super::floating_windows::{
     body_mode_selector::BodyModeSelector,
     endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
     file_selector::FileSelector,
+    project_variables::ProjectVariables,
 };
 use super::{
     add_header_window::AddHeaderWindow,
@@ -727,6 +728,15 @@ impl anathema::component::Component for DashboardComponent {
 
         if let Ok(component_ids) = self.component_ids.try_borrow() {
             match component {
+                "project_variables" => ProjectVariables::handle_message(
+                    value,
+                    ident,
+                    state,
+                    context,
+                    elements,
+                    component_ids,
+                ),
+
                 "add_project_variable" => AddProjectVariable::handle_message(
                     value,
                     ident,

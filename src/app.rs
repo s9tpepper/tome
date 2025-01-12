@@ -32,6 +32,7 @@ use crate::{
             edit_project_name::EditProjectName,
             endpoints_selector::EndpointsSelector,
             file_selector::FileSelector,
+            project_variables::ProjectVariables,
             syntax_theme_selector::SyntaxThemeSelector,
         },
         focusable_section::FocusableSection,
@@ -348,6 +349,7 @@ impl App {
         Commands::register(&self.component_ids, builder)?;
         CodeGen::register(&self.component_ids, builder)?;
         AddProjectVariable::register(&self.component_ids, builder)?;
+        ProjectVariables::register(&self.component_ids, builder)?;
         FileSelector::register("postman_file_selector", &self.component_ids, builder)?;
 
         TextArea::register(
