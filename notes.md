@@ -27,6 +27,15 @@
 [x] (MVP) Style the Success/Error popups with app theme colors
 [ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
+[ ] (MVP) Project window remove add button
+[ ] (MVP) Project window rename button doesn't do anything
+[ ] (MVP) Project window delete confirmation window needs style updates
+[ ] (MVP) Project window delete confirmation window No option doesn't work
+[ ] (MVP) Endpoints window Rename button doesn't do anything
+[ ] (MVP) Endpoints window Delete button tries to delete a project instead of the endpoint
+
+
+
 
 ### Post-Release
 [ ] Need a cool logo
