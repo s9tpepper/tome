@@ -31,7 +31,7 @@
 [ ] (MVP) Project window add button
 [x] (MVP) Project window delete button
 [ ] (MVP) Project window rename button doesn't do anything
-[ ] (MVP) Project window delete confirmation window needs style updates
+[x] (MVP) Project window delete confirmation window needs style updates
 [x] (MVP) Project window delete confirmation window No option doesn't work
 [ ] (MVP) Endpoints window Rename button doesn't do anything
 [ ] (MVP) Endpoints window Delete button tries to delete a project instead of the endpoint

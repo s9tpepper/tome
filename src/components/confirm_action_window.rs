@@ -7,8 +7,11 @@ use anathema::{
     state::{State, Value},
 };
 
-use crate::messages::confirm_delete_project::{
-    ConfirmAction, DeleteProjectDetails, DeleteProjectDetailsAnswer,
+use crate::{
+    messages::confirm_delete_project::{
+        ConfirmAction, DeleteProjectDetails, DeleteProjectDetailsAnswer,
+    },
+    theme::{get_app_theme, AppTheme},
 };
 
 use super::{dashboard::DashboardMessages, send_message};
@@ -54,13 +57,17 @@ impl ConfirmActionWindow {
 pub struct ConfirmActionWindowState {
     title: Value<String>,
     message: Value<String>,
+    app_theme: Value<AppTheme>,
 }
 
 impl ConfirmActionWindowState {
     pub fn new() -> Self {
+        let app_theme = get_app_theme();
+
         ConfirmActionWindowState {
             title: "".to_string().into(),
             message: "".to_string().into(),
+            app_theme: app_theme.into(),
         }
     }
 }

@@ -1,17 +1,29 @@
 align [alignment: "center"]
-  border [foreground: border_color, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 50]
-    vstack
-      container [height: 1, background: "yellow", foreground: #131313]
-        expand
+  container [max_width: 50, height: 7]
+    zstack [foreground: app_theme.overlay_foreground, background: app_theme.overlay_background, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 50]
+      vstack [max_width: 50]
+        container [max_width: 50, height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_background]
+          expand
+            hstack
+              text "  " title
+
+
+        border [foreground: app_theme.border_focused, width: 50, border_style: "╭─╮│╯─╰│", sides: ["left", "bottom", "right"]]
+          padding [padding: 2]
+            text message
+
+      vstack [height: 9, width: 50]
+        spacer
+        container [height: 1, max_width: 48]
           hstack
-            text title
-
-      padding [padding: 2]
-        text message
-
-      hstack
-        spacer
-        text "(Y)es"
-        spacer
-        text "(N)o"
-        spacer
+            spacer
+            text [min_height: 1] ""
+              span [foreground: app_theme.border_focused] "─"
+              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+              span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(Y)es"
+              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+            text [min_height: 1] ""
+              span [foreground: app_theme.border_focused] "─"
+              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+              span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(N)o"
+              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
