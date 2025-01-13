@@ -162,6 +162,7 @@ zstack [background: app_theme.background]
       project_window__cancel -> project_window__cancel,
       project_window__selection -> project_window__selection,
       project_window__delete -> project_window__delete,
+      rename_project -> rename_project,
       add_new_project -> add_new_project
     ) [id: "project_selector"]
 
@@ -177,7 +178,8 @@ zstack [background: app_theme.background]
   if floating_window == "ChangeProjectName"
     @edit_project_name (
       edit_project_name__cancel -> edit_project_name__cancel,
-      edit_project_name__submit -> edit_project_name__submit
+      edit_project_name__submit -> edit_project_name__submit,
+      edit_project_name__specific_project_rename -> edit_project_name__specific_project_rename
     ) [id: "edit_project_name", border_color: "#ffffff"]
 
   if floating_window == "EndpointsSelector"

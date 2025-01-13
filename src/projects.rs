@@ -1,6 +1,11 @@
 use anathema::state::{self, List, State, Value};
 use serde::{Deserialize, Serialize};
-use std::{fs, ops::Deref};
+use std::{
+    fs::{self, File},
+    io::BufReader,
+    ops::Deref,
+    path::PathBuf,
+};
 
 use crate::fs::get_app_dir;
 
@@ -255,7 +260,38 @@ fn get_default_headers() -> Vec<HeaderState> {
     ]
 }
 
-pub fn delete_project(project: PersistedProject) -> anyhow::Result<()> {
+fn get_project(project_path: &PathBuf) -> anyhow::Result<PersistedProject> {
+    let file = File::open(project_path)?;
+    let reader = BufReader::new(file);
+
+    let persisted_project: PersistedProject = serde_json::from_reader(reader)?;
+
+    Ok(persisted_project)
+}
+
+pub fn rename_project(project: &PersistedProject, new_name: &str) -> anyhow::Result<()> {
+    let dir_result = get_app_dir("projects");
+    if dir_result.is_err() {
+        return Err(anyhow::Error::msg("Unable to access projects directory"));
+    }
+
+    let mut old_project_dir = dir_result.unwrap();
+    let mut new_project_dir = old_project_dir.clone();
+
+    old_project_dir.push(format!("{}.project", project.name));
+    new_project_dir.push(format!("{}.project", new_name));
+
+    let mut persisted_project = get_project(&old_project_dir)?;
+    delete_project(&persisted_project)?;
+
+    persisted_project.name = new_name.to_string();
+
+    save_project(&persisted_project)?;
+
+    Ok(())
+}
+
+pub fn delete_project(project: &PersistedProject) -> anyhow::Result<()> {
     let dir_result = get_app_dir("projects");
     if dir_result.is_err() {
         return Err(anyhow::Error::msg("Unable to access projects directory"));
@@ -274,7 +310,7 @@ pub fn delete_project(project: PersistedProject) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn save_project(project: PersistedProject) -> anyhow::Result<()> {
+pub fn save_project(project: &PersistedProject) -> anyhow::Result<()> {
     if project.name.trim() == "" {
         return Err(anyhow::Error::msg("Project must have name"));
     }

@@ -297,7 +297,7 @@ impl DashboardComponent {
     fn save_project(&self, state: &mut DashboardState, show_message: bool) {
         let project: PersistedProject = state.project.to_ref().deref().into();
 
-        match save_project(project) {
+        match save_project(&project) {
             Ok(_) => {
                 if show_message {
                     self.show_message("Project Save", "Saved project successfully", state)
@@ -323,6 +323,34 @@ impl DashboardComponent {
         };
 
         context.emit(*app_id, msg);
+    }
+
+    fn rename_project(
+        &self,
+        value: &str,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
+        let Ok(project) = serde_json::from_str::<PersistedProject>(value) else {
+            state.floating_window.set(FloatingWindow::None);
+            context.set_focus("id", "app");
+
+            return;
+        };
+
+        let edit_project_name_messages = EditProjectNameMessages::Specifically(project);
+        let Ok(message) = serde_json::to_string(&edit_project_name_messages) else {
+            return;
+        };
+
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+
+        state.floating_window.set(FloatingWindow::ChangeProjectName);
+        context.set_focus("id", "edit_project_name");
+
+        let _ = send_message("edit_project_name", message, &ids, context.emitter);
     }
 
     fn new_project(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
@@ -396,7 +424,7 @@ impl DashboardComponent {
             .endpoints
             .push((&state.endpoint.to_ref().clone()).into());
 
-        match save_project(project.clone()) {
+        match save_project(&project) {
             Ok(_) => {
                 if show_message {
                     self.show_message("Endpoint Save", "Saved endpoint successfully", state);
@@ -618,7 +646,7 @@ impl DashboardComponent {
                         self.clear_url_and_request_body(&context);
 
                         let project_name = persisted_project.name.clone();
-                        let delete_result = delete_project(persisted_project);
+                        let delete_result = delete_project(&persisted_project);
                         match delete_result {
                             Ok(_) => self.show_message(
                                 "Delete Project Success",
@@ -783,6 +811,10 @@ impl anathema::component::Component for DashboardComponent {
 
             "add_new_project" => {
                 self.new_project(state, &mut context);
+            }
+
+            "rename_project" => {
+                self.rename_project(&value.to_string(), state, &mut context);
             }
 
             "open_add_variable_window" => {

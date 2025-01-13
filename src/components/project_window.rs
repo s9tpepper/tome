@@ -215,9 +215,23 @@ impl ProjectWindow {
 
     fn rename_project(
         &self,
-        _state: &mut ProjectWindowState,
-        _context: Context<'_, ProjectWindowState>,
+        state: &mut ProjectWindowState,
+        mut context: Context<'_, ProjectWindowState>,
     ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let project = self.project_list.get(selected_index);
+
+        match project {
+            Some(project) => match serde_json::to_string(project) {
+                Ok(project_json) => {
+                    state.selected_project.set(project_json);
+                    context.publish("rename_project", |state| &state.selected_project)
+                }
+
+                Err(_) => context.publish("project_window__cancel", |state| &state.cursor),
+            },
+            None => context.publish("project_window__cancel", |state| &state.cursor),
+        }
     }
 
     fn add_project(&self, mut context: Context<'_, ProjectWindowState>) {

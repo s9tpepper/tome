@@ -346,7 +346,7 @@ impl FileSelector {
         let reader = BufReader::new(file);
 
         match serde_json::from_reader::<BufReader<File>, PostmanJson>(reader) {
-            Ok(postman_json) => match save_project(postman_json.into()) {
+            Ok(postman_json) => match save_project(&postman_json.into()) {
                 Ok(_) => {
                     let title = "Postman Import".to_string();
                     let message = "Postman file was imported successfully".to_string();
