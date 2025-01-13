@@ -291,6 +291,26 @@ pub fn rename_project(project: &PersistedProject, new_name: &str) -> anyhow::Res
     Ok(())
 }
 
+pub fn delete_endpoint(
+    project: &mut PersistedProject,
+    endpoint: &PersistedEndpoint,
+) -> anyhow::Result<()> {
+    delete_project(project)?;
+
+    let endpoints: Vec<PersistedEndpoint> = project
+        .endpoints
+        .iter()
+        .filter(|pe| **pe != *endpoint)
+        .cloned()
+        .collect();
+
+    project.endpoints = endpoints;
+
+    save_project(project)?;
+
+    Ok(())
+}
+
 pub fn delete_project(project: &PersistedProject) -> anyhow::Result<()> {
     let dir_result = get_app_dir("projects");
     if dir_result.is_err() {

@@ -17,8 +17,10 @@ use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fs::get_documents_dir, messages::confirm_delete_project::ConfirmAction,
-    projects::delete_project, theme::get_app_theme,
+    fs::get_documents_dir,
+    messages::confirm_delete_project::ConfirmAction,
+    projects::{delete_endpoint, delete_project},
+    theme::get_app_theme,
 };
 use crate::{
     projects::{
@@ -641,6 +643,10 @@ impl DashboardComponent {
             ConfirmAction::ConfirmationDeletePersistedProject(delete_project_details_answer) => {
                 match delete_project_details_answer.answer {
                     true => {
+                        // TODO: Verify this line is correct, because this deletes the current
+                        // project that's selected for the dashboard, and I believe that this
+                        // should be deleting the project in delete_project_details_answer.project
+                        //
                         let persisted_project: PersistedProject =
                             state.project.to_ref().as_ref().into();
 
@@ -659,6 +665,48 @@ impl DashboardComponent {
 
                             Err(_) => self.show_error(
                                 &format!("There was an error deleting '{project_name}"),
+                                state,
+                            ),
+                        }
+                    }
+
+                    false => {
+                        state.floating_window.set(FloatingWindow::None);
+                        context.set_focus("id", "app");
+                    }
+                }
+            }
+
+            ConfirmAction::ConfirmationDeletePersistedEndpoint(delete_endpoint_details_answer) => {
+                match delete_endpoint_details_answer.answer {
+                    true => {
+                        let persisted_endpoint = delete_endpoint_details_answer.endpoint;
+                        let current_endpoint: PersistedEndpoint =
+                            state.endpoint.to_ref().deref().into();
+
+                        if persisted_endpoint == current_endpoint {
+                            state.endpoint.set(Endpoint::new());
+                            self.clear_url_and_request_body(&context);
+                        }
+
+                        let endpoint_name = persisted_endpoint.name.clone();
+                        let mut current_project: PersistedProject =
+                            state.project.to_ref().deref().into();
+                        match delete_endpoint(&mut current_project, &persisted_endpoint) {
+                            Ok(_) => {
+                                let project: Project = (&current_project).into();
+                                state.project.set(project);
+
+                                self.show_message(
+                                    "Delete Endpoint Success",
+                                    &format!("The {endpoint_name} endpoint has been deleted."),
+                                    state,
+                                );
+                            }
+                            Err(_) => self.show_error(
+                                &format!(
+                                    "There was an error deleting the {endpoint_name} endpoint"
+                                ),
                                 state,
                             ),
                         }

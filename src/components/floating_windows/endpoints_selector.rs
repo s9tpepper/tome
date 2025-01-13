@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::TuiBackend,
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -16,7 +16,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
-    messages::confirm_delete_endpoint::ConfirmDeleteEndpoint,
+    messages::{
+        confirm_delete_endpoint::ConfirmDeleteEndpoint,
+        confirm_delete_project::{ConfirmAction, DeleteEndpointDetails},
+    },
     projects::{Endpoint, PersistedEndpoint},
     theme::{get_app_theme, AppTheme},
 };
@@ -220,6 +223,27 @@ impl EndpointsSelector {
 
         state.window_list = new_list_state;
     }
+
+    fn delete_endpoint(
+        &self,
+        state: &mut EndpointsSelectorState,
+        mut context: Context<'_, EndpointsSelectorState>,
+    ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let persisted_endpoint = self.items_list.get(selected_index);
+
+        match persisted_endpoint {
+            Some(persisted_endpoint) => match serde_json::to_string(persisted_endpoint) {
+                Ok(project_json) => {
+                    state.selected_item.set(project_json);
+                    context.publish("endpoints_selector__delete", |state| &state.selected_item)
+                }
+
+                Err(_) => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+            },
+            None => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+        }
+    }
 }
 
 impl DashboardMessageHandler for EndpointsSelector {
@@ -255,8 +279,6 @@ impl DashboardMessageHandler for EndpointsSelector {
             }
 
             "endpoints_selector__delete" => {
-                // TODO: Fix this, this is sending the wrong message, it should not be trying to
-                // delete the project, it should delete the endpoint
                 state.floating_window.set(FloatingWindow::ConfirmAction);
                 context.set_focus("id", "confirm_action_window");
 
@@ -265,11 +287,14 @@ impl DashboardMessageHandler for EndpointsSelector {
 
                 match endpoint {
                     Ok(endpoint) => {
-                        let confirm_message = ConfirmDeleteEndpoint {
+                        let confirm_delete_endpoint = DeleteEndpointDetails {
                             title: format!("Delete {}", endpoint.name),
                             message: "Are you sure you want to delete?".into(),
                             endpoint,
                         };
+
+                        let confirm_message =
+                            ConfirmAction::ConfirmDeletePersistedEndpoint(confirm_delete_endpoint);
 
                         if let Ok(message) = serde_json::to_string(&confirm_message) {
                             let confirm_action_window_id =
@@ -316,28 +341,7 @@ impl Component for EndpointsSelector {
             anathema::component::KeyCode::Char(char) => match char {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
-                'd' => {
-                    let selected_index = *state.cursor.to_ref() as usize;
-                    let endpoint = self.items_list.get(selected_index);
-
-                    match endpoint {
-                        Some(endpoint) => match serde_json::to_string(endpoint) {
-                            Ok(endpoint_json) => {
-                                state.selected_item.set(endpoint_json);
-                                context.publish("endpoints_selector__delete", |state| {
-                                    &state.selected_item
-                                })
-                            }
-
-                            Err(_) => {
-                                context.publish("endpoints_selector__cancel", |state| &state.cursor)
-                            }
-                        },
-                        None => {
-                            context.publish("endpoints_selector__cancel", |state| &state.cursor)
-                        }
-                    }
-                }
+                'd' => self.delete_endpoint(state, context),
                 _ => {}
             },
 

@@ -9,7 +9,8 @@ use anathema::{
 
 use crate::{
     messages::confirm_delete_project::{
-        ConfirmAction, DeleteProjectDetails, DeleteProjectDetailsAnswer,
+        ConfirmAction, DeleteEndpointDetails, DeleteEndpointDetailsAnswer, DeleteProjectDetails,
+        DeleteProjectDetailsAnswer,
     },
     theme::{get_app_theme, AppTheme},
 };
@@ -138,6 +139,17 @@ impl Component for ConfirmActionWindow {
                                 ),
                             ),
 
+                            ConfirmAction::ConfirmDeletePersistedEndpoint(
+                                DeleteEndpointDetails { endpoint, .. },
+                            ) => DashboardMessages::Confirmations(
+                                ConfirmAction::ConfirmationDeletePersistedEndpoint(
+                                    DeleteEndpointDetailsAnswer {
+                                        endpoint: endpoint.clone(),
+                                        answer,
+                                    },
+                                ),
+                            ),
+
                             ConfirmAction::ConfirmDeletePersistedProjectVariable(
                                 _delete_persisted_variable_details,
                             ) => todo!(),
@@ -185,6 +197,11 @@ impl Component for ConfirmActionWindow {
             ConfirmAction::ConfirmDeletePersistedProject(confirm_delete_project) => {
                 state.title.set(confirm_delete_project.title.clone());
                 state.message.set(confirm_delete_project.message.clone());
+            }
+
+            ConfirmAction::ConfirmDeletePersistedEndpoint(delete_endpoint_details) => {
+                state.title.set(delete_endpoint_details.title.clone());
+                state.message.set(delete_endpoint_details.message.clone());
             }
 
             ConfirmAction::ConfirmDeletePersistedProjectVariable(
