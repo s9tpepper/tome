@@ -157,14 +157,14 @@ impl HeaderState {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PersistedProject {
     pub name: String,
     pub endpoints: Vec<PersistedEndpoint>,
     pub variable: Vec<PersistedVariable>,
 }
 
-#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum VariableType {
     #[default]
     String,
@@ -173,7 +173,7 @@ pub enum VariableType {
     Number,
 }
 
-#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PersistedVariable {
     pub id: Option<String>,
     pub key: Option<String>,
@@ -225,7 +225,7 @@ impl From<ProjectVariable> for PersistedVariable {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PersistedEndpoint {
     pub name: String,
     pub url: String,
@@ -236,7 +236,7 @@ pub struct PersistedEndpoint {
     pub raw_type: String,
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Header {
     pub name: String,
     pub value: String,
@@ -253,6 +253,25 @@ fn get_default_headers() -> Vec<HeaderState> {
             value: "application/json".to_string().into(),
         },
     ]
+}
+
+pub fn delete_project(project: PersistedProject) -> anyhow::Result<()> {
+    let dir_result = get_app_dir("projects");
+    if dir_result.is_err() {
+        return Err(anyhow::Error::msg("Unable to access projects directory"));
+    }
+
+    let mut project_dir = dir_result.unwrap();
+    project_dir.push(format!("{}.project", project.name));
+
+    let remove_result = fs::remove_file(project_dir);
+    if remove_result.is_err() {
+        let write_error = remove_result.unwrap_err();
+
+        return Err(anyhow::Error::msg(write_error.to_string()));
+    }
+
+    Ok(())
 }
 
 pub fn save_project(project: PersistedProject) -> anyhow::Result<()> {

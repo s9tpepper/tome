@@ -14,7 +14,7 @@ use anathema::{
 };
 
 use crate::{
-    messages::confirm_delete_project::ConfirmDeleteProject,
+    messages::confirm_delete_project::{ConfirmAction, DeleteProjectDetails},
     projects::{get_projects, Endpoint, PersistedProject, Project},
     theme::{get_app_theme, AppTheme},
 };
@@ -272,18 +272,22 @@ impl DashboardMessageHandler for ProjectWindow {
             }
 
             "project_window__delete" => {
-                state.floating_window.set(FloatingWindow::ConfirmProject);
+                state.floating_window.set(FloatingWindow::ConfirmAction);
+                context.set_focus("id", "confirm_action_window");
 
                 let value = &*value.to_common_str();
                 let project = serde_json::from_str::<PersistedProject>(value);
 
                 match project {
                     Ok(project) => {
-                        let confirm_message = ConfirmDeleteProject {
+                        let confirm_delete_project = DeleteProjectDetails {
                             title: format!("Delete {}", project.name),
                             message: "Are you sure you want to delete?".into(),
                             project,
                         };
+
+                        let confirm_message =
+                            ConfirmAction::ConfirmDeletePersistedProject(confirm_delete_project);
 
                         if let Ok(message) = serde_json::to_string(&confirm_message) {
                             let confirm_action_window_id =

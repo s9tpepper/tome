@@ -16,7 +16,10 @@ use std::{fs, ops::Deref};
 use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
-use crate::{fs::get_documents_dir, theme::get_app_theme};
+use crate::{
+    fs::get_documents_dir, messages::confirm_delete_project::ConfirmAction,
+    projects::delete_project, theme::get_app_theme,
+};
 use crate::{
     projects::{
         save_project, Endpoint, HeaderState, PersistedEndpoint, PersistedProject, Project,
@@ -27,7 +30,7 @@ use crate::{
 use crate::{requests::do_request, theme::get_app_theme_persisted};
 
 use super::floating_windows::{
-    add_project_variable::AddProjectVariable,
+    add_project_variable::{AddProjectVariable, AddProjectVariableMessages},
     body_mode_selector::BodyModeSelector,
     endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
     file_selector::FileSelector,
@@ -90,7 +93,7 @@ pub enum FloatingWindow {
     Error,
     EditHeaderSelector,
     Project,
-    ConfirmProject,
+    ConfirmAction,
     Message,
     ChangeEndpointName,
     ChangeProjectName,
@@ -113,7 +116,7 @@ impl State for FloatingWindow {
             FloatingWindow::Error => Some(CommonVal::Str("Error")),
             FloatingWindow::EditHeaderSelector => Some(CommonVal::Str("EditHeaderSelector")),
             FloatingWindow::Project => Some(CommonVal::Str("Project")),
-            FloatingWindow::ConfirmProject => Some(CommonVal::Str("ConfirmProject")),
+            FloatingWindow::ConfirmAction => Some(CommonVal::Str("ConfirmAction")),
             FloatingWindow::Message => Some(CommonVal::Str("Message")),
             FloatingWindow::ChangeEndpointName => Some(CommonVal::Str("ChangeEndpointName")),
             FloatingWindow::ChangeProjectName => Some(CommonVal::Str("ChangeProjectName")),
@@ -598,6 +601,60 @@ impl DashboardComponent {
             context.emitter,
         );
     }
+
+    fn confirm_action(
+        &self,
+        confirm_action: ConfirmAction,
+        state: &mut DashboardState,
+        mut context: Context<'_, DashboardState>,
+    ) {
+        match confirm_action {
+            ConfirmAction::ConfirmationDeletePersistedProject(delete_project_details_answer) => {
+                match delete_project_details_answer.answer {
+                    true => {
+                        let persisted_project: PersistedProject =
+                            state.project.to_ref().as_ref().into();
+
+                        state.project.set(Project::new());
+                        state.endpoint.set(Endpoint::new());
+                        self.clear_url_and_request_body(&context);
+
+                        let project_name = persisted_project.name.clone();
+                        let delete_result = delete_project(persisted_project);
+                        match delete_result {
+                            Ok(_) => self.show_message(
+                                "Delete Project Success",
+                                &format!("Project '{project_name}' has been deleted"),
+                                state,
+                            ),
+
+                            Err(_) => self.show_error(
+                                &format!("There was an error deleting '{project_name}"),
+                                state,
+                            ),
+                        }
+                    }
+
+                    false => {
+                        state.floating_window.set(FloatingWindow::None);
+                        context.set_focus("id", "app");
+                    }
+                }
+            }
+
+            ConfirmAction::ConfirmationDeletePersistedProjectVariable(
+                delete_persisted_variable_answer,
+            ) => match delete_persisted_variable_answer.answer {
+                true => {}
+                false => {
+                    state.floating_window.set(FloatingWindow::None);
+                    context.set_focus("id", "app");
+                }
+            },
+
+            _ => {}
+        }
+    }
 }
 
 pub trait DashboardMessageHandler {
@@ -618,6 +675,7 @@ pub enum DashboardMessages {
     ThemeUpdate,
     ShowSucces((String, String)),
     ShowError(String),
+    Confirmations(ConfirmAction),
 }
 
 impl anathema::component::Component for DashboardComponent {
@@ -633,6 +691,10 @@ impl anathema::component::Component for DashboardComponent {
     ) {
         if let Ok(dashboard_message) = serde_json::from_str::<DashboardMessages>(&message) {
             match dashboard_message {
+                DashboardMessages::Confirmations(confirm_action) => {
+                    self.confirm_action(confirm_action, state, context);
+                }
+
                 DashboardMessages::ShowSucces((title, message)) => {
                     self.show_message(&title, &message, state);
                 }
@@ -719,6 +781,24 @@ impl anathema::component::Component for DashboardComponent {
             // Unfocus the url input and set back to dashboard
             "url_input_focus" => {
                 context.set_focus("id", "app");
+            }
+
+            "open_add_variable_window" => {
+                state
+                    .floating_window
+                    .set(FloatingWindow::AddProjectVariable);
+                context.set_focus("id", "add_project_variable");
+
+                let Ok(message) = serde_json::to_string(&AddProjectVariableMessages::InitialFocus)
+                else {
+                    return;
+                };
+
+                let Ok(ids) = self.component_ids.try_borrow() else {
+                    return;
+                };
+
+                let _ = send_message("add_project_variable", message, &ids, context.emitter);
             }
 
             _ => {}

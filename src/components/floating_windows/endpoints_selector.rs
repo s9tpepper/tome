@@ -255,7 +255,10 @@ impl DashboardMessageHandler for EndpointsSelector {
             }
 
             "endpoints_selector__delete" => {
-                state.floating_window.set(FloatingWindow::ConfirmProject);
+                // TODO: Fix this, this is sending the wrong message, it should not be trying to
+                // delete the project, it should delete the endpoint
+                state.floating_window.set(FloatingWindow::ConfirmAction);
+                context.set_focus("id", "confirm_action_window");
 
                 let value = &*value.to_common_str();
                 let endpoint = serde_json::from_str::<PersistedEndpoint>(value);

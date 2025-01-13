@@ -164,8 +164,8 @@ zstack [background: app_theme.background]
       project_window__delete -> project_window__delete
     ) [id: "project_selector"]
 
-  if floating_window == "ConfirmProject"
-    @confirm_action_window
+  if floating_window == "ConfirmAction"
+    @confirm_action_window [id: "confirm_action_window"]
 
   if floating_window == "ChangeEndpointName"
     @edit_endpoint_name (
@@ -213,7 +213,7 @@ zstack [background: app_theme.background]
     align [alignment: "center"]
       @add_project_variable (
         add_project_variable__submit -> add_project_variable__submit,
-        add_project_variable__cancel -> add_project_variable__cancel
+        add_project_variable__cancel -> add_project_variable__cancel,
       ) [id: "add_project_variable"]
 
   if floating_window == "ViewProjectVariables"
@@ -221,7 +221,8 @@ zstack [background: app_theme.background]
       @project_variables (
         project_variables__cancel -> project_variables__cancel,
         project_variables__selection -> project_variables__selection,
-        project_variables__delete -> project_variables__delete
+        project_variables__delete -> project_variables__delete,
+        open_add_variable_window -> open_add_variable_window
       ) [id: "project_variables"]
 
   if floating_window == "Error"
