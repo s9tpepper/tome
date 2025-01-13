@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::TuiBackend,
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -212,6 +212,38 @@ impl ProjectWindow {
                 state.window_list.push(project);
             });
     }
+
+    fn rename_project(
+        &self,
+        _state: &mut ProjectWindowState,
+        _context: Context<'_, ProjectWindowState>,
+    ) {
+    }
+
+    fn add_project(&self, mut context: Context<'_, ProjectWindowState>) {
+        context.publish("add_new_project", |state| &state.cursor);
+    }
+
+    fn delete_project(
+        &self,
+        state: &mut ProjectWindowState,
+        mut context: Context<'_, ProjectWindowState>,
+    ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let project = self.project_list.get(selected_index);
+
+        match project {
+            Some(project) => match serde_json::to_string(project) {
+                Ok(project_json) => {
+                    state.selected_project.set(project_json);
+                    context.publish("project_window__delete", |state| &state.selected_project)
+                }
+
+                Err(_) => context.publish("project_window__cancel", |state| &state.cursor),
+            },
+            None => context.publish("project_window__cancel", |state| &state.cursor),
+        }
+    }
 }
 
 impl DashboardMessageHandler for ProjectWindow {
@@ -325,26 +357,10 @@ impl Component for ProjectWindow {
             anathema::component::KeyCode::Char(char) => match char {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
-                'd' => {
-                    let selected_index = *state.cursor.to_ref() as usize;
-                    let project = self.project_list.get(selected_index);
+                'd' => self.delete_project(state, context),
+                'r' => self.rename_project(state, context),
+                'a' => self.add_project(context),
 
-                    match project {
-                        Some(project) => match serde_json::to_string(project) {
-                            Ok(project_json) => {
-                                state.selected_project.set(project_json);
-                                context.publish("project_window__delete", |state| {
-                                    &state.selected_project
-                                })
-                            }
-
-                            Err(_) => {
-                                context.publish("project_window__cancel", |state| &state.cursor)
-                            }
-                        },
-                        None => context.publish("project_window__cancel", |state| &state.cursor),
-                    }
-                }
                 _ => {}
             },
 
