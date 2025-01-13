@@ -325,18 +325,16 @@ impl DashboardComponent {
         context.emit(*app_id, msg);
     }
 
-    fn new_project(
-        &self,
-        state: &mut DashboardState,
-        context: Context<'_, DashboardState>,
-        _: anathema::widgets::Elements<'_, '_>,
-    ) {
+    fn new_project(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
         self.save_project(state, false);
 
         state.project.set(Project::new());
         state.endpoint.set(Endpoint::new());
 
-        self.clear_url_and_request_body(&context);
+        self.clear_url_and_request_body(context);
+
+        state.floating_window.set(FloatingWindow::None);
+        context.set_focus("id", "app");
     }
 
     fn new_endpoint(&self, state: &mut DashboardState, context: Context<'_, DashboardState>) {
@@ -783,6 +781,10 @@ impl anathema::component::Component for DashboardComponent {
                 context.set_focus("id", "app");
             }
 
+            "add_new_project" => {
+                self.new_project(state, &mut context);
+            }
+
             "open_add_variable_window" => {
                 state
                     .floating_window
@@ -969,7 +971,7 @@ impl anathema::component::Component for DashboardComponent {
                     // 'f' => context.set_focus("id", "response_body_input"),
                     'o' => self.send_options_open(state, context),
                     't' => self.new_endpoint(state, context),
-                    'w' => self.new_project(state, context, elements),
+                    'w' => self.new_project(state, &mut context),
 
                     'v' => match main_display {
                         DashboardDisplay::RequestBody => {}

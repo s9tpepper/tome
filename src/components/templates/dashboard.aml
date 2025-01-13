@@ -161,7 +161,8 @@ zstack [background: app_theme.background]
     @project_selector (
       project_window__cancel -> project_window__cancel,
       project_window__selection -> project_window__selection,
-      project_window__delete -> project_window__delete
+      project_window__delete -> project_window__delete,
+      add_new_project -> add_new_project
     ) [id: "project_selector"]
 
   if floating_window == "ConfirmAction"

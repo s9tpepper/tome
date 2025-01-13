@@ -28,7 +28,7 @@
 [ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
 [ ] (MVP) Project window rename button
-[ ] (MVP) Project window add button
+[x] (MVP) Project window add button
 [x] (MVP) Project window delete button
 [ ] (MVP) Project window rename button doesn't do anything
 [x] (MVP) Project window delete confirmation window needs style updates
