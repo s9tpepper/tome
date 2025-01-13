@@ -167,7 +167,9 @@ zstack [background: app_theme.background]
     ) [id: "project_selector"]
 
   if floating_window == "ConfirmAction"
-    @confirm_action_window [id: "confirm_action_window"]
+    @confirm_action_window (
+      confirm_action__cancel -> confirm_action__cancel
+    ) [id: "confirm_action_window"]
 
   if floating_window == "ChangeEndpointName"
     @edit_endpoint_name (

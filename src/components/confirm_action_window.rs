@@ -14,7 +14,10 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
-use super::{dashboard::DashboardMessages, send_message};
+use super::{
+    dashboard::{DashboardMessageHandler, DashboardMessages},
+    send_message,
+};
 
 pub const CONFIRM_ACTION_WINDOW_TEMPLATE: &str =
     "./src/components/templates/confirm_action_window.aml";
@@ -72,6 +75,32 @@ impl ConfirmActionWindowState {
     }
 }
 
+impl DashboardMessageHandler for ConfirmActionWindow {
+    fn handle_message(
+        _: anathema::state::CommonVal<'_>,
+        ident: impl Into<String>,
+        state: &mut super::dashboard::DashboardState,
+        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
+        _: anathema::widgets::Elements<'_, '_>,
+        _: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
+    ) {
+        let event: String = ident.into();
+
+        #[allow(clippy::single_match)]
+        match event.as_str() {
+            "confirm_action__cancel" => {
+                state
+                    .floating_window
+                    .set(super::dashboard::FloatingWindow::None);
+
+                context.set_focus("id", "app");
+            }
+
+            _ => {}
+        }
+    }
+}
+
 impl Component for ConfirmActionWindow {
     type State = ConfirmActionWindowState;
     type Message = String;
@@ -85,7 +114,7 @@ impl Component for ConfirmActionWindow {
         key: anathema::component::KeyEvent,
         _: &mut Self::State,
         _: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match key.code {
             anathema::component::KeyCode::Char(char) => match char {
@@ -132,7 +161,9 @@ impl Component for ConfirmActionWindow {
                 _ => {}
             },
 
-            anathema::component::KeyCode::Esc => todo!(),
+            anathema::component::KeyCode::Esc => {
+                context.publish("confirm_action__cancel", |state| &state.title);
+            }
 
             _ => {}
         }

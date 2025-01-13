@@ -29,13 +29,6 @@ use crate::{
 };
 use crate::{requests::do_request, theme::get_app_theme_persisted};
 
-use super::floating_windows::{
-    add_project_variable::{AddProjectVariable, AddProjectVariableMessages},
-    body_mode_selector::BodyModeSelector,
-    endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
-    file_selector::FileSelector,
-    project_variables::ProjectVariables,
-};
 use super::{
     add_header_window::AddHeaderWindow,
     app_layout::AppLayoutMessages,
@@ -53,6 +46,16 @@ use super::{
     syntax_highlighter::get_highlight_theme,
     textarea::TextAreaMessages,
     textinput::TextInputMessages,
+};
+use super::{
+    confirm_action_window::ConfirmActionWindow,
+    floating_windows::{
+        add_project_variable::{AddProjectVariable, AddProjectVariableMessages},
+        body_mode_selector::BodyModeSelector,
+        endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
+        file_selector::FileSelector,
+        project_variables::ProjectVariables,
+    },
 };
 
 pub const DASHBOARD_TEMPLATE: &str = "./src/components/templates/dashboard.aml";
@@ -842,6 +845,15 @@ impl anathema::component::Component for DashboardComponent {
 
         if let Ok(component_ids) = self.component_ids.try_borrow() {
             match component {
+                "confirm_action" => ConfirmActionWindow::handle_message(
+                    value,
+                    ident,
+                    state,
+                    context,
+                    elements,
+                    component_ids,
+                ),
+
                 "project_variables" => ProjectVariables::handle_message(
                     value,
                     ident,
