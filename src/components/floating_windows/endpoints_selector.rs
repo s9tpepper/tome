@@ -157,6 +157,14 @@ impl EndpointsSelector {
         state: &mut EndpointsSelectorState,
     ) {
         if self.items_list.is_empty() {
+            loop {
+                if state.window_list.len() > 0 {
+                    state.window_list.pop_front();
+                } else {
+                    break;
+                }
+            }
+
             return;
         }
 
