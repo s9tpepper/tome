@@ -330,6 +330,38 @@ impl DashboardComponent {
         context.emit(*app_id, msg);
     }
 
+    fn rename_endpoint(
+        &self,
+        value: &str,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
+        let Ok(endpoint) = serde_json::from_str::<PersistedEndpoint>(value) else {
+            state.floating_window.set(FloatingWindow::None);
+            context.set_focus("id", "app");
+
+            return;
+        };
+
+        let current_project_name = state.project.to_ref().name.to_ref().clone();
+        let edit_endpoint_name_messages =
+            EditEndpointNameMessages::Specifically((current_project_name, endpoint));
+        let Ok(message) = serde_json::to_string(&edit_endpoint_name_messages) else {
+            return;
+        };
+
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+
+        state
+            .floating_window
+            .set(FloatingWindow::ChangeEndpointName);
+        context.set_focus("id", "edit_endpoint_name");
+
+        let _ = send_message("edit_endpoint_name", message, &ids, context.emitter);
+    }
+
     fn rename_project(
         &self,
         value: &str,
@@ -866,6 +898,10 @@ impl anathema::component::Component for DashboardComponent {
 
             "rename_project" => {
                 self.rename_project(&value.to_string(), state, &mut context);
+            }
+
+            "rename_endpoint" => {
+                self.rename_endpoint(&value.to_string(), state, &mut context);
             }
 
             "open_add_variable_window" => {

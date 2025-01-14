@@ -32,8 +32,10 @@
 [x] (MVP) Project window rename button doesn't do anything
 [x] (MVP) Project window delete confirmation window needs style updates
 [x] (MVP) Project window delete confirmation window No option doesn't work
-[ ] (MVP) Endpoints window Rename button doesn't do anything
+[x] (MVP) Endpoints window Rename button doesn't do anything
 [x] (MVP) Endpoints window Delete button tries to delete a project instead of the endpoint
+[ ] (MVP) Clear the list of endpoints when the project is swapped
+[ ] (MVP) Ensure that endpoint names are unique per project
 
 
 

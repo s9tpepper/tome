@@ -244,6 +244,27 @@ impl EndpointsSelector {
             None => context.publish("endpoints_selector__cancel", |state| &state.cursor),
         }
     }
+
+    fn rename_endpoint(
+        &self,
+        state: &mut EndpointsSelectorState,
+        mut context: Context<'_, EndpointsSelectorState>,
+    ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let project = self.items_list.get(selected_index);
+
+        match project {
+            Some(project) => match serde_json::to_string(project) {
+                Ok(project_json) => {
+                    state.selected_item.set(project_json);
+                    context.publish("rename_endpoint", |state| &state.selected_item)
+                }
+
+                Err(_) => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+            },
+            None => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+        }
+    }
 }
 
 impl DashboardMessageHandler for EndpointsSelector {
@@ -342,6 +363,7 @@ impl Component for EndpointsSelector {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
                 'd' => self.delete_endpoint(state, context),
+                'r' => self.rename_endpoint(state, context),
                 _ => {}
             },
 

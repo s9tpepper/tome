@@ -325,9 +325,9 @@ impl EditProjectName {
 }
 
 #[derive(Deserialize, Serialize)]
-struct SpecificNameUpdate {
-    old_name: String,
-    new_name: String,
+pub struct SpecificNameUpdate {
+    pub old_name: String,
+    pub new_name: String,
 }
 
 #[derive(State)]
@@ -338,11 +338,10 @@ pub struct EditProjectNameState {
     specific_name_change: Value<Option<SpecificNameChange>>,
 }
 
-struct SpecificNameChange {
-    old_name: Value<String>,
-    new_name: Value<String>,
-
-    common: String,
+pub struct SpecificNameChange {
+    pub old_name: Value<String>,
+    pub new_name: Value<String>,
+    pub common: String,
 }
 
 impl ::anathema::state::State for SpecificNameChange {

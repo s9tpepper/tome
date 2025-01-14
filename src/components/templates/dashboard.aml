@@ -174,7 +174,8 @@ zstack [background: app_theme.background]
   if floating_window == "ChangeEndpointName"
     @edit_endpoint_name (
       edit_endpoint_name__cancel -> edit_endpoint_name__cancel,
-      edit_endpoint_name__submit -> edit_endpoint_name__submit
+      edit_endpoint_name__submit -> edit_endpoint_name__submit,
+      edit_endpoint_name__specific_endpoint_rename -> edit_endpoint_name__specific_endpoint_rename
     ) [id: "edit_endpoint_name"]
 
   if floating_window == "ChangeProjectName"
@@ -188,7 +189,8 @@ zstack [background: app_theme.background]
     @endpoints_selector_window (
       endpoints_selector__cancel -> endpoints_selector__cancel,
       endpoints_selector__selection -> endpoints_selector__selection,
-      endpoints_selector__delete -> endpoints_selector__delete
+      endpoints_selector__delete -> endpoints_selector__delete,
+      rename_endpoint -> rename_endpoint
     ) [id: "endpoints_selector_window"]
 
   if floating_window == "Commands"

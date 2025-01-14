@@ -269,6 +269,38 @@ fn get_project(project_path: &PathBuf) -> anyhow::Result<PersistedProject> {
     Ok(persisted_project)
 }
 
+pub fn rename_endpoint(
+    project_name: &str,
+    endpoint: &PersistedEndpoint,
+    new_name: &str,
+) -> anyhow::Result<()> {
+    let dir_result = get_app_dir("projects");
+    if dir_result.is_err() {
+        return Err(anyhow::Error::msg("Unable to access projects directory"));
+    }
+
+    let mut project_dir = dir_result.unwrap();
+    project_dir.push(format!("{}.project", project_name));
+
+    let mut persisted_project = get_project(&project_dir)?;
+    delete_project(&persisted_project)?;
+
+    let mut endpoints: Vec<PersistedEndpoint> = persisted_project
+        .endpoints
+        .iter()
+        .filter(|e| e.name != endpoint.name)
+        .map(|e| (*e).clone())
+        .collect();
+
+    let mut new_endpoint = endpoint.clone();
+    new_endpoint.name = new_name.to_string();
+
+    endpoints.push(new_endpoint);
+    persisted_project.endpoints = endpoints;
+
+    save_project(&persisted_project)
+}
+
 pub fn rename_project(project: &PersistedProject, new_name: &str) -> anyhow::Result<()> {
     let dir_result = get_app_dir("projects");
     if dir_result.is_err() {
