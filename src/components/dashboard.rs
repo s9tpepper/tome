@@ -18,8 +18,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     fs::get_documents_dir,
-    messages::confirm_delete_project::ConfirmAction,
-    projects::{delete_endpoint, delete_project},
+    messages::confirm_actions::ConfirmAction,
+    projects::{delete_endpoint, delete_project, PersistedVariable},
     theme::get_app_theme,
 };
 use crate::{
@@ -760,10 +760,47 @@ impl DashboardComponent {
                 }
             }
 
-            ConfirmAction::ConfirmationDeletePersistedProjectVariable(
+            ConfirmAction::ConfirmationDeletePersistedVariable(
                 delete_persisted_variable_answer,
             ) => match delete_persisted_variable_answer.answer {
-                true => {}
+                true => {
+                    let persisted_variable = delete_persisted_variable_answer.variable;
+                    let deleted_variable = persisted_variable.name.clone().unwrap_or_default();
+
+                    let mut delete_index: i64 = -1;
+                    for (index, var) in state.project.to_ref().variable.to_ref().iter().enumerate()
+                    {
+                        let project_persisted_variable: PersistedVariable =
+                            (var.to_ref().deref()).into();
+
+                        if project_persisted_variable == persisted_variable {
+                            delete_index = index as i64;
+                            break;
+                        }
+                    }
+
+                    if delete_index > -1 {
+                        state
+                            .project
+                            .to_mut()
+                            .variable
+                            .remove(delete_index as usize);
+
+                        let project: PersistedProject = state.project.to_ref().deref().into();
+                        match save_project(&project) {
+                            Ok(_) => {
+                                let title = format!("Delete '{deleted_variable}'");
+                                let message = "Variable deleted successfully";
+                                self.show_message(&title, message, state);
+                            }
+                            Err(_) => {
+                                let message = format!("Error deleting '{deleted_variable}'");
+                                self.show_error(&message, state);
+                            }
+                        }
+                    }
+                }
+
                 false => {
                     state.floating_window.set(FloatingWindow::None);
                     context.set_focus("id", "app");

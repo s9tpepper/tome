@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
+    messages::confirm_actions::{ConfirmAction, DeleteVariableDetails},
     projects::{PersistedVariable, ProjectVariable},
     theme::{get_app_theme, AppTheme},
 };
@@ -32,7 +33,7 @@ pub struct ProjectVariablesState {
     window_list: Value<List<ProjectVariable>>,
     project_count: Value<u8>,
     // TODO: Figure out a better way to do this for deleting
-    selected_project: Value<String>,
+    selected_variables: Value<String>,
     app_theme: Value<AppTheme>,
 }
 
@@ -47,7 +48,7 @@ impl ProjectVariablesState {
             current_last_index: 4.into(),
             visible_projects: 5.into(),
             window_list: List::empty(),
-            selected_project: "".to_string().into(),
+            selected_variables: "".to_string().into(),
             app_theme: app_theme.into(),
         }
     }
@@ -140,8 +141,10 @@ impl ProjectVariables {
 
         match serde_json::to_string(persisted_variable) {
             Ok(variable_json) => {
-                state.selected_project.set(variable_json);
-                context.publish("project_variables__delete", |state| &state.selected_project)
+                state.selected_variables.set(variable_json);
+                context.publish("project_variables__delete", |state| {
+                    &state.selected_variables
+                });
             }
 
             Err(_) => context.publish("project_variables__cancel", |state| &state.cursor),
@@ -182,7 +185,24 @@ impl ProjectVariables {
             return;
         }
 
-        let display_projects = &self.variables_list[first_index..=last_index];
+        let list_length = self.variables_list.len();
+        let last_poss = list_length.saturating_sub(1);
+
+        let first = if first_index > last_poss {
+            0
+        } else {
+            first_index
+        };
+
+        let last = if last_index > last_poss {
+            last_poss
+        } else if last_index > first {
+            first
+        } else {
+            last_index
+        };
+
+        let display_projects = &self.variables_list[first..=last];
         let mut new_project_list: Vec<ProjectVariable> = vec![];
         display_projects
             .iter()
@@ -242,12 +262,12 @@ impl ProjectVariables {
 
 impl DashboardMessageHandler for ProjectVariables {
     fn handle_message(
-        _value: anathema::state::CommonVal<'_>,
+        value: anathema::state::CommonVal<'_>,
         ident: impl Into<String>,
         state: &mut DashboardState,
         mut context: Context<'_, DashboardState>,
         _: Elements<'_, '_>,
-        _component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
+        component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
         let event: String = ident.into();
 
@@ -298,29 +318,35 @@ impl DashboardMessageHandler for ProjectVariables {
             }
 
             "project_variables__delete" => {
-                // state.floating_window.set(FloatingWindow::ConfirmAction);
-                //
-                // let value = &*value.to_common_str();
-                // let project = serde_json::from_str::<PersistedProject>(value);
-                //
-                // match project {
-                //     Ok(project) => {
-                //         let confirm_message = ConfirmDeleteProject {
-                //             title: format!("Delete {}", project.name),
-                //             message: "Are you sure you want to delete?".into(),
-                //             project,
-                //         };
-                //
-                //         if let Ok(message) = serde_json::to_string(&confirm_message) {
-                //             let confirm_action_window_id =
-                //                 component_ids.get("confirm_action_window");
-                //             if let Some(id) = confirm_action_window_id {
-                //                 context.emit(*id, message);
-                //             }
-                //         }
-                //     }
-                //     Err(_) => todo!(),
-                // }
+                state.floating_window.set(FloatingWindow::ConfirmAction);
+                context.set_focus("id", "confirm_action_window");
+
+                let value = &*value.to_common_str();
+                let variable = serde_json::from_str::<PersistedVariable>(value);
+
+                match variable {
+                    Ok(variable) => {
+                        let confirm_delete_endpoint = DeleteVariableDetails {
+                            title: format!("Delete {}", variable.name.clone().unwrap_or_default()),
+                            message: "Are you sure you want to delete?".into(),
+                            variable,
+                        };
+
+                        let confirm_message =
+                            ConfirmAction::ConfirmDeletePersistedVariable(confirm_delete_endpoint);
+
+                        if let Ok(message) = serde_json::to_string(&confirm_message) {
+                            let confirm_action_window_id =
+                                component_ids.get("confirm_action_window");
+                            if let Some(id) = confirm_action_window_id {
+                                context.emit(*id, message);
+                            }
+                        }
+                    }
+
+                    // TODO: Fix these todo()!
+                    Err(_) => {}
+                }
             }
 
             _ => {}
@@ -389,9 +415,9 @@ impl Component for ProjectVariables {
                 match project {
                     Some(project) => match serde_json::to_string(project) {
                         Ok(project_json) => {
-                            state.selected_project.set(project_json);
+                            state.selected_variables.set(project_json);
                             context.publish("project_variables__selection", |state| {
-                                &state.selected_project
+                                &state.selected_variables
                             });
                         }
                         Err(_) => {

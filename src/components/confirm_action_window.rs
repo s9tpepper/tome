@@ -8,9 +8,9 @@ use anathema::{
 };
 
 use crate::{
-    messages::confirm_delete_project::{
+    messages::confirm_actions::{
         ConfirmAction, DeleteEndpointDetails, DeleteEndpointDetailsAnswer, DeleteProjectDetails,
-        DeleteProjectDetailsAnswer,
+        DeleteProjectDetailsAnswer, DeleteVariableDetails, DeleteVariableDetailsAnswer,
     },
     theme::{get_app_theme, AppTheme},
 };
@@ -150,9 +150,16 @@ impl Component for ConfirmActionWindow {
                                 ),
                             ),
 
-                            ConfirmAction::ConfirmDeletePersistedProjectVariable(
-                                _delete_persisted_variable_details,
-                            ) => todo!(),
+                            ConfirmAction::ConfirmDeletePersistedVariable(
+                                DeleteVariableDetails { variable, .. },
+                            ) => DashboardMessages::Confirmations(
+                                ConfirmAction::ConfirmationDeletePersistedVariable(
+                                    DeleteVariableDetailsAnswer {
+                                        variable: variable.clone(),
+                                        answer,
+                                    },
+                                ),
+                            ),
 
                             _ => unreachable!(),
                         };
@@ -204,10 +211,13 @@ impl Component for ConfirmActionWindow {
                 state.message.set(delete_endpoint_details.message.clone());
             }
 
-            ConfirmAction::ConfirmDeletePersistedProjectVariable(
-                _delete_persisted_variable_message,
-            ) => {
-                todo!()
+            ConfirmAction::ConfirmDeletePersistedVariable(delete_persisted_variable_message) => {
+                state
+                    .title
+                    .set(delete_persisted_variable_message.title.clone());
+                state
+                    .message
+                    .set(delete_persisted_variable_message.message.clone());
             }
 
             _ => {}

@@ -16,10 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
-    messages::{
-        confirm_delete_endpoint::ConfirmDeleteEndpoint,
-        confirm_delete_project::{ConfirmAction, DeleteEndpointDetails},
-    },
+    messages::confirm_actions::{ConfirmAction, DeleteEndpointDetails},
     projects::{Endpoint, PersistedEndpoint},
     theme::{get_app_theme, AppTheme},
 };
@@ -31,10 +28,6 @@ pub enum EndpointsSelectorMessages {
 
 pub const ENDPOINTS_SELECTOR_TEMPLATE: &str =
     "./src/components/floating_windows/templates/endpoints_selector.aml";
-
-// TODO: Fix the default project row color to the correct gray
-const DEFAULT_ROW_COLOR: &str = "#333333";
-const SELECTED_ROW_COLOR: &str = "#FFFFFF";
 
 #[derive(Default, State)]
 pub struct EndpointsSelectorState {
@@ -333,6 +326,8 @@ impl DashboardMessageHandler for EndpointsSelector {
                             }
                         }
                     }
+
+                    // TODO: Fix these todo()!
                     Err(_) => todo!(),
                 }
             }

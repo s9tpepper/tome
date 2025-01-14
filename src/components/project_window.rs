@@ -14,7 +14,7 @@ use anathema::{
 };
 
 use crate::{
-    messages::confirm_delete_project::{ConfirmAction, DeleteProjectDetails},
+    messages::confirm_actions::{ConfirmAction, DeleteProjectDetails},
     projects::{get_projects, Endpoint, PersistedProject, Project},
     theme::{get_app_theme, AppTheme},
 };

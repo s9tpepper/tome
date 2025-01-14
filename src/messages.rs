@@ -1,2 +1,1 @@
-pub(crate) mod confirm_delete_endpoint;
-pub(crate) mod confirm_delete_project;
+pub(crate) mod confirm_actions;
