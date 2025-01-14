@@ -2,10 +2,12 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
+    default_widgets::Text,
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{State, Value},
-    widgets::Elements,
+    state::{List, State, Value},
+    store::slab::Element,
+    widgets::{AnyWidget, Elements},
 };
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +27,7 @@ const TEMPLATE: &str = "./src/components/floating_windows/templates/edit_endpoin
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EditEndpointNameMessages {
     ClearInput,
-    InputValue(String),
+    InputValue((String, Vec<String>)),
     Specifically((String, PersistedEndpoint)),
 }
 
@@ -173,8 +175,9 @@ impl Component for EditEndpointName {
                     }
                 }
 
-                EditEndpointNameMessages::InputValue(input_value) => {
+                EditEndpointNameMessages::InputValue((input_value, current_names)) => {
                     state.name.set(input_value.clone());
+                    state.current_names = current_names;
 
                     if let Ok(ids) = self.component_ids.try_borrow() {
                         let _ = send_message(
@@ -221,29 +224,58 @@ impl Component for EditEndpointName {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
+        mut elements: anathema::widgets::Elements<'_, '_>,
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match key.code {
             anathema::component::KeyCode::Char(char) => match char {
                 'e' => context.set_focus("id", "endpoint_name_input"),
 
-                's' => match &self.persisted_endpoint {
-                    Some(persisted_endpoint) => {
-                        self.rename_specific_endpoint(persisted_endpoint, state, context);
-                    }
-                    None => {
-                        context.publish("edit_endpoint_name__submit", |state| &state.name);
-                    }
-                },
+                's' => {
+                    let exists = state
+                        .current_names
+                        .iter()
+                        .find(|n| **n == state.name.to_ref().to_string());
 
-                'c' => context.publish("edit_endpoint_name__cancel", |state| &state.name),
+                    if exists.is_some() {
+                        let unique_name_error = format!(
+                            "The name '{}' is already in use",
+                            state.name.to_ref().clone()
+                        );
+
+                        // TODO: Figure out why this isn't updating in the dialog
+                        state.unique_name_error.set(unique_name_error);
+                        // elements
+                        //     .by_attribute("id", "endpoint_name_errors")
+                        //     .first(|e, _| {
+                        //         let text = e.to::<Text>();
+                        //         text.any_needs();
+                        //     });
+
+                        return;
+                    }
+
+                    match &self.persisted_endpoint {
+                        Some(persisted_endpoint) => {
+                            self.rename_specific_endpoint(persisted_endpoint, state, context);
+                        }
+                        None => {
+                            context.publish("edit_endpoint_name__submit", |state| &state.name);
+                        }
+                    }
+                }
+
+                'c' => {
+                    context.publish("edit_endpoint_name__cancel", |state| &state.name);
+                    state.unique_name_error.set("".to_string());
+                }
 
                 _ => {}
             },
 
             anathema::component::KeyCode::Esc => {
-                context.publish("edit_endpoint_name__cancel", |state| &state.name)
+                context.publish("edit_endpoint_name__cancel", |state| &state.name);
+                state.unique_name_error.set("".to_string());
             }
 
             _ => {}
@@ -268,6 +300,8 @@ impl EditEndpointName {
             EditEndpointNameState {
                 name: String::from("").into(),
                 app_theme: app_theme.into(),
+                current_names: vec![],
+                unique_name_error: String::from("").into(),
 
                 specific_name_change: None.into(),
             },
@@ -363,6 +397,10 @@ impl EditEndpointName {
 pub struct EditEndpointNameState {
     name: Value<String>,
     app_theme: Value<AppTheme>,
+    unique_name_error: Value<String>,
+
+    #[state_ignore]
+    current_names: Vec<String>,
 
     specific_name_change: Value<Option<SpecificNameChange>>,
 }

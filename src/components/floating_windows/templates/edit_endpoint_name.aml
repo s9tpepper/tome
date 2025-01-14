@@ -14,6 +14,11 @@ align [alignment: "center"]
               escape -> name_input_escape
             ) [id: "endpoint_name_input", label: "(E)ndpoint Name"]
 
+    vstack [height: 5, width: 62]
+      spacer
+      padding [left: 4]
+        text [id: "endpoint_name_errors", foreground: "red"] unique_name_error
+
     vstack [height: 7, width: 62]
       spacer
       hstack [width: 60]

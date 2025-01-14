@@ -605,7 +605,16 @@ impl DashboardComponent {
                 input_value = String::new();
             }
 
-            let message = EditEndpointNameMessages::InputValue(input_value);
+            let current_names: Vec<String> = state
+                .project
+                .to_ref()
+                .endpoints
+                .to_ref()
+                .iter()
+                .map(|e| e.to_ref().name.to_ref().clone())
+                .collect();
+
+            let message = EditEndpointNameMessages::InputValue((input_value, current_names));
             let _ = serde_json::to_string(&message).map(|msg| {
                 let _ = send_message("edit_endpoint_name", msg, &ids, context.emitter);
             });

@@ -35,6 +35,7 @@
 [x] (MVP) Endpoints window Rename button doesn't do anything
 [x] (MVP) Endpoints window Delete button tries to delete a project instead of the endpoint
 [x] (MVP) Clear the list of endpoints when the project is swapped
+// Come back to this after project variables, the state change is not triggering a redraw
 [ ] (MVP) Ensure that endpoint names are unique per project
 
 
