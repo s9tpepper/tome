@@ -32,8 +32,7 @@ pub struct ProjectVariablesState {
     visible_projects: Value<u8>,
     window_list: Value<List<ProjectVariable>>,
     project_count: Value<u8>,
-    // TODO: Figure out a better way to do this for deleting
-    selected_variables: Value<String>,
+    selected_variable: Value<String>,
     app_theme: Value<AppTheme>,
 }
 
@@ -48,7 +47,7 @@ impl ProjectVariablesState {
             current_last_index: 4.into(),
             visible_projects: 5.into(),
             window_list: List::empty(),
-            selected_variables: "".to_string().into(),
+            selected_variable: "".to_string().into(),
             app_theme: app_theme.into(),
         }
     }
@@ -124,7 +123,26 @@ impl ProjectVariables {
         context.publish("open_add_variable_window", |state| &state.cursor);
     }
 
-    fn open_edit_variable_window(&self, state: &mut ProjectVariablesState) {}
+    fn open_edit_variable_window(
+        &self,
+        state: &mut ProjectVariablesState,
+        mut context: Context<'_, ProjectVariablesState>,
+    ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let persisted_variable = self.variables_list.get(selected_index);
+
+        match persisted_variable {
+            Some(persisted_variable) => match serde_json::to_string(persisted_variable) {
+                Ok(persisted_variable_json) => {
+                    state.selected_variable.set(persisted_variable_json);
+                    context.publish("rename_variable", |state| &state.selected_variable)
+                }
+
+                Err(_) => context.publish("project_variables__cancel", |state| &state.cursor),
+            },
+            None => context.publish("project_variables__cancel", |state| &state.cursor),
+        }
+    }
 
     fn open_delete_variable_window(
         &self,
@@ -141,9 +159,9 @@ impl ProjectVariables {
 
         match serde_json::to_string(persisted_variable) {
             Ok(variable_json) => {
-                state.selected_variables.set(variable_json);
+                state.selected_variable.set(variable_json);
                 context.publish("project_variables__delete", |state| {
-                    &state.selected_variables
+                    &state.selected_variable
                 });
             }
 
@@ -374,29 +392,9 @@ impl Component for ProjectVariables {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
                 'a' => self.open_add_variable_window(&mut context),
-                'e' => self.open_edit_variable_window(state),
+                'e' => self.open_edit_variable_window(state, context),
                 'd' => self.open_delete_variable_window(state, context),
 
-                // 'd' => {
-                // let selected_index = *state.cursor.to_ref() as usize;
-                // let project = self.variables_list.get(selected_index);
-                //
-                // match project {
-                //     Some(project) => match serde_json::to_string(project) {
-                //         Ok(project_json) => {
-                //             state.selected_project.set(project_json);
-                //             context.publish("project_variables__delete", |state| {
-                //                 &state.selected_project
-                //             })
-                //         }
-                //
-                //         Err(_) => {
-                //             context.publish("project_variables__cancel", |state| &state.cursor)
-                //         }
-                //     },
-                //     None => context.publish("project_variables__cancel", |state| &state.cursor),
-                // }
-                // }
                 _ => {}
             },
 
@@ -415,9 +413,9 @@ impl Component for ProjectVariables {
                 match project {
                     Some(project) => match serde_json::to_string(project) {
                         Ok(project_json) => {
-                            state.selected_variables.set(project_json);
+                            state.selected_variable.set(project_json);
                             context.publish("project_variables__selection", |state| {
-                                &state.selected_variables
+                                &state.selected_variable
                             });
                         }
                         Err(_) => {

@@ -330,6 +330,50 @@ impl DashboardComponent {
         context.emit(*app_id, msg);
     }
 
+    fn rename_variable(
+        &self,
+        value: &str,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
+        let Ok(variable) = serde_json::from_str::<PersistedVariable>(value) else {
+            state.floating_window.set(FloatingWindow::None);
+            context.set_focus("id", "app");
+
+            return;
+        };
+
+        let current_names: Vec<String> = state
+            .project
+            .to_ref()
+            .variable
+            .to_ref()
+            .iter()
+            .map(|v| v.to_ref().name.to_ref().to_string())
+            .collect();
+
+        let current_project_name = state.project.to_ref().name.to_ref().clone();
+        let add_project_variable_messages = AddProjectVariableMessages::Specifically((
+            current_project_name,
+            variable,
+            current_names,
+        ));
+        let Ok(message) = serde_json::to_string(&add_project_variable_messages) else {
+            return;
+        };
+
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+
+        state
+            .floating_window
+            .set(FloatingWindow::AddProjectVariable);
+        context.set_focus("id", "add_project_variable");
+
+        let _ = send_message("add_project_variable", message, &ids, context.emitter);
+    }
+
     fn rename_endpoint(
         &self,
         value: &str,
@@ -957,6 +1001,10 @@ impl anathema::component::Component for DashboardComponent {
 
             "rename_endpoint" => {
                 self.rename_endpoint(&value.to_string(), state, &mut context);
+            }
+
+            "rename_variable" => {
+                self.rename_variable(&value.to_string(), state, &mut context);
             }
 
             "open_add_variable_window" => {

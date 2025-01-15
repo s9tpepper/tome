@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{self, Component, ComponentId},
-    prelude::{self, TuiBackend},
+    prelude::{self, Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
     widgets::{self, Elements},
@@ -23,10 +23,13 @@ const TEMPLATE: &str = "./src/components/floating_windows/templates/add_project_
 pub enum AddProjectVariableMessages {
     InitialFocus,
     ClearInput,
-    InputValue(String),
+    Specifically((String, PersistedVariable, Vec<String>)),
 }
 
 pub struct AddProjectVariable {
+    persisted_project_name: Option<String>,
+    persisted_variable: Option<PersistedVariable>,
+
     #[allow(dead_code)]
     component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
 }
@@ -97,7 +100,7 @@ impl Component for AddProjectVariable {
     fn message(
         &mut self,
         message: Self::Message,
-        _: &mut Self::State,
+        state: &mut Self::State,
         _: widgets::Elements<'_, '_>,
         mut context: prelude::Context<'_, Self::State>,
     ) {
@@ -128,21 +131,53 @@ impl Component for AddProjectVariable {
                     }
                 }
 
-                AddProjectVariableMessages::InputValue(_input_value) => {
-                    // TODO: This will get used/updated to implement editing a project variable
-                    // state.variable.to_mut().name.set(input_value.clone());
-
-                    // if let Ok(ids) = self.component_ids.try_borrow() {
-                    //     let _ = send_message(
-                    //         "add_project_variable_input",
-                    //         input_value,
-                    //         &ids,
-                    //         context.emitter,
-                    //     );
-                    // }
+                AddProjectVariableMessages::InitialFocus => {
+                    context.set_focus("id", "add_project_variable_name");
                 }
 
-                AddProjectVariableMessages::InitialFocus => {
+                AddProjectVariableMessages::Specifically((
+                    project_name,
+                    persisted_variable,
+                    current_names,
+                )) => {
+                    state.current_names = current_names;
+                    state.unique_name_error.set("".to_string());
+
+                    let mut project_variable = state.variable.to_mut();
+
+                    project_variable
+                        .name
+                        .set(persisted_variable.name.clone().unwrap_or_default());
+
+                    project_variable
+                        .public
+                        .set(persisted_variable.value.clone().unwrap_or_default());
+
+                    project_variable
+                        .private
+                        .set(persisted_variable.private.clone().unwrap_or_default());
+
+                    self.set_input_value(
+                        "add_project_variable_name",
+                        &persisted_variable.name.clone().unwrap_or_default(),
+                        &mut context,
+                    );
+
+                    self.set_input_value(
+                        "add_project_variable_public_value",
+                        &persisted_variable.value.clone().unwrap_or_default(),
+                        &mut context,
+                    );
+
+                    self.set_input_value(
+                        "add_project_variable_private_value",
+                        &persisted_variable.private.clone().unwrap_or_default(),
+                        &mut context,
+                    );
+
+                    self.persisted_project_name = Some(project_name);
+                    self.persisted_variable = Some(persisted_variable);
+
                     context.set_focus("id", "add_project_variable_name");
                 }
             }
@@ -230,12 +265,17 @@ impl AddProjectVariable {
             "add_project_variable",
             TEMPLATE,
             AddProjectVariable {
+                persisted_project_name: None,
+                persisted_variable: None,
+
                 component_ids: ids.clone(),
             },
             AddProjectVariableState {
                 app_theme: app_theme.into(),
                 variable: variable.into(),
                 cancel: Cancel {}.into(),
+                current_names: vec![],
+                unique_name_error: "".to_string().into(),
             },
         )?;
 
@@ -248,6 +288,19 @@ impl AddProjectVariable {
     fn update_app_theme(&self, state: &mut AddProjectVariableState) {
         let app_theme = get_app_theme();
         state.app_theme.set(app_theme);
+    }
+
+    fn set_input_value(
+        &self,
+        ident: &str,
+        value: &str,
+        context: &mut Context<'_, AddProjectVariableState>,
+    ) {
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+
+        let _ = send_message(ident, value.to_string(), &ids, context.emitter);
     }
 }
 
@@ -328,4 +381,8 @@ pub struct AddProjectVariableState {
     app_theme: Value<AppTheme>,
     variable: Value<Variable>,
     cancel: Value<Cancel>,
+    unique_name_error: Value<String>,
+
+    #[state_ignore]
+    current_names: Vec<String>,
 }
