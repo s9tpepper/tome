@@ -2,12 +2,10 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    default_widgets::Text,
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{List, State, Value},
-    store::slab::Element,
-    widgets::{AnyWidget, Elements},
+    state::{State, Value},
+    widgets::Elements,
 };
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +26,7 @@ const TEMPLATE: &str = "./src/components/floating_windows/templates/edit_endpoin
 pub enum EditEndpointNameMessages {
     ClearInput,
     InputValue((String, Vec<String>)),
-    Specifically((String, PersistedEndpoint)),
+    Specifically((String, PersistedEndpoint, Vec<String>)),
 }
 
 pub struct EditEndpointName {
@@ -163,6 +161,7 @@ impl Component for EditEndpointName {
         if let Ok(msg) = serde_json::from_str::<EditEndpointNameMessages>(&message) {
             match msg {
                 EditEndpointNameMessages::ClearInput => {
+                    state.unique_name_error.set("".to_string());
                     state.name.set("".to_string());
 
                     if let Ok(ids) = self.component_ids.try_borrow() {
@@ -176,6 +175,7 @@ impl Component for EditEndpointName {
                 }
 
                 EditEndpointNameMessages::InputValue((input_value, current_names)) => {
+                    state.unique_name_error.set("".to_string());
                     state.name.set(input_value.clone());
                     state.current_names = current_names;
 
@@ -191,7 +191,13 @@ impl Component for EditEndpointName {
                     context.set_focus("id", "endpoint_name_input");
                 }
 
-                EditEndpointNameMessages::Specifically((project_name, persisted_endpoint)) => {
+                EditEndpointNameMessages::Specifically((
+                    project_name,
+                    persisted_endpoint,
+                    current_names,
+                )) => {
+                    state.current_names = current_names;
+                    state.unique_name_error.set("".to_string());
                     let input_value = &persisted_endpoint.name;
                     state.name.set(input_value.to_string());
 
@@ -224,7 +230,7 @@ impl Component for EditEndpointName {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        mut elements: anathema::widgets::Elements<'_, '_>,
+        _: anathema::widgets::Elements<'_, '_>,
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match key.code {
@@ -243,15 +249,7 @@ impl Component for EditEndpointName {
                             state.name.to_ref().clone()
                         );
 
-                        // TODO: Figure out why this isn't updating in the dialog
                         state.unique_name_error.set(unique_name_error);
-                        // elements
-                        //     .by_attribute("id", "endpoint_name_errors")
-                        //     .first(|e, _| {
-                        //         let text = e.to::<Text>();
-                        //         text.any_needs();
-                        //     });
-
                         return;
                     }
 

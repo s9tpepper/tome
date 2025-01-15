@@ -16,8 +16,9 @@ align [alignment: "center"]
 
     vstack [height: 5, width: 62]
       spacer
-      padding [left: 4]
-        text [id: "endpoint_name_errors", foreground: "red"] unique_name_error
+      padding [left: 3]
+        text [id: "endpoint_name_errors"] "─"
+          span [foreground:  app_theme.menu_color_3] unique_name_error
 
     vstack [height: 7, width: 62]
       spacer

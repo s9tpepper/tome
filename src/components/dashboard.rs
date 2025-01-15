@@ -343,9 +343,18 @@ impl DashboardComponent {
             return;
         };
 
+        let current_names: Vec<String> = state
+            .project
+            .to_ref()
+            .endpoints
+            .to_ref()
+            .iter()
+            .map(|e| e.to_ref().name.to_ref().to_string())
+            .collect();
+
         let current_project_name = state.project.to_ref().name.to_ref().clone();
         let edit_endpoint_name_messages =
-            EditEndpointNameMessages::Specifically((current_project_name, endpoint));
+            EditEndpointNameMessages::Specifically((current_project_name, endpoint, current_names));
         let Ok(message) = serde_json::to_string(&edit_endpoint_name_messages) else {
             return;
         };
