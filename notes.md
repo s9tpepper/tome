@@ -3,13 +3,13 @@
 ## TODO
 
 ### Release Checklist
-[ ] Squash bugs for MVP
-[x] Test on other terminals? (Ghostty, Kitty, Alacritty, iTerm, gnome terminal, konsole, terminator, xterm, gtk terminal)
 [ ] Flesh out the README.md
 [ ] Add GitHub Action(s) for producing binaries and release
 [ ] Screenshots for the README
-[x] Update the application name
 [ ] Do a pass through the keybindings, make sure they make sense
+[x] Squash bugs for MVP
+[x] Test on other terminals? (Ghostty, Kitty, Alacritty, iTerm, gnome terminal, konsole, terminator, xterm, gtk terminal)
+[x] Update the application name
 [x] (MVP) Import to Postman format
 [x] (MVP) Export to Postman format
 [x] (MVP) saving endpoint/project is not updating the project/endpoint name display
@@ -19,14 +19,12 @@
 [x] (MVP) Add file handling
 [x] (MVP) Add x-www-form-urlencoded handling
 [x] (MVP) Fix extension handling in requests.rs:92
-[ ] (MVP?) Pretty print responses that are minified
 [x] (MVP) Fix selected/unselected colors of floating windows with text lists, like file selector, apply theme colors
 [x] (MVP) Fix auto-focus for popups that have inputs, so the first input is automatically in focus
 [x] (MVP) Update cursor in text inputs to use a color from the app theme
 [x] (MVP) Refactor out old textinput components for the newer shared edit_input.rs
 [x] (MVP) Style the Success/Error popups with app theme colors
-[ ] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
-[ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
+[x] (MVP) Project/Request variables, like for tokens so you don't have to copy/paste tokens for every request
 [x] (MVP) Project window add button
 [x] (MVP) Project window delete button
 [x] (MVP) Project window rename button doesn't do anything
@@ -37,6 +35,9 @@
 [x] (MVP) Clear the list of endpoints when the project is swapped
 [x] (MVP) Ensure that endpoint names are unique per project
 
+[ ] (POST-LAUNCH) Pretty print responses that are minified
+[ ] (POST-LAUNCH) Fix code gen with variables
+[ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
 
 
 
