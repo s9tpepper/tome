@@ -1223,9 +1223,13 @@ impl anathema::component::Component for DashboardComponent {
 
                     // Make the request
                     'r' => {
-                        // TODO: Handle the error for making a request and let the user know if
-                        // there was an error
-                        let _ = do_request(state, context, elements, self);
+                        let response = do_request(state, context, elements, self);
+                        match response {
+                            Ok(_) => {}
+                            Err(err) => {
+                                self.show_error(&err.to_string(), state);
+                            }
+                        }
                     }
 
                     // Show request body editor window

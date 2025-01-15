@@ -1,10 +1,12 @@
 use std::{
+    collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
 };
 
 use anathema::prelude::Context;
+use anyhow::bail;
 use mime::Mime;
 use ureq::Response;
 use ureq_multipart::MultipartBuilder;
@@ -15,8 +17,114 @@ use crate::{
         response_renderer::ResponseRendererMessages,
         send_message,
     },
-    projects::{HeaderState, PersistedEndpoint},
+    projects::{HeaderState, PersistedEndpoint, PersistedProject},
 };
+
+fn replace_variables(
+    mut input: &str,
+    variables: &HashMap<String, String>,
+) -> anyhow::Result<String> {
+    let (left, right) = input.as_bytes().windows(2).fold((0, 0), |mut a, s| {
+        if s == b"{{" {
+            a.0 += 1
+        }
+
+        if s == b"}}" {
+            a.1 += 1
+        }
+
+        a
+    });
+
+    if left != right {
+        bail!("The opening and closing brackets are imbalanced");
+    }
+
+    let mut replaced = String::from(input);
+
+    while let Some(mut start) = input.find("{{") {
+        if let Some(mut end) = input.find("}}") {
+            start += 2;
+
+            let variable = &input[start..end];
+
+            if let Some(value) = variables.get(variable) {
+                replaced = replaced.replace(&format!("{{{{{}}}}}", variable), value);
+            }
+
+            end += 2;
+            input = &input[end..];
+        } else {
+            break;
+        }
+    }
+
+    Ok(replaced)
+}
+
+#[test]
+fn test_replace_variables() {
+    let input = "https://{{baseUrl}}/something/something/something";
+    let mut vars = HashMap::<String, String>::new();
+    vars.insert("baseUrl".to_string(), "localhost".to_string());
+
+    let replaced = replace_variables(input, &vars);
+
+    let expect = "https://localhost/something/something/something".to_string();
+
+    assert_eq!(replaced.unwrap(), expect);
+}
+
+#[test]
+fn test_replace_variables_one_var() {
+    let input = "{{baseUrl}}";
+    let mut vars = HashMap::<String, String>::new();
+    vars.insert("baseUrl".to_string(), "localhost".to_string());
+
+    let replaced = replace_variables(input, &vars);
+
+    let expect = "localhost".to_string();
+
+    assert_eq!(replaced.unwrap(), expect);
+}
+
+#[test]
+fn test_replace_multiple_variables() {
+    let input = "https://{{baseUrl}}/something/something/{{path}}";
+    let mut vars = HashMap::<String, String>::new();
+    vars.insert("baseUrl".to_string(), "localhost".to_string());
+    vars.insert("path".to_string(), "user".to_string());
+
+    let replaced = replace_variables(input, &vars);
+
+    let expect = "https://localhost/something/something/user".to_string();
+
+    assert_eq!(replaced.unwrap(), expect);
+}
+
+#[test]
+fn test_replace_multiple_incomplete_pairs() {
+    let input = "https://{{baseUrl}/something/something/{{path}}";
+    let mut vars = HashMap::<String, String>::new();
+    vars.insert("baseUrl".to_string(), "localhost".to_string());
+    vars.insert("path".to_string(), "user".to_string());
+
+    let replaced = replace_variables(input, &vars);
+
+    assert!(replaced.is_err());
+}
+
+#[test]
+fn test_replace_multiple_incomplete_pairs2() {
+    let input = "https://{{baseUrl}}/something/something/{{path}";
+    let mut vars = HashMap::<String, String>::new();
+    vars.insert("baseUrl".to_string(), "localhost".to_string());
+    vars.insert("path".to_string(), "user".to_string());
+
+    let replaced = replace_variables(input, &vars);
+
+    assert!(replaced.is_err());
+}
 
 pub fn do_request(
     state: &mut DashboardState,
@@ -24,18 +132,39 @@ pub fn do_request(
     _: anathema::widgets::Elements<'_, '_>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
+    let project: PersistedProject = (&*state.project.to_ref()).into();
+    let variables = project
+        .variable
+        .iter()
+        .map(|variable| {
+            (
+                variable.key.clone().unwrap_or_default(),
+                variable
+                    .private
+                    .clone()
+                    .unwrap_or(variable.value.clone().unwrap_or_default()),
+            )
+        })
+        .collect::<HashMap<String, String>>();
+
     let endpoint: PersistedEndpoint = (&*state.endpoint.to_ref()).into();
 
     let content_type = get_content_type(&endpoint);
-    let url = endpoint.url.clone();
+    let mut url = endpoint.url.clone();
+
+    url = replace_variables(&url, &variables)?;
+
     let method = endpoint.method.clone();
     let headers = endpoint.headers;
 
     let mut request = ureq::request(&method, &url);
     for header_value in headers.iter() {
         let header = header_value;
-        let header_name = header.name.to_string();
-        let header_value = header.value.to_string();
+        let mut header_name = header.name.to_string();
+        let mut header_value = header.value.to_string();
+
+        header_name = replace_variables(&header_name, &variables)?;
+        header_value = replace_variables(&header_value, &variables)?;
 
         // NOTE: Skip content-type header, this should be calculated based
         // on the body mode and/or raw type
