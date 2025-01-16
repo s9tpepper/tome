@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
-    messages::confirm_actions::{ConfirmAction, DeleteVariableDetails},
+    messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{PersistedVariable, ProjectVariable},
     theme::{get_app_theme, AppTheme},
 };
@@ -344,10 +344,10 @@ impl DashboardMessageHandler for ProjectVariables {
 
                 match variable {
                     Ok(variable) => {
-                        let confirm_delete_endpoint = DeleteVariableDetails {
+                        let confirm_delete_endpoint = ConfirmDetails {
                             title: format!("Delete {}", variable.name.clone().unwrap_or_default()),
                             message: "Are you sure you want to delete?".into(),
-                            variable,
+                            data: variable,
                         };
 
                         let confirm_message =

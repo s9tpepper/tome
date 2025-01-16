@@ -8,10 +8,7 @@ use anathema::{
 };
 
 use crate::{
-    messages::confirm_actions::{
-        ConfirmAction, DeleteEndpointDetails, DeleteEndpointDetailsAnswer, DeleteProjectDetails,
-        DeleteProjectDetailsAnswer, DeleteVariableDetails, DeleteVariableDetailsAnswer,
-    },
+    messages::confirm_actions::{ConfirmAction, ConfirmDetails, ConfirmationAnswer},
     theme::{get_app_theme, AppTheme},
 };
 
@@ -118,67 +115,70 @@ impl Component for ConfirmActionWindow {
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match key.code {
-            anathema::component::KeyCode::Char(char) => match char {
-                'y' | 'n' => match &self.confirm_action {
-                    Some(confirm_action) => {
-                        let answer = match char {
-                            'y' => true,
-                            'n' => false,
-                            _ => false,
-                        };
+            anathema::component::KeyCode::Char(char) => {
+                match char {
+                    'y' | 'n' => match &self.confirm_action {
+                        Some(confirm_action) => {
+                            let answer = match char {
+                                'y' => true,
+                                'n' => false,
+                                _ => false,
+                            };
 
-                        let message = match confirm_action {
-                            ConfirmAction::ConfirmDeletePersistedProject(
-                                DeleteProjectDetails { project, .. },
-                            ) => DashboardMessages::Confirmations(
-                                ConfirmAction::ConfirmationDeletePersistedProject(
-                                    DeleteProjectDetailsAnswer {
-                                        project: project.clone(),
-                                        answer,
-                                    },
-                                ),
-                            ),
+                            let message =
+                                match confirm_action {
+                                    ConfirmAction::ConfirmDeletePersistedProject(
+                                        ConfirmDetails { data: project, .. },
+                                    ) => DashboardMessages::Confirmations(
+                                        ConfirmAction::ConfirmationDeletePersistedProject(
+                                            ConfirmationAnswer {
+                                                data: project.clone(),
+                                                answer,
+                                            },
+                                        ),
+                                    ),
 
-                            ConfirmAction::ConfirmDeletePersistedEndpoint(
-                                DeleteEndpointDetails { endpoint, .. },
-                            ) => DashboardMessages::Confirmations(
-                                ConfirmAction::ConfirmationDeletePersistedEndpoint(
-                                    DeleteEndpointDetailsAnswer {
-                                        endpoint: endpoint.clone(),
-                                        answer,
-                                    },
-                                ),
-                            ),
+                                    ConfirmAction::ConfirmDeletePersistedEndpoint(
+                                        ConfirmDetails { data: endpoint, .. },
+                                    ) => DashboardMessages::Confirmations(
+                                        ConfirmAction::ConfirmationDeletePersistedEndpoint(
+                                            ConfirmationAnswer {
+                                                data: endpoint.clone(),
+                                                answer,
+                                            },
+                                        ),
+                                    ),
 
-                            ConfirmAction::ConfirmDeletePersistedVariable(
-                                DeleteVariableDetails { variable, .. },
-                            ) => DashboardMessages::Confirmations(
-                                ConfirmAction::ConfirmationDeletePersistedVariable(
-                                    DeleteVariableDetailsAnswer {
-                                        variable: variable.clone(),
-                                        answer,
-                                    },
-                                ),
-                            ),
+                                    ConfirmAction::ConfirmDeletePersistedVariable(
+                                        ConfirmDetails { data: variable, .. },
+                                    ) => DashboardMessages::Confirmations(
+                                        ConfirmAction::ConfirmationDeletePersistedVariable(
+                                            ConfirmationAnswer {
+                                                data: variable.clone(),
+                                                answer,
+                                            },
+                                        ),
+                                    ),
 
-                            _ => unreachable!(),
-                        };
+                                    _ => unreachable!(),
+                                };
 
-                        let Ok(message) = serde_json::to_string(&message) else {
-                            return;
-                        };
+                            let Ok(message) = serde_json::to_string(&message) else {
+                                return;
+                            };
 
-                        let Ok(ids) = self.component_ids.try_borrow() else {
-                            return;
-                        };
+                            let Ok(ids) = self.component_ids.try_borrow() else {
+                                return;
+                            };
 
-                        let _ = send_message("dashboard", message, &ids, context.emitter);
-                    }
-                    None => unreachable!(),
-                },
+                            let _ = send_message("dashboard", message, &ids, context.emitter);
+                        }
+                        None => unreachable!(),
+                    },
 
-                _ => {}
-            },
+                    _ => {}
+                }
+            }
 
             anathema::component::KeyCode::Esc => {
                 context.publish("confirm_action__cancel", |state| &state.title);

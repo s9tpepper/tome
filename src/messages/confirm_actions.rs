@@ -4,51 +4,25 @@ use crate::projects::{PersistedEndpoint, PersistedProject, PersistedVariable};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ConfirmAction {
-    ConfirmDeletePersistedVariable(DeleteVariableDetails),
-    ConfirmationDeletePersistedVariable(DeleteVariableDetailsAnswer),
+    ConfirmDeletePersistedVariable(ConfirmDetails<PersistedVariable>),
+    ConfirmationDeletePersistedVariable(ConfirmationAnswer<PersistedVariable>),
 
-    ConfirmDeletePersistedProject(DeleteProjectDetails),
-    ConfirmationDeletePersistedProject(DeleteProjectDetailsAnswer),
+    ConfirmDeletePersistedProject(ConfirmDetails<PersistedProject>),
+    ConfirmationDeletePersistedProject(ConfirmationAnswer<PersistedProject>),
 
-    ConfirmDeletePersistedEndpoint(DeleteEndpointDetails),
-    ConfirmationDeletePersistedEndpoint(DeleteEndpointDetailsAnswer),
+    ConfirmDeletePersistedEndpoint(ConfirmDetails<PersistedEndpoint>),
+    ConfirmationDeletePersistedEndpoint(ConfirmationAnswer<PersistedEndpoint>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteVariableDetails {
-    pub variable: PersistedVariable,
+pub struct ConfirmDetails<T> {
+    pub data: T,
     pub title: String,
     pub message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteVariableDetailsAnswer {
-    pub variable: PersistedVariable,
-    pub answer: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteEndpointDetails {
-    pub endpoint: PersistedEndpoint,
-    pub title: String,
-    pub message: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteEndpointDetailsAnswer {
-    pub endpoint: PersistedEndpoint,
-    pub answer: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteProjectDetails {
-    pub project: PersistedProject,
-    pub title: String,
-    pub message: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeleteProjectDetailsAnswer {
-    pub project: PersistedProject,
+pub struct ConfirmationAnswer<T> {
+    pub data: T,
     pub answer: bool,
 }

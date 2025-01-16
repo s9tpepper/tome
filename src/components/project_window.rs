@@ -14,7 +14,7 @@ use anathema::{
 };
 
 use crate::{
-    messages::confirm_actions::{ConfirmAction, DeleteProjectDetails},
+    messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{get_projects, Endpoint, PersistedProject, Project},
     theme::{get_app_theme, AppTheme},
 };
@@ -326,10 +326,10 @@ impl DashboardMessageHandler for ProjectWindow {
 
                 match project {
                     Ok(project) => {
-                        let confirm_delete_project = DeleteProjectDetails {
+                        let confirm_delete_project = ConfirmDetails {
                             title: format!("Delete {}", project.name),
                             message: "Are you sure you want to delete?".into(),
-                            project,
+                            data: project,
                         };
 
                         let confirm_message =

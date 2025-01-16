@@ -774,7 +774,7 @@ impl DashboardComponent {
             ConfirmAction::ConfirmationDeletePersistedEndpoint(delete_endpoint_details_answer) => {
                 match delete_endpoint_details_answer.answer {
                     true => {
-                        let persisted_endpoint = delete_endpoint_details_answer.endpoint;
+                        let persisted_endpoint = delete_endpoint_details_answer.data;
                         let current_endpoint: PersistedEndpoint =
                             state.endpoint.to_ref().deref().into();
 

@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
-    messages::confirm_actions::{ConfirmAction, DeleteEndpointDetails},
+    messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{Endpoint, PersistedEndpoint},
     theme::{get_app_theme, AppTheme},
 };
@@ -309,10 +309,10 @@ impl DashboardMessageHandler for EndpointsSelector {
 
                 match endpoint {
                     Ok(endpoint) => {
-                        let confirm_delete_endpoint = DeleteEndpointDetails {
+                        let confirm_delete_endpoint = ConfirmDetails {
                             title: format!("Delete {}", endpoint.name),
                             message: "Are you sure you want to delete?".into(),
-                            endpoint,
+                            data: endpoint,
                         };
 
                         let confirm_message =
