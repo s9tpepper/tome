@@ -11,7 +11,6 @@ pub const MENU_ITEM_TEMPLATE: &str = "./src/components/templates/menu_item.aml";
 pub struct MenuItem;
 
 impl MenuItem {
-    // TODO: Add a message to update the app theme when it changes for the menu items
     #[allow(unused)]
     fn update_app_theme(&self, state: &mut MenuItemState) {
         let app_theme = get_app_theme();
