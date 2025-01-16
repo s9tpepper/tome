@@ -37,7 +37,7 @@
 
 [x] 100% scroll displays as 10%;
 [x] Unique endpoint names are broken again (broken when changing names via N, change vs rename)
-[ ] Scrolling is not working correctly in endpoint names list
+[x] Scrolling is not working correctly in endpoint names list
 
 [ ] (POST-LAUNCH) Pretty print responses that are minified
 [ ] (POST-LAUNCH) Fix code gen with variables
