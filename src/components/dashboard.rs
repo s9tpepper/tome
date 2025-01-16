@@ -17,7 +17,7 @@ use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fs::get_documents_dir,
+    fs::{get_documents_dir, save_response},
     messages::confirm_actions::ConfirmAction,
     projects::{delete_endpoint, delete_project, PersistedVariable},
     theme::get_app_theme,
@@ -232,7 +232,7 @@ impl DashboardComponent {
         Ok(())
     }
 
-    fn show_message(&self, title: &str, message: &str, state: &mut DashboardState) {
+    pub fn show_message(&self, title: &str, message: &str, state: &mut DashboardState) {
         state.message.set(message.to_string());
         state.message_label.set(title.to_string());
         state.floating_window.set(FloatingWindow::Message);
@@ -240,7 +240,7 @@ impl DashboardComponent {
         // TODO: Add same auto-close behavior as show_error()
     }
 
-    fn show_error(&self, message: &str, state: &mut DashboardState) {
+    pub fn show_error(&self, message: &str, state: &mut DashboardState) {
         state.error_message.set(message.to_string());
         state.floating_window.set(FloatingWindow::Error);
 
@@ -475,63 +475,6 @@ impl DashboardComponent {
                 }
 
                 state.project.set((&project).into());
-            }
-            Err(error) => self.show_error(&error.to_string(), state),
-        }
-    }
-
-    fn save_response_body(&self, state: &mut DashboardState, _: Context<'_, DashboardState>) {
-        let dir = get_documents_dir();
-
-        match dir {
-            Ok(mut docs_dir) => {
-                let response = state.response.to_ref().to_string();
-
-                let endpoint_name = state.endpoint.to_ref().name.to_ref().to_string();
-                let endpoint_name = endpoint_name.replace("/", "_");
-
-                let timestamp = SystemTime::now();
-                let duration = timestamp
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or(Duration::from_secs(1));
-                let name = format!("{endpoint_name}_{}.txt", duration.as_secs());
-
-                docs_dir.push(state.project.to_ref().name.to_ref().to_string());
-                let _ = fs::create_dir_all(&docs_dir);
-
-                match fs::exists(&docs_dir) {
-                    Ok(docs_exist) => {
-                        if !docs_exist {
-                            self.show_error(
-                                "Couldn't create project directory to save response",
-                                state,
-                            );
-
-                            return;
-                        }
-
-                        docs_dir.push(name);
-
-                        let save_path = docs_dir.clone();
-
-                        match fs::write(docs_dir, response) {
-                            Ok(_) => {
-                                self.show_message(
-                                    "Response Saved",
-                                    format!("Saved to {save_path:?}").as_str(),
-                                    state,
-                                );
-                            }
-                            Err(err) => self.show_error(&err.to_string(), state),
-                        }
-                    }
-                    Err(_) => {
-                        self.show_error(
-                            "Couldn't create project directory to save response",
-                            state,
-                        );
-                    }
-                }
             }
             Err(error) => self.show_error(&error.to_string(), state),
         }
@@ -1161,7 +1104,7 @@ impl anathema::component::Component for DashboardComponent {
                     'v' => match main_display {
                         DashboardDisplay::RequestBody => {}
                         DashboardDisplay::RequestHeadersEditor => {}
-                        DashboardDisplay::ResponseBody => self.save_response_body(state, context),
+                        DashboardDisplay::ResponseBody => save_response(self, state, context),
                         DashboardDisplay::ResponseHeaders => {}
                     },
 
