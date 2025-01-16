@@ -185,6 +185,17 @@ impl OptionsView {
             }
         });
     }
+
+    fn send_error_message(&self, error_message: &str, context: Context<'_, OptionsViewState>) {
+        let dashboard_msg = DashboardMessages::ShowError(error_message.to_string());
+        let Ok(msg) = serde_json::to_string(&dashboard_msg) else {
+            return;
+        };
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+        let _ = send_message("dashboard", msg, &ids, context.emitter);
+    }
 }
 
 impl Component for OptionsView {
@@ -232,13 +243,16 @@ impl Component for OptionsView {
                 let new_theme = value.to_string().replace(".tmTheme", "");
                 options.syntax_theme = new_theme.clone();
 
-                // TODO: add message alerts
-                #[allow(clippy::single_match)]
                 match save_options(options) {
                     Ok(_) => {
                         state.options.to_mut().syntax_theme.set(new_theme);
                     }
-                    Err(_) => {}
+                    Err(error) => {
+                        let error_message =
+                            format!("Error saving selected syntax highlighting theme: {}", error);
+
+                        self.send_error_message(&error_message, context);
+                    }
                 }
             }
             "syntax_theme_selector__cancel" => {
@@ -256,14 +270,16 @@ impl Component for OptionsView {
 
                 options.app_theme_name = value.to_string();
 
-                // TODO: add message alerts
-                #[allow(clippy::single_match)]
                 match save_options(options) {
                     Ok(_) => {
                         state.options.to_mut().app_theme_name.set(value.to_string());
                         self.update_app_theme(state, context);
                     }
-                    Err(_) => {}
+                    Err(error) => {
+                        let error_message = format!("Error saving selected theme: {}", error);
+
+                        self.send_error_message(&error_message, context);
+                    }
                 }
             }
 
