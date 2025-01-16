@@ -432,7 +432,7 @@ impl Component for ProjectWindow {
                 let last_index: usize = *state.current_last_index.to_ref() as usize;
                 let selected_index = 0;
 
-                self.update_project_list(first_index, last_index, selected_index, state)
+                self.update_project_list(first_index, last_index, selected_index, state);
             }
 
             Err(error) => {
