@@ -20,7 +20,7 @@ use crate::{
 };
 
 use super::{
-    dashboard::{DashboardMessageHandler, FloatingWindow},
+    dashboard::{DashboardMessageHandler, DashboardMessages, FloatingWindow},
     send_message,
     textarea::TextAreaMessages,
 };
@@ -412,7 +412,7 @@ impl Component for ProjectWindow {
         &mut self,
         state: &mut Self::State,
         _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        context: anathema::prelude::Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -435,8 +435,18 @@ impl Component for ProjectWindow {
                 self.update_project_list(first_index, last_index, selected_index, state)
             }
 
-            // TODO: Figure out what to do if the list of projects can't be loaded
-            Err(_) => todo!(),
+            Err(error) => {
+                let error_message = format!("Error loading projects: {}", error);
+
+                let dashboard_msg = DashboardMessages::ShowError(error_message);
+                let Ok(msg) = serde_json::to_string(&dashboard_msg) else {
+                    return;
+                };
+                let Ok(ids) = self.component_ids.try_borrow() else {
+                    return;
+                };
+                let _ = send_message("dashboard", msg, &ids, context.emitter);
+            }
         }
     }
 
