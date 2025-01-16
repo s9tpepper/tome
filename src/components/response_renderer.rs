@@ -25,7 +25,7 @@ use crate::{
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
 };
 
-use super::syntax_highlighter::highlight;
+use super::{dashboard::DashboardMessages, send_message, syntax_highlighter::highlight};
 
 const TEMPLATE: &str = "./src/components/templates/response_renderer.aml";
 const SYNTAX_TEMPLATE: &str = "./src/components/templates/syntax_highlighter_renderer.aml";
@@ -146,14 +146,13 @@ impl ResponseRenderer {
             .set(app_theme.bottom_bar_foreground);
     }
 
-    // NOTE: Renders initial response when its new
-    // TODO: Make this work for scrolling the response
     fn render_response(
         &mut self,
         extension: String,
         elements: &mut Elements<'_, '_>,
         state: &mut ResponseRendererState,
         offset: usize,
+        context: Context<'_, ResponseRendererState>,
     ) {
         if self.response_reader.is_none() {
             return;
@@ -178,11 +177,26 @@ impl ResponseRenderer {
                 let response_lines: Vec<String> = lines.map(|s| s.to_string()).collect();
                 self.response_lines = response_lines;
             }
-            // TODO: Figure out what to do if this fails
-            Err(_) => todo!(),
+
+            Err(error) => {
+                let error_message = format!("There was an error reading the response: {}", error);
+
+                self.send_error_message(&error_message, context);
+            }
         }
 
         self.scroll_response(elements, state, offset);
+    }
+
+    fn send_error_message(&self, error_message: &str, context: Context<'_, ResponseRendererState>) {
+        let dashboard_msg = DashboardMessages::ShowError(error_message.to_string());
+        let Ok(msg) = serde_json::to_string(&dashboard_msg) else {
+            return;
+        };
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+        let _ = send_message("dashboard", msg, &ids, context.emitter);
     }
 
     fn scroll_response(
@@ -325,9 +339,20 @@ impl ResponseRenderer {
         // });
 
         state.viewable_response.set(viewable_response);
+        info!("hello");
     }
 
-    fn update_size(&mut self, context: Context<'_, ResponseRendererState>) {
+    fn update_size(
+        &mut self,
+        context: Context<'_, ResponseRendererState>,
+        elements: &mut Elements<'_, '_>,
+    ) {
+        elements
+            .by_attribute("id", "response_border")
+            .first(|element, _| {
+                info!("{:?}", element.size());
+            });
+
         let size = context.viewport.size();
 
         let app_titles = 2; // top/bottom menus of dashboard
@@ -590,10 +615,10 @@ impl Component for ResponseRenderer {
     fn on_focus(
         &mut self,
         _: &mut Self::State,
-        _: Elements<'_, '_>,
+        mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
-        self.update_size(context);
+        self.update_size(context, &mut elements);
         info!("response_renderer has focus");
     }
 
@@ -603,13 +628,15 @@ impl Component for ResponseRenderer {
 
     fn resize(
         &mut self,
-        _: &mut Self::State,
-        _: Elements<'_, '_>,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
-        self.update_size(context);
+        self.update_size(context, &mut elements);
 
         // TODO: Update response text when the window gets resized
+        // NOTE: Causes panic!
+        // self.scroll_response(&mut elements, state, self.response_offset);
     }
 
     fn on_key(
@@ -693,7 +720,7 @@ impl Component for ResponseRenderer {
         message: Self::Message,
         state: &mut Self::State,
         mut elements: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        context: anathema::prelude::Context<'_, Self::State>,
     ) {
         let response_renderer_message = serde_json::from_str::<ResponseRendererMessages>(&message);
 
@@ -714,7 +741,7 @@ impl Component for ResponseRenderer {
 
                     let response_reader = reader_result.unwrap();
                     self.response_reader = Some(response_reader);
-                    self.render_response(extension, &mut elements, state, 0);
+                    self.render_response(extension, &mut elements, state, 0, context);
                 }
 
                 ResponseRendererMessages::SyntaxPreview(theme) => {
@@ -735,7 +762,13 @@ impl Component for ResponseRenderer {
                     self.set_response(state, code, theme);
                 }
             },
-            Err(_) => {}
+
+            Err(error) => {
+                let error_message =
+                    format!("There was an error handling a response message: {}", error);
+
+                self.send_error_message(&error_message, context);
+            }
         }
     }
 }
