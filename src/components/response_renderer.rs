@@ -213,6 +213,8 @@ impl ResponseRenderer {
             return;
         }
 
+        let last_offset = self.response_offset;
+
         let size = self.size.unwrap();
         self.response_offset = offset;
         self.viewport_height = size.height;
@@ -251,6 +253,11 @@ impl ResponseRenderer {
         let screens = last_response_line_index as f32 / self.viewport_height as f32;
         let current_screen = self.response_offset as f32 / self.viewport_height as f32;
         let percent = (current_screen / screens) * 100f32;
+        if percent >= 100f32 {
+            self.response_offset = last_offset;
+            return;
+        }
+
         let percent_scrolled = format!("{:0>2}", percent as usize);
 
         state.percent_scrolled.set(percent_scrolled);

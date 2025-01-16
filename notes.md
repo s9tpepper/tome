@@ -35,6 +35,10 @@
 [x] (MVP) Clear the list of endpoints when the project is swapped
 [x] (MVP) Ensure that endpoint names are unique per project
 
+[x] 100% scroll displays as 10%;
+[x] Unique endpoint names are broken again (broken when changing names via N, change vs rename)
+[ ] Scrolling is not working correctly in endpoint names list
+
 [ ] (POST-LAUNCH) Pretty print responses that are minified
 [ ] (POST-LAUNCH) Fix code gen with variables
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests

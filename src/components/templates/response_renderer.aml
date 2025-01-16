@@ -49,8 +49,8 @@ zstack
       spacer
       hstack
         text "["
-        container [width: 2]
+        container [width: 6]
           text percent_scrolled
-        text "%]"
+            span "%]"
       container [width: 2]
         text "─╯"

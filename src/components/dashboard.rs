@@ -5,6 +5,7 @@ use anathema::{
     state::{CommonVal, List, Value},
     widgets::Elements,
 };
+use log::info;
 use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
