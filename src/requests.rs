@@ -13,7 +13,8 @@ use ureq_multipart::MultipartBuilder;
 
 use crate::{
     components::{
-        dashboard::{DashboardComponent, DashboardDisplay, DashboardState, FloatingWindow},
+        dashboard::{DashboardComponent, DashboardDisplay, DashboardState},
+        floating_windows::FloatingWindow,
         response_renderer::ResponseRendererMessages,
         send_message,
     },

@@ -15,11 +15,13 @@ use anathema::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
+    components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{PersistedVariable, ProjectVariable},
     theme::{get_app_theme, AppTheme},
 };
+
+use super::FloatingWindow;
 
 pub const PROJECT_VARIABLES_TEMPLATE: &str =
     "./src/components/floating_windows/templates/project_variables.aml";

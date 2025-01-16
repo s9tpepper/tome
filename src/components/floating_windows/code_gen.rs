@@ -15,11 +15,13 @@ use anathema::{
 use crate::{
     code_gen::{generate_rust, generate_web, WebType},
     components::{
-        dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState, FloatingWindow},
+        dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
         send_message,
     },
     theme::{get_app_theme, AppTheme},
 };
+
+use super::FloatingWindow;
 
 const TEMPLATE: &str = "./src/components/floating_windows/templates/code_gen.aml";
 

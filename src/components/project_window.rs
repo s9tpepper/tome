@@ -20,7 +20,8 @@ use crate::{
 };
 
 use super::{
-    dashboard::{DashboardMessageHandler, DashboardMessages, FloatingWindow},
+    dashboard::{DashboardMessageHandler, DashboardMessages},
+    floating_windows::FloatingWindow,
     send_message,
     textarea::TextAreaMessages,
 };

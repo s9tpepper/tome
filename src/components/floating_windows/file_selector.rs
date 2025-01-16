@@ -21,12 +21,14 @@ use log::info;
 use crate::{
     compatibility::postman::PostmanJson,
     components::{
-        dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState, FloatingWindow},
+        dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
         send_message,
     },
     projects::save_project,
     theme::{get_app_theme, AppTheme},
 };
+
+use super::FloatingWindow;
 
 pub const FILE_SELECTOR_TEMPLATE: &str =
     "./src/components/floating_windows/templates/file_selector.aml";

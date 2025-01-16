@@ -15,11 +15,13 @@ use anathema::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
+    components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{Endpoint, PersistedEndpoint},
     theme::{get_app_theme, AppTheme},
 };
+
+use super::FloatingWindow;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EndpointsSelectorMessages {

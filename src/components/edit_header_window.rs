@@ -13,7 +13,7 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
-use super::dashboard::{DashboardMessageHandler, FloatingWindow};
+use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow};
 
 pub const EDIT_HEADER_WINDOW_TEMPLATE: &str = "./src/components/templates/edit_header_window.aml";
 

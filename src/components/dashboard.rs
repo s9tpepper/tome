@@ -2,7 +2,7 @@ use anathema::{
     component::{ComponentId, KeyCode, KeyEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{CommonVal, List, State, Value},
+    state::{CommonVal, List, Value},
     widgets::Elements,
 };
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -41,6 +41,7 @@ use super::{
         commands::Commands,
         edit_endpoint_name::{EditEndpointName, EditEndpointNameMessages},
         edit_project_name::{EditProjectName, EditProjectNameMessages},
+        FloatingWindow,
     },
     method_selector::MethodSelector,
     project_window::ProjectWindow,
@@ -87,53 +88,6 @@ impl anathema::state::State for DashboardDisplay {
 pub struct MenuItem {
     label: Value<String>,
     color: Value<String>,
-}
-
-#[derive(PartialEq, Eq)]
-pub enum FloatingWindow {
-    None,
-    Method,
-    AddHeader,
-    EditHeader,
-    Error,
-    EditHeaderSelector,
-    Project,
-    ConfirmAction,
-    Message,
-    ChangeEndpointName,
-    ChangeProjectName,
-    EndpointsSelector,
-    Commands,
-    CodeGen,
-    PostmanFileSelector,
-    BodyModeSelector,
-    AddProjectVariable,
-    ViewProjectVariables,
-}
-
-impl State for FloatingWindow {
-    fn to_common(&self) -> Option<CommonVal<'_>> {
-        match self {
-            FloatingWindow::None => Some(CommonVal::Str("None")),
-            FloatingWindow::Method => Some(CommonVal::Str("Method")),
-            FloatingWindow::AddHeader => Some(CommonVal::Str("AddHeader")),
-            FloatingWindow::EditHeader => Some(CommonVal::Str("EditHeader")),
-            FloatingWindow::Error => Some(CommonVal::Str("Error")),
-            FloatingWindow::EditHeaderSelector => Some(CommonVal::Str("EditHeaderSelector")),
-            FloatingWindow::Project => Some(CommonVal::Str("Project")),
-            FloatingWindow::ConfirmAction => Some(CommonVal::Str("ConfirmAction")),
-            FloatingWindow::Message => Some(CommonVal::Str("Message")),
-            FloatingWindow::ChangeEndpointName => Some(CommonVal::Str("ChangeEndpointName")),
-            FloatingWindow::ChangeProjectName => Some(CommonVal::Str("ChangeProjectName")),
-            FloatingWindow::EndpointsSelector => Some(CommonVal::Str("EndpointsSelector")),
-            FloatingWindow::Commands => Some(CommonVal::Str("Commands")),
-            FloatingWindow::CodeGen => Some(CommonVal::Str("CodeGen")),
-            FloatingWindow::PostmanFileSelector => Some(CommonVal::Str("PostmanFileSelector")),
-            FloatingWindow::BodyModeSelector => Some(CommonVal::Str("BodyModeSelector")),
-            FloatingWindow::AddProjectVariable => Some(CommonVal::Str("AddProjectVariable")),
-            FloatingWindow::ViewProjectVariables => Some(CommonVal::Str("ViewProjectVariables")),
-        }
-    }
 }
 
 #[derive(anathema::state::State)]

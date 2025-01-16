@@ -15,7 +15,7 @@ use anathema::{
 use crate::{
     compatibility::postman::export_postman,
     components::{
-        dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState, FloatingWindow},
+        dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
         send_message,
     },
     projects::{PersistedProject, PersistedVariable},
@@ -24,6 +24,7 @@ use crate::{
 
 use super::{
     add_project_variable::AddProjectVariableMessages, project_variables::ProjectVariablesMessages,
+    FloatingWindow,
 };
 
 const TEMPLATE: &str = "./src/components/floating_windows/templates/commands.aml";

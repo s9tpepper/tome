@@ -8,7 +8,7 @@ use anathema::{
 
 use crate::theme::{get_app_theme, AppTheme};
 
-use super::dashboard::{DashboardMessageHandler, FloatingWindow};
+use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow};
 
 pub const METHOD_SELECTOR_TEMPLATE: &str = "./src/components/templates/method_selector.aml";
 

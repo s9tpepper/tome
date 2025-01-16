@@ -18,6 +18,8 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
+use super::FloatingWindow;
+
 const TEMPLATE: &str = "./src/components/floating_windows/templates/edit_project_name.aml";
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,9 +71,7 @@ impl DashboardMessageHandler for EditProjectName {
                         .set(specific_name_update.new_name);
                 }
 
-                state
-                    .floating_window
-                    .set(crate::components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
 
@@ -89,9 +89,7 @@ impl DashboardMessageHandler for EditProjectName {
                 let new_name = value.to_string();
                 state.project.to_mut().name.set(new_name);
 
-                state
-                    .floating_window
-                    .set(crate::components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
 
@@ -106,9 +104,7 @@ impl DashboardMessageHandler for EditProjectName {
             }
 
             "edit_project_name__cancel" => {
-                state
-                    .floating_window
-                    .set(crate::components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
             }

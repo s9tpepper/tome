@@ -18,7 +18,10 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
-use super::edit_project_name::{SpecificNameChange, SpecificNameUpdate};
+use super::{
+    edit_project_name::{SpecificNameChange, SpecificNameUpdate},
+    FloatingWindow,
+};
 
 const TEMPLATE: &str = "./src/components/floating_windows/templates/edit_endpoint_name.aml";
 
@@ -86,9 +89,7 @@ impl DashboardMessageHandler for EditEndpointName {
                         }
                     });
 
-                state
-                    .floating_window
-                    .set(crate::components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
 
@@ -106,9 +107,7 @@ impl DashboardMessageHandler for EditEndpointName {
                 let new_name = value.to_string();
                 state.endpoint.to_mut().name.set(new_name);
 
-                state
-                    .floating_window
-                    .set(crate::components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
 
@@ -123,9 +122,7 @@ impl DashboardMessageHandler for EditEndpointName {
             }
 
             "edit_endpoint_name__cancel" => {
-                state
-                    .floating_window
-                    .set(crate::components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
             }

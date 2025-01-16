@@ -14,6 +14,7 @@ use crate::{
 
 use super::{
     dashboard::{DashboardMessageHandler, DashboardMessages},
+    floating_windows::FloatingWindow,
     send_message,
 };
 
@@ -87,9 +88,7 @@ impl DashboardMessageHandler for ConfirmActionWindow {
         #[allow(clippy::single_match)]
         match event.as_str() {
             "confirm_action__cancel" => {
-                state
-                    .floating_window
-                    .set(super::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
             }

@@ -17,6 +17,8 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
+use super::FloatingWindow;
+
 const TEMPLATE: &str = "./src/components/floating_windows/templates/add_project_variable.aml";
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,9 +54,7 @@ impl DashboardMessageHandler for AddProjectVariable {
 
                 state.project.to_mut().variable.push(project_variable);
 
-                state
-                    .floating_window
-                    .set(components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
 
@@ -69,9 +69,7 @@ impl DashboardMessageHandler for AddProjectVariable {
             }
 
             "add_project_variable__cancel" => {
-                state
-                    .floating_window
-                    .set(components::dashboard::FloatingWindow::None);
+                state.floating_window.set(FloatingWindow::None);
 
                 context.set_focus("id", "app");
             }

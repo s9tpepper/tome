@@ -7,9 +7,11 @@ use anathema::{
 };
 
 use crate::{
-    components::dashboard::{DashboardMessageHandler, DashboardState, FloatingWindow},
+    components::dashboard::{DashboardMessageHandler, DashboardState},
     theme::{get_app_theme, AppTheme},
 };
+
+use super::FloatingWindow;
 
 pub const BODY_MODE_SELECTOR_TEMPLATE: &str =
     "./src/components/floating_windows/templates/body_mode_selector.aml";
