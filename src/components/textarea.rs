@@ -32,6 +32,7 @@ pub struct TextArea {
     pub input_for: Option<String>,
     pub listeners: Vec<String>,
     pub component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+    #[allow(unused)]
     pub app_theme: AppTheme,
 }
 

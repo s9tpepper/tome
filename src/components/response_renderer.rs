@@ -628,7 +628,7 @@ impl Component for ResponseRenderer {
 
     fn resize(
         &mut self,
-        state: &mut Self::State,
+        _: &mut Self::State,
         mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {

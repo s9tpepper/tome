@@ -7,7 +7,6 @@ use std::{
 };
 
 use crate::{
-    app_themes,
     components::response_renderer::{ResponseRendererMessages, CODE_SAMPLE},
     options::{get_syntax_theme, get_syntax_themes},
     theme::{get_app_theme, AppTheme},
@@ -24,10 +23,6 @@ use anathema::{
 // project window
 
 pub const TEMPLATE: &str = "./src/components/floating_windows/templates/syntax_theme_selector.aml";
-
-// TODO: Fix the default project row color to the correct gray
-const DEFAULT_ROW_COLOR: &str = "#333333";
-const SELECTED_ROW_COLOR: &str = "#FFFFFF";
 
 #[derive(Default, State)]
 pub struct SyntaxThemeSelectorState {

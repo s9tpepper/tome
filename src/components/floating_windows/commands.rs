@@ -1,7 +1,6 @@
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
-    ops::Deref,
     rc::Rc,
 };
 
@@ -19,13 +18,12 @@ use crate::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState, FloatingWindow},
         send_message,
     },
-    projects::{self, PersistedProject, PersistedVariable, ProjectVariable},
+    projects::{PersistedProject, PersistedVariable},
     theme::{get_app_theme, AppTheme},
 };
 
 use super::{
-    add_project_variable::AddProjectVariableMessages,
-    project_variables::{ProjectVariables, ProjectVariablesMessages},
+    add_project_variable::AddProjectVariableMessages, project_variables::ProjectVariablesMessages,
 };
 
 const TEMPLATE: &str = "./src/components/floating_windows/templates/commands.aml";

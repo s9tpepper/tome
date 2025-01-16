@@ -21,19 +21,6 @@ pub struct Span<'a> {
     pub bold: bool,
 }
 
-impl Span<'_> {
-    pub fn take_space(&self) -> (Option<i32>, &str, bool) {
-        let count = self.src.bytes().take_while(|b| *b == b' ').count();
-
-        let opt_count = match count {
-            0 => None,
-            n => Some(n as i32),
-        };
-
-        (opt_count, &self.src[count..], self.bold)
-    }
-}
-
 impl<'a> From<(Style, &'a str)> for Span<'a> {
     fn from((style, src): (Style, &'a str)) -> Self {
         let bold = style.font_style.contains(FontStyle::BOLD);
@@ -153,94 +140,4 @@ pub fn highlight<'a>(src: &'a str, ext: &str, name: Option<String>) -> (Box<[Lin
 
     info!("output length: {}", output.len());
     (output.into_boxed_slice(), theme)
-}
-
-pub struct Parser<'a> {
-    lines: Box<[Line<'a>]>,
-    instructions: Vec<Instruction>,
-    foreground: Hex,
-    background: Hex,
-}
-
-#[derive(Debug, Clone)]
-pub enum Instruction {
-    Type(char, bool),
-    SetForeground(Hex),
-    SetBackground(Hex),
-    Newline { x: i32 },
-    SetX(i32),
-}
-
-impl<'a> Parser<'a> {
-    pub fn new(lines: Box<[Line<'a>]>) -> Self {
-        Self {
-            lines,
-            instructions: vec![],
-            foreground: Hex::WHITE,
-            background: Hex::BLACK,
-        }
-    }
-
-    pub fn instructions(mut self) -> Vec<Instruction> {
-        let lines = std::mem::take(&mut self.lines);
-
-        for line in &*lines {
-            let mut line_start = 0;
-
-            let (count, src, bold) = line.head.take_space();
-            if let Some(x) = count {
-                // self.instructions.push(Instruction::SetX(x));
-                line_start = x;
-            } else {
-                self.instructions.push(Instruction::SetX(0));
-            }
-
-            self.set_foreground(&line.head);
-            self.set_background(&line.head);
-
-            if line_start == 0 {
-                self.push_chars(src, bold, line_start);
-            } else {
-                let mut spaces = "".to_string();
-                for _ in 0..line_start {
-                    spaces.push(' ');
-                }
-
-                self.push_chars(&spaces, bold, 0);
-            }
-
-            for span in &*line.tail {
-                self.set_foreground(span);
-                self.set_background(span);
-                self.push_chars(span.src, span.bold, 0);
-            }
-        }
-
-        self.instructions
-    }
-
-    fn set_foreground(&mut self, span: &Span) {
-        if span.fg != self.foreground {
-            self.instructions.push(Instruction::SetForeground(span.fg));
-            self.foreground = span.fg;
-        }
-    }
-
-    fn set_background(&mut self, span: &Span) {
-        if span.bg != self.background {
-            self.instructions.push(Instruction::SetBackground(span.bg));
-            self.background = span.bg;
-        }
-    }
-
-    fn push_chars(&mut self, src: &str, bold: bool, line_start: i32) {
-        for c in src.chars() {
-            match c {
-                '\n' => self
-                    .instructions
-                    .push(Instruction::Newline { x: line_start }),
-                c => self.instructions.push(Instruction::Type(c, bold)),
-            }
-        }
-    }
 }

@@ -817,7 +817,7 @@ impl DashboardComponent {
                 delete_persisted_variable_answer,
             ) => match delete_persisted_variable_answer.answer {
                 true => {
-                    let persisted_variable = delete_persisted_variable_answer.variable;
+                    let persisted_variable = delete_persisted_variable_answer.data;
                     let deleted_variable = persisted_variable.name.clone().unwrap_or_default();
 
                     let mut delete_index: i64 = -1;

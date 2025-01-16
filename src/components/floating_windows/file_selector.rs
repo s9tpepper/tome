@@ -5,7 +5,6 @@ use std::{
     env,
     fs::{self, DirEntry, File},
     io::BufReader,
-    os::macos::raw::stat,
     path::PathBuf,
     rc::Rc,
 };
