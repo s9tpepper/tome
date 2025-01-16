@@ -5,19 +5,18 @@ use anathema::{
     state::{CommonVal, List, Value},
     widgets::Elements,
 };
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
     rc::Rc,
 };
-use std::{fs, ops::Deref};
 
 use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fs::{get_documents_dir, save_response},
+    fs::save_response,
     messages::confirm_actions::ConfirmAction,
     projects::{delete_endpoint, delete_project, PersistedVariable},
     theme::get_app_theme,
