@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::TuiBackend,
+    prelude::{ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
 };
@@ -19,7 +19,7 @@ use super::{
 };
 
 pub const CONFIRM_ACTION_WINDOW_TEMPLATE: &str =
-    "./src/components/templates/confirm_action_window.aml";
+    include_str!("./templates/confirm_action_window.aml");
 
 #[derive(Default)]
 pub struct ConfirmActionWindow {
@@ -43,7 +43,7 @@ impl ConfirmActionWindow {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "confirm_action_window",
-            CONFIRM_ACTION_WINDOW_TEMPLATE,
+            CONFIRM_ACTION_WINDOW_TEMPLATE.to_template(),
             ConfirmActionWindow::new(ids.clone()),
             ConfirmActionWindowState::new(),
         )?;

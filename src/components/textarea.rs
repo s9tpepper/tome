@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::{io::Write, str::Chars};
 
 use anathema::component::{ComponentId, Emitter, KeyCode};
-use anathema::prelude::TuiBackend;
+use anathema::prelude::{SourceKind, ToSourceKind, TuiBackend};
 use anathema::runtime::RuntimeBuilder;
 use anathema::{
     default_widgets::{Overflow, Text},
@@ -24,7 +24,7 @@ use crate::theme::{get_app_theme, AppTheme};
 
 use super::dashboard::DashboardMessages;
 
-pub const TEXTAREA_TEMPLATE: &str = "./src/components/templates/textarea.aml";
+pub const TEXTAREA_TEMPLATE: &str = include_str!("./templates/textarea.aml");
 
 #[derive(Default)]
 pub struct TextArea {
@@ -383,12 +383,12 @@ impl TextArea {
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
         builder: &mut RuntimeBuilder<TuiBackend, ()>,
         ident: impl Into<String>,
-        template: Option<&str>,
+        template: Option<SourceKind>,
         input_for: Option<String>,
         listeners: Vec<String>,
     ) -> anyhow::Result<()> {
         let name: String = ident.into();
-        let input_template = template.unwrap_or(TEXTAREA_TEMPLATE);
+        let input_template = template.unwrap_or(TEXTAREA_TEMPLATE.to_template());
 
         let app_theme = get_app_theme();
         let state = TextAreaInputState::new(

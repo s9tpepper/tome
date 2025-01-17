@@ -1,6 +1,6 @@
 use anathema::{
     component::{ComponentId, KeyCode, KeyEvent},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, List, Value},
     widgets::Elements,
@@ -60,7 +60,7 @@ use super::{
     },
 };
 
-pub const DASHBOARD_TEMPLATE: &str = "./src/components/templates/dashboard.aml";
+pub const DASHBOARD_TEMPLATE: &str = include_str!("./templates/dashboard.aml");
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DashboardDisplay {
@@ -217,7 +217,7 @@ impl DashboardComponent {
 
         let id = builder.register_component(
             "dashboard",
-            DASHBOARD_TEMPLATE,
+            DASHBOARD_TEMPLATE.to_template(),
             DashboardComponent {
                 component_ids: ids.clone(),
                 test: false,

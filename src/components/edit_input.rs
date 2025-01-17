@@ -2,12 +2,12 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId, Emitter, KeyCode},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, SourceKind, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     widgets::Elements,
 };
 
-const TEMPLATE: &str = "./src/components/templates/edit_input.aml";
+const TEMPLATE: &str = include_str!("./templates/edit_input.aml");
 
 use crate::theme::{get_app_theme, AppTheme};
 
@@ -32,12 +32,12 @@ impl EditInput {
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
         builder: &mut RuntimeBuilder<TuiBackend, ()>,
         ident: impl Into<String>,
-        template: Option<&str>,
+        template: Option<SourceKind>,
         input_for: Option<String>,
         listeners: Vec<String>,
     ) -> anyhow::Result<()> {
         let name: String = ident.into();
-        let input_template = template.unwrap_or(TEMPLATE);
+        let input_template = template.unwrap_or(TEMPLATE.to_template());
 
         let app_theme = get_app_theme();
         let state = InputState::new(

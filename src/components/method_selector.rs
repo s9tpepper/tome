@@ -10,7 +10,7 @@ use crate::theme::{get_app_theme, AppTheme};
 
 use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow};
 
-pub const METHOD_SELECTOR_TEMPLATE: &str = "./src/components/templates/method_selector.aml";
+pub const METHOD_SELECTOR_TEMPLATE: &str = include_str!("./templates/method_selector.aml");
 
 #[derive(Default)]
 pub struct MethodSelector;

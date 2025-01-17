@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{self, Component, ComponentId},
-    prelude::{self, Context, TuiBackend},
+    prelude::{self, Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
     widgets::{self, Elements},
@@ -19,7 +19,7 @@ use crate::{
 
 use super::FloatingWindow;
 
-const TEMPLATE: &str = "./src/components/floating_windows/templates/add_project_variable.aml";
+const TEMPLATE: &str = include_str!("./templates/add_project_variable.aml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AddProjectVariableMessages {
@@ -261,7 +261,7 @@ impl AddProjectVariable {
 
         let id = builder.register_component(
             "add_project_variable",
-            TEMPLATE,
+            TEMPLATE.to_template(),
             AddProjectVariable {
                 persisted_project_name: None,
                 persisted_variable: None,

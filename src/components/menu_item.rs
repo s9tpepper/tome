@@ -5,7 +5,7 @@ use anathema::{
 
 use crate::theme::{get_app_theme, AppTheme};
 
-pub const MENU_ITEM_TEMPLATE: &str = "./src/components/templates/menu_item.aml";
+pub const MENU_ITEM_TEMPLATE: &str = include_str!("./templates/menu_item.aml");
 
 #[derive(Default)]
 pub struct MenuItem;

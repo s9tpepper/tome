@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -23,8 +23,7 @@ use crate::{
 
 use super::FloatingWindow;
 
-pub const PROJECT_VARIABLES_TEMPLATE: &str =
-    "./src/components/floating_windows/templates/project_variables.aml";
+pub const PROJECT_VARIABLES_TEMPLATE: &str = include_str!("./templates/project_variables.aml");
 
 #[derive(Default, State)]
 pub struct ProjectVariablesState {
@@ -74,7 +73,7 @@ impl ProjectVariables {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "project_variables",
-            PROJECT_VARIABLES_TEMPLATE,
+            PROJECT_VARIABLES_TEMPLATE.to_template(),
             ProjectVariables::new(ids.clone()),
             ProjectVariablesState::new(),
         )?;

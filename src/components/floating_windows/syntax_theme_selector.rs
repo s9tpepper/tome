@@ -14,7 +14,7 @@ use crate::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::TuiBackend,
+    prelude::{ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
 };
@@ -22,7 +22,7 @@ use anathema::{
 // TODO: Refactor this selector window to reuse for syntax theme selector, endpoint selector, and
 // project window
 
-pub const TEMPLATE: &str = "./src/components/floating_windows/templates/syntax_theme_selector.aml";
+pub const TEMPLATE: &str = include_str!("./templates/syntax_theme_selector.aml");
 
 #[derive(Default, State)]
 pub struct SyntaxThemeSelectorState {
@@ -92,7 +92,7 @@ impl SyntaxThemeSelector {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "syntax_theme_selector",
-            TEMPLATE,
+            TEMPLATE.to_template(),
             SyntaxThemeSelector::new(ids.clone()),
             SyntaxThemeSelectorState::new(),
         )?;

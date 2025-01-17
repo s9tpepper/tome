@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -28,8 +28,7 @@ pub enum EndpointsSelectorMessages {
     EndpointsList(Vec<PersistedEndpoint>),
 }
 
-pub const ENDPOINTS_SELECTOR_TEMPLATE: &str =
-    "./src/components/floating_windows/templates/endpoints_selector.aml";
+pub const ENDPOINTS_SELECTOR_TEMPLATE: &str = include_str!("./templates/endpoints_selector.aml");
 
 #[derive(Default, State)]
 pub struct EndpointsSelectorState {
@@ -74,7 +73,7 @@ impl EndpointsSelector {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "endpoints_selector_window",
-            ENDPOINTS_SELECTOR_TEMPLATE,
+            ENDPOINTS_SELECTOR_TEMPLATE.to_template(),
             EndpointsSelector::new(ids.clone()),
             EndpointsSelectorState::new(),
         )?;

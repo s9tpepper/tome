@@ -6,7 +6,7 @@ use std::{
 
 use anathema::{
     component::{self, Component, ComponentId, Emitter},
-    prelude::TuiBackend,
+    prelude::{ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -23,7 +23,7 @@ use crate::{
 
 use super::FloatingWindow;
 
-const TEMPLATE: &str = "./src/components/floating_windows/templates/code_gen.aml";
+const TEMPLATE: &str = include_str!("./templates/code_gen.aml");
 
 #[derive(Default)]
 pub struct CodeGen {
@@ -42,7 +42,7 @@ impl CodeGen {
 
         let app_id = builder.register_component(
             "codegen_window",
-            TEMPLATE,
+            TEMPLATE.to_template(),
             CodeGen { languages },
             CodeGenState::new(),
         )?;

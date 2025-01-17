@@ -6,7 +6,7 @@ use std::{
 
 use anathema::{
     component::{self, Component, ComponentId},
-    prelude::TuiBackend,
+    prelude::{ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -27,7 +27,7 @@ use super::{
     FloatingWindow,
 };
 
-const TEMPLATE: &str = "./src/components/floating_windows/templates/commands.aml";
+const TEMPLATE: &str = include_str!("./templates/commands.aml");
 
 #[derive(Default)]
 pub struct Commands;
@@ -39,7 +39,7 @@ impl Commands {
     ) -> anyhow::Result<()> {
         let app_id = builder.register_component(
             "commands_window",
-            TEMPLATE,
+            TEMPLATE.to_template(),
             Commands {},
             CommandsState::new(),
         )?;

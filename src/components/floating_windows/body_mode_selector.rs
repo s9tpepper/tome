@@ -13,8 +13,7 @@ use crate::{
 
 use super::FloatingWindow;
 
-pub const BODY_MODE_SELECTOR_TEMPLATE: &str =
-    "./src/components/floating_windows/templates/body_mode_selector.aml";
+pub const BODY_MODE_SELECTOR_TEMPLATE: &str = include_str!("./templates/body_mode_selector.aml");
 
 #[derive(Default)]
 pub struct BodyModeSelector;

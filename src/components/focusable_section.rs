@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::TuiBackend,
+    prelude::{SourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
 };
@@ -20,7 +20,7 @@ impl FocusableSection {
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
         builder: &mut RuntimeBuilder<TuiBackend, ()>,
         ident: impl Into<String>,
-        template: &str,
+        template: SourceKind,
     ) -> anyhow::Result<()> {
         let name: String = ident.into();
         let input_template = template;

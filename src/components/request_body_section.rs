@@ -4,7 +4,7 @@ use anathema::{
 };
 
 pub const REQUEST_BODY_SECTION_TEMPLATE: &str =
-    "./src/components/templates/request_body_section.aml";
+    include_str!("./templates/request_body_section.aml");
 
 #[derive(Default)]
 pub struct RequestBodySection;

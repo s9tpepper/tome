@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -23,7 +23,7 @@ use super::{
     FloatingWindow,
 };
 
-const TEMPLATE: &str = "./src/components/floating_windows/templates/edit_endpoint_name.aml";
+const TEMPLATE: &str = include_str!("./templates/edit_endpoint_name.aml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EditEndpointNameMessages {
@@ -286,7 +286,7 @@ impl EditEndpointName {
         let app_theme = get_app_theme();
         let id = builder.register_component(
             "edit_endpoint_name",
-            TEMPLATE,
+            TEMPLATE.to_template(),
             EditEndpointName {
                 persisted_project_name: None,
                 persisted_endpoint: None,

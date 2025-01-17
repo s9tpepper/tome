@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use super::dashboard::DashboardMessages;
 
-pub const TEXTINPUT_TEMPLATE: &str = "./src/components/templates/textinput.aml";
+pub const TEXTINPUT_TEMPLATE: &str = include_str!("./templates/textinput.aml");
 
 #[derive(Default)]
 pub struct TextInput {

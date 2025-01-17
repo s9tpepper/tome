@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc};
 
 use anathema::{
     component::ComponentId,
-    prelude::{Document, TuiBackend},
+    prelude::{Document, ToSourceKind, TuiBackend},
     runtime::{Runtime, RuntimeBuilder},
 };
 use log::{info, LevelFilter};
@@ -52,8 +52,9 @@ use crate::{
     theme::get_app_theme,
 };
 
-const RESPONSE_FILTER_INPUT: &str = "./src/components/templates/response_filter_input.aml";
-const NO_BORDER_INPUT: &str = "./src/components/templates/no_border_input.aml";
+const RESPONSE_FILTER_INPUT: &str =
+    include_str!("./components/templates/response_filter_input.aml");
+const NO_BORDER_INPUT: &str = include_str!("./components/templates/no_border_input.aml");
 
 pub fn app() -> anyhow::Result<()> {
     App::new().run()?;
@@ -79,6 +80,7 @@ impl App {
     }
 
     pub fn new() -> Self {
+        info!("App::new()");
         App {
             component_ids: Rc::new(RefCell::new(HashMap::new())),
         }
@@ -87,31 +89,41 @@ impl App {
     pub fn run(&mut self) -> anyhow::Result<()> {
         self.logger();
 
+        info!("App::run()");
+
         let doc = Document::new("@app");
+        info!("App::run() doc");
 
         let tui = TuiBackend::builder()
-            // TODO: Enable this line for releases
-            // .enable_alt_screen()
+            .enable_alt_screen()
             .enable_raw_mode()
             .hide_cursor()
             .finish();
 
+        info!("Made tui");
+
         if let Err(ref error) = tui {
-            println!("[ERROR] Could not start terminal interface");
-            println!("{error:?}");
+            info!("Error making tui");
+            eprintln!("[ERROR] Could not start terminal interface");
+            eprintln!("{error:?}");
         }
 
         let backend = tui.unwrap();
         let mut runtime_builder = Runtime::builder(doc, backend);
+
+        info!("Registering components...");
         self.register_components(&mut runtime_builder)?;
 
         let runtime = runtime_builder.finish();
+        info!("Started runtime...");
+
         if let Ok(mut runtime) = runtime {
             let _emitter = runtime.emitter();
 
+            info!("Running runtime...");
             runtime.run();
         } else if let Err(error) = runtime {
-            println!("{:?}", error);
+            eprintln!("{:?}", error);
         }
 
         Ok(())
@@ -125,7 +137,7 @@ impl App {
 
         builder.register_prototype(
             "textinput",
-            TEXTINPUT_TEMPLATE,
+            TEXTINPUT_TEMPLATE.to_template(),
             move || TextInput {
                 component_ids: component_ids.clone(),
                 listeners: vec!["dashboard".to_string()],
@@ -136,7 +148,7 @@ impl App {
         component_ids = self.component_ids.clone();
         builder.register_prototype(
             "response_body_area",
-            TEXTAREA_TEMPLATE,
+            TEXTAREA_TEMPLATE.to_template(),
             move || {
                 let app_theme = get_app_theme();
                 TextArea {
@@ -159,47 +171,47 @@ impl App {
 
         builder.register_prototype(
             "method_selector",
-            METHOD_SELECTOR_TEMPLATE,
+            METHOD_SELECTOR_TEMPLATE.to_template(),
             || MethodSelector,
             MethodSelectorState::new,
         )?;
 
         builder.register_prototype(
             "body_mode_selector",
-            BODY_MODE_SELECTOR_TEMPLATE,
+            BODY_MODE_SELECTOR_TEMPLATE.to_template(),
             || BodyModeSelector,
             BodyModeSelectorState::new,
         )?;
 
         builder.register_prototype(
             "menu_item",
-            MENU_ITEM_TEMPLATE,
+            MENU_ITEM_TEMPLATE.to_template(),
             || MenuItem,
             MenuItemState::new,
         )?;
 
         builder.register_prototype(
             "request_headers_editor",
-            REQUEST_HEADERS_EDITOR_TEMPLATE,
+            REQUEST_HEADERS_EDITOR_TEMPLATE.to_template(),
             || RequestHeadersEditor,
             RequestHeadersEditorState::new,
         )?;
 
         builder.register_prototype(
             "app_section",
-            APP_SECTION_TEMPLATE,
+            APP_SECTION_TEMPLATE.to_template(),
             || AppSection,
             AppSectionState::new,
         )?;
 
         builder.register_prototype(
             "edit_header_selector",
-            EDIT_HEADER_SELECTOR_TEMPLATE,
+            EDIT_HEADER_SELECTOR_TEMPLATE.to_template(),
             || EditHeaderSelector,
             EditHeaderSelectorState::new,
         )?;
 
-        builder.register_prototype("row", ROW_TEMPLATE, || Row, RowState::new)?;
+        builder.register_prototype("row", ROW_TEMPLATE.to_template(), || Row, RowState::new)?;
 
         Ok(())
     }
@@ -216,14 +228,14 @@ impl App {
             &self.component_ids,
             builder,
             "url_input",
-            "./src/components/templates/url_input.aml",
+            include_str!("./components/templates/url_input.aml").to_template(),
         )?;
 
         TextArea::register(
             &self.component_ids,
             builder,
             "request_body_input",
-            Some(TEXTAREA_TEMPLATE),
+            Some(TEXTAREA_TEMPLATE.to_template()),
             Some("endpoint_request_body".to_string()),
             vec!["dashboard".to_string()],
         )?;
@@ -276,7 +288,7 @@ impl App {
             &self.component_ids,
             builder,
             "response_filter_input",
-            Some(RESPONSE_FILTER_INPUT),
+            Some(RESPONSE_FILTER_INPUT.to_template()),
             None,
             vec![],
         )?;
@@ -285,7 +297,7 @@ impl App {
             &self.component_ids,
             builder,
             "url_text_input",
-            Some(NO_BORDER_INPUT),
+            Some(NO_BORDER_INPUT.to_template()),
             Some(String::from("endpoint_url_input")),
             vec![String::from("dashboard")],
         )?;
@@ -294,7 +306,7 @@ impl App {
             &self.component_ids,
             builder,
             "edit_header_name_input",
-            Some(TEXTINPUT_TEMPLATE),
+            Some(TEXTINPUT_TEMPLATE.to_template()),
             None,
             vec![],
         )?;
@@ -302,7 +314,7 @@ impl App {
             &self.component_ids,
             builder,
             "edit_header_value_input",
-            Some(TEXTINPUT_TEMPLATE),
+            Some(TEXTINPUT_TEMPLATE.to_template()),
             None,
             vec![],
         )?;
@@ -311,7 +323,7 @@ impl App {
             &self.component_ids,
             builder,
             "headernameinput",
-            Some(TEXTINPUT_TEMPLATE),
+            Some(TEXTINPUT_TEMPLATE.to_template()),
             None,
             vec![],
         )?;
@@ -319,7 +331,7 @@ impl App {
             &self.component_ids,
             builder,
             "headervalueinput",
-            Some(TEXTINPUT_TEMPLATE),
+            Some(TEXTINPUT_TEMPLATE.to_template()),
             None,
             vec![],
         )?;
@@ -365,7 +377,7 @@ impl App {
             &self.component_ids,
             builder,
             "request_body_section",
-            REQUEST_BODY_SECTION_TEMPLATE,
+            REQUEST_BODY_SECTION_TEMPLATE.to_template(),
         )?;
 
         // dbg!(&self.component_ids);

@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{self, Component, ComponentId, KeyCode},
-    prelude::TuiBackend,
+    prelude::{ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -15,7 +15,7 @@ use crate::{
 
 use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow};
 
-pub const EDIT_HEADER_WINDOW_TEMPLATE: &str = "./src/components/templates/edit_header_window.aml";
+pub const EDIT_HEADER_WINDOW_TEMPLATE: &str = include_str!("./templates/edit_header_window.aml");
 
 #[derive(Default)]
 pub struct EditHeaderWindow {
@@ -30,7 +30,7 @@ impl EditHeaderWindow {
     ) -> anyhow::Result<()> {
         let edit_header_window_id = builder.register_component(
             "edit_header_window",
-            EDIT_HEADER_WINDOW_TEMPLATE,
+            EDIT_HEADER_WINDOW_TEMPLATE.to_template(),
             EditHeaderWindow {
                 component_ids: ids.clone(),
             },

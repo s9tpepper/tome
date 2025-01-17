@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -26,7 +26,7 @@ use super::{
     textarea::TextAreaMessages,
 };
 
-pub const PROJECT_WINDOW_TEMPLATE: &str = "./src/components/templates/project_window.aml";
+pub const PROJECT_WINDOW_TEMPLATE: &str = include_str!("./templates/project_window.aml");
 
 #[derive(Default, State)]
 pub struct ProjectWindowState {
@@ -71,7 +71,7 @@ impl ProjectWindow {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "project_selector",
-            PROJECT_WINDOW_TEMPLATE,
+            PROJECT_WINDOW_TEMPLATE.to_template(),
             ProjectWindow::new(ids.clone()),
             ProjectWindowState::new(),
         )?;

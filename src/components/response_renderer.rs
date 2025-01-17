@@ -11,7 +11,7 @@ use anathema::{
     component::{Component, ComponentId},
     default_widgets::Overflow,
     geometry::{Pos, Size},
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{Hex, List, State, Value},
     widgets::Elements,
@@ -27,8 +27,8 @@ use crate::{
 
 use super::{dashboard::DashboardMessages, send_message, syntax_highlighter::highlight};
 
-const TEMPLATE: &str = "./src/components/templates/response_renderer.aml";
-const SYNTAX_TEMPLATE: &str = "./src/components/templates/syntax_highlighter_renderer.aml";
+const TEMPLATE: &str = include_str!("./templates/response_renderer.aml");
+const SYNTAX_TEMPLATE: &str = include_str!("./templates/syntax_highlighter_renderer.aml");
 pub const CODE_SAMPLE: &str = include_str!("../../themes/code_sample.rs");
 
 #[derive(Debug)]
@@ -64,9 +64,9 @@ impl ResponseRenderer {
         ident: String,
     ) -> anyhow::Result<()> {
         let template = if ident == "response_renderer" {
-            TEMPLATE
+            TEMPLATE.to_template()
         } else {
-            SYNTAX_TEMPLATE
+            SYNTAX_TEMPLATE.to_template()
         };
 
         let id = builder.register_component(

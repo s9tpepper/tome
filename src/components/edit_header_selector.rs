@@ -11,7 +11,7 @@ use crate::theme::{get_app_theme, AppTheme};
 use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow, send_message};
 
 pub const EDIT_HEADER_SELECTOR_TEMPLATE: &str =
-    "./src/components/templates/edit_header_selector.aml";
+    include_str!("./templates/edit_header_selector.aml");
 
 #[derive(Default)]
 pub struct EditHeaderSelector;

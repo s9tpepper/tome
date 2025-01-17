@@ -2,14 +2,14 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::ComponentId,
-    prelude::{Context, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
     widgets::Elements,
 };
 use serde::{Deserialize, Serialize};
 
-pub const APP_LAYOUT_TEMPLATE: &str = "./src/components/templates/app_layout.aml";
+pub const APP_LAYOUT_TEMPLATE: &str = include_str!("./templates/app_layout.aml");
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum AppLayoutMessages {
@@ -48,7 +48,7 @@ impl AppLayoutComponent {
     ) -> anyhow::Result<()> {
         let app_id = builder.register_component(
             "app",
-            APP_LAYOUT_TEMPLATE,
+            APP_LAYOUT_TEMPLATE.to_template(),
             AppLayoutComponent {
                 component_ids: ids.clone(),
             },

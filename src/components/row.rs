@@ -1,6 +1,6 @@
 use anathema::{component::Component, state::State};
 
-pub const ROW_TEMPLATE: &str = "./src/components/templates/row.aml";
+pub const ROW_TEMPLATE: &str = include_str!("./templates/row.aml");
 
 #[derive(Default)]
 pub struct Row;
