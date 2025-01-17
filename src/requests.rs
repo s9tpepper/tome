@@ -3,6 +3,7 @@ use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
+    sync::Arc,
 };
 
 use anathema::prelude::Context;
@@ -158,7 +159,11 @@ pub fn do_request(
     let method = endpoint.method.clone();
     let headers = endpoint.headers;
 
-    let mut request = ureq::request(&method, &url);
+    let agent = ureq::AgentBuilder::new()
+        .tls_connector(Arc::new(native_tls::TlsConnector::new()?))
+        .build();
+
+    let mut request = agent.request(&method, &url);
     for header_value in headers.iter() {
         let header = header_value;
         let mut header_name = header.name.to_string();
