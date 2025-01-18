@@ -84,12 +84,18 @@ impl App {
         let doc = Document::new("@app");
         info!("App::run() doc");
 
-        let builder = TuiBackend::builder();
-
         #[cfg(feature = "static_templates")]
-        builder.enable_alt_screen();
+        let tui = TuiBackend::builder()
+            .enable_alt_screen()
+            .enable_raw_mode()
+            .hide_cursor()
+            .finish();
 
-        let tui = builder.enable_raw_mode().hide_cursor().finish();
+        #[cfg(feature = "runtime_templates")]
+        let tui = TuiBackend::builder()
+            .enable_raw_mode()
+            .hide_cursor()
+            .finish();
 
         info!("Made tui");
 
