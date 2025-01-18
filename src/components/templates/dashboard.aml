@@ -144,7 +144,8 @@ zstack [background: app_theme.background]
       edit_header_selector__selection -> edit_header_selector__selection,
       edit_header_selector__cancel -> edit_header_selector__cancel,
       edit_header_selector__delete -> edit_header_selector__delete,
-      edit_header_selector__add -> edit_header_selector__add
+      edit_header_selector__add -> edit_header_selector__add,
+      edit_header_selector__edit -> edit_header_selector__edit
     ) [id: "edit_header_selector", headers: request_headers]
 
   if floating_window == "EditHeader"

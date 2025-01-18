@@ -22,7 +22,9 @@ use crate::{
     theme::{get_app_theme, AppTheme},
 };
 
-use super::floating_windows::FloatingWindow;
+use super::{
+    add_header_window::AddHeaderWindowMessages, floating_windows::FloatingWindow, send_message,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EditHeaderSelectorMessages {
@@ -258,7 +260,7 @@ impl EditHeaderSelector {
             Some(header) => match serde_json::to_string(header) {
                 Ok(header_json) => {
                     state.selected_item.set(header_json);
-                    context.publish("edit_header", |state| &state.selected_item)
+                    context.publish("edit_header_selector__edit", |state| &state.selected_item)
                 }
 
                 Err(_) => context.publish("edit_header_selector__cancel", |state| &state.cursor),
@@ -287,6 +289,45 @@ impl DashboardMessageHandler for EditHeaderSelector {
             "edit_header_selector__add" => {
                 state.floating_window.set(FloatingWindow::AddHeader);
                 context.set_focus("id", "add_header_window");
+            }
+
+            "edit_header_selector__edit" => {
+                let Ok(header) = serde_json::from_str::<Header>(&value.to_string()) else {
+                    state.floating_window.set(FloatingWindow::None);
+                    context.set_focus("id", "app");
+
+                    return;
+                };
+
+                let current_names: Vec<String> = state
+                    .endpoint
+                    .to_ref()
+                    .headers
+                    .to_ref()
+                    .iter()
+                    .map(|e| e.to_ref().name.to_ref().to_string())
+                    .collect();
+
+                let current_header_name = header.name.clone();
+                let add_header_window_messages = AddHeaderWindowMessages::Specifically((
+                    current_header_name,
+                    header,
+                    current_names,
+                ));
+
+                let Ok(message) = serde_json::to_string(&add_header_window_messages) else {
+                    return;
+                };
+
+                state.floating_window.set(FloatingWindow::AddHeader);
+                context.set_focus("id", "add_header_window");
+
+                let _ = send_message(
+                    "add_header_window",
+                    message,
+                    &component_ids,
+                    context.emitter,
+                );
             }
 
             "edit_header_selector__cancel" => {

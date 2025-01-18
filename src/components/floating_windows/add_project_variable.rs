@@ -255,7 +255,7 @@ impl AddProjectVariable {
             name: String::from("").into(),
             public: String::from("").into(),
             private: String::from("").into(),
-            common: String::from("hello world"),
+            common: String::from(""),
         };
 
         let id = builder.register_component(
