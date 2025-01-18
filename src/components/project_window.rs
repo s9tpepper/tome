@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -16,6 +16,7 @@ use anathema::{
 use crate::{
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{get_projects, Endpoint, PersistedProject, Project},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
@@ -25,8 +26,6 @@ use super::{
     send_message,
     textarea::TextAreaMessages,
 };
-
-pub const PROJECT_WINDOW_TEMPLATE: &str = include_str!("./templates/project_window.aml");
 
 #[derive(Default, State)]
 pub struct ProjectWindowState {
@@ -71,7 +70,7 @@ impl ProjectWindow {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "project_selector",
-            PROJECT_WINDOW_TEMPLATE.to_template(),
+            template("templates/project_window"),
             ProjectWindow::new(ids.clone()),
             ProjectWindowState::new(),
         )?;

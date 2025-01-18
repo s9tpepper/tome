@@ -6,7 +6,7 @@ use std::{
 
 use anathema::{
     component::{self, Component, ComponentId, KeyCode},
-    prelude::{ToSourceKind, TuiBackend},
+    prelude::TuiBackend,
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -14,12 +14,11 @@ use anathema::{
 
 use crate::{
     projects::HeaderState,
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
 use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow};
-
-pub const ADD_HEADER_WINDOW_TEMPLATE: &str = include_str!("./templates/add_header_window.aml");
 
 #[derive(Default)]
 pub struct AddHeaderWindow {
@@ -36,7 +35,7 @@ impl AddHeaderWindow {
 
         let app_id = builder.register_component(
             name.clone(),
-            ADD_HEADER_WINDOW_TEMPLATE.to_template(),
+            template("templates/add_header_window"),
             AddHeaderWindow {
                 component_ids: ids.clone(),
             },

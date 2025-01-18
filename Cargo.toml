@@ -22,3 +22,8 @@ ureq = { version = "2.12.1", features = ["json", "native-tls"] }
 ureq_multipart = "1.1.1"
 uuid = { version = "1.12.0", features = [ "v5"] }
 void = "1.0.2"
+
+[features]
+default = ["runtime_templates"]
+runtime_templates = []
+static_templates = []

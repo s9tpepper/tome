@@ -1,5 +1,6 @@
 use crate::{
     options::{save_options, Options},
+    templates::template,
     theme::{get_app_theme_by_name, AppTheme},
 };
 
@@ -7,7 +8,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
 };
@@ -18,8 +19,6 @@ use super::{
     app_layout::AppLayoutMessages, dashboard::DashboardMessages,
     response_renderer::ResponseRendererMessages, send_message,
 };
-
-const TEMPLATE: &str = include_str!("./templates/options.aml");
 
 #[derive(Default)]
 pub struct OptionsView {
@@ -92,7 +91,7 @@ impl OptionsView {
         let options = get_options();
         let id = builder.register_component(
             "options",
-            TEMPLATE.to_template(),
+            template("templates/options"),
             OptionsView::new(ids.clone()),
             OptionsViewState::new(options),
         )?;

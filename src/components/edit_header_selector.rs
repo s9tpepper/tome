@@ -5,13 +5,11 @@ use anathema::{
     state::{State, Value},
     widgets::Elements,
 };
+use log::info;
 
 use crate::theme::{get_app_theme, AppTheme};
 
 use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow, send_message};
-
-pub const EDIT_HEADER_SELECTOR_TEMPLATE: &str =
-    include_str!("./templates/edit_header_selector.aml");
 
 #[derive(Default)]
 pub struct EditHeaderSelector;
@@ -59,6 +57,8 @@ impl DashboardMessageHandler for EditHeaderSelector {
 
             "edit_header_selector__selection" => {
                 let selection: usize = value.to_string().parse().unwrap();
+                info!("selection: {selection}");
+
                 let mut endpoint = state.endpoint.to_mut();
 
                 let last_index = endpoint.headers.len().saturating_sub(1);
@@ -66,7 +66,18 @@ impl DashboardMessageHandler for EditHeaderSelector {
                     return;
                 }
 
+                endpoint.headers.for_each(|header_state| {
+                    info!("headers before {:?}", *header_state.name.to_ref());
+                });
+
                 let header = endpoint.headers.remove(selection);
+                if header.is_none() {
+                    return;
+                }
+
+                endpoint.headers.for_each(|header_state| {
+                    info!("headers after {:?}", *header_state.name.to_ref());
+                });
 
                 if let Some(selected_header) = &header {
                     let header = selected_header.to_ref();
@@ -74,7 +85,7 @@ impl DashboardMessageHandler for EditHeaderSelector {
                     state.edit_header_value.set(header.value.to_ref().clone());
                 };
 
-                state.header_being_edited.set(header);
+                state.header_being_edited = header.unwrap();
                 state.floating_window.set(FloatingWindow::EditHeader);
 
                 let edit_header_name_input_id = component_ids.get("edit_header_name_input");
@@ -129,6 +140,7 @@ impl Component for EditHeaderSelector {
         match event.code {
             component::KeyCode::Char(char) => {
                 state.selection.set(Some(char));
+                // NOTE: THIS IS STUPID, this needs to change
                 if let '0'..='9' = char {
                     context.publish("edit_header_selector__selection", |state| &state.selection)
                 }

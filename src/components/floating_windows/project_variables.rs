@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -18,12 +18,11 @@ use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{PersistedVariable, ProjectVariable},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
 use super::FloatingWindow;
-
-pub const PROJECT_VARIABLES_TEMPLATE: &str = include_str!("./templates/project_variables.aml");
 
 #[derive(Default, State)]
 pub struct ProjectVariablesState {
@@ -73,7 +72,7 @@ impl ProjectVariables {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "project_variables",
-            PROJECT_VARIABLES_TEMPLATE.to_template(),
+            template("floating_windows/templates/project_variables"),
             ProjectVariables::new(ids.clone()),
             ProjectVariablesState::new(),
         )?;
@@ -343,6 +342,7 @@ impl DashboardMessageHandler for ProjectVariables {
                 let value = &*value.to_common_str();
                 let variable = serde_json::from_str::<PersistedVariable>(value);
 
+                #[allow(clippy::single_match)]
                 match variable {
                     Ok(variable) => {
                         let confirm_delete_endpoint = ConfirmDetails {

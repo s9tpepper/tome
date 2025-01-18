@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{self, Component, ComponentId},
-    prelude::{self, Context, ToSourceKind, TuiBackend},
+    prelude::{self, Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
     widgets::{self, Elements},
@@ -14,12 +14,11 @@ use serde_json::{from_str, to_string};
 use crate::{
     components::{self, dashboard::DashboardMessageHandler, send_message},
     projects::{PersistedVariable, ProjectVariable},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
 use super::FloatingWindow;
-
-const TEMPLATE: &str = include_str!("./templates/add_project_variable.aml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AddProjectVariableMessages {
@@ -261,7 +260,7 @@ impl AddProjectVariable {
 
         let id = builder.register_component(
             "add_project_variable",
-            TEMPLATE.to_template(),
+            template("floating_windows/templates/add_project_variable"),
             AddProjectVariable {
                 persisted_project_name: None,
                 persisted_variable: None,

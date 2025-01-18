@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
     widgets::Elements,
@@ -15,12 +15,11 @@ use crate::{
         send_message,
     },
     projects::{rename_project, PersistedProject},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
 use super::FloatingWindow;
-
-const TEMPLATE: &str = include_str!("./templates/edit_project_name.aml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EditProjectNameMessages {
@@ -226,7 +225,7 @@ impl EditProjectName {
 
         let id = builder.register_component(
             "edit_project_name",
-            TEMPLATE.to_template(),
+            template("floating_windows/templates/edit_project_name"),
             EditProjectName {
                 component_ids: ids.clone(),
                 persisted_project: None,

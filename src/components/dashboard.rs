@@ -1,6 +1,6 @@
 use anathema::{
     component::{ComponentId, KeyCode, KeyEvent},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, List, Value},
     widgets::Elements,
@@ -19,6 +19,7 @@ use crate::{
     fs::save_response,
     messages::confirm_actions::ConfirmAction,
     projects::{delete_endpoint, delete_project, PersistedVariable},
+    templates::template,
     theme::get_app_theme,
 };
 use crate::{
@@ -59,8 +60,6 @@ use super::{
         project_variables::ProjectVariables,
     },
 };
-
-pub const DASHBOARD_TEMPLATE: &str = include_str!("./templates/dashboard.aml");
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DashboardDisplay {
@@ -112,7 +111,8 @@ pub struct DashboardState {
     pub edit_header_name: Value<String>,
     pub edit_header_value: Value<String>,
 
-    pub header_being_edited: Value<Option<Value<HeaderState>>>,
+    #[state_ignore]
+    pub header_being_edited: Value<HeaderState>,
 
     pub project: Value<Project>,
     // pub project_count: Value<u8>,
@@ -184,7 +184,7 @@ impl DashboardState {
                 label: "(P)rojects".to_string().into(),
             }]),
             response_headers: List::from_iter(vec![]),
-            header_being_edited: None.into(),
+            header_being_edited: HeaderState::default().into(),
             filter_indexes: List::empty(),
             filter_total: 0.into(),
             filter_nav_index: 0.into(),
@@ -217,7 +217,7 @@ impl DashboardComponent {
 
         let id = builder.register_component(
             "dashboard",
-            DASHBOARD_TEMPLATE.to_template(),
+            template("templates/dashboard"),
             DashboardComponent {
                 component_ids: ids.clone(),
                 test: false,

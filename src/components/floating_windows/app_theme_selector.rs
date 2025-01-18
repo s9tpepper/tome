@@ -7,16 +7,17 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{ToSourceKind, TuiBackend},
+    prelude::TuiBackend,
     runtime::RuntimeBuilder,
     state::{List, State, Value},
 };
 
-use crate::theme::{
-    get_app_theme, get_app_theme_by_name, get_app_themes_list, AppTheme, AppThemePersisted,
+use crate::{
+    templates::template,
+    theme::{
+        get_app_theme, get_app_theme_by_name, get_app_themes_list, AppTheme, AppThemePersisted,
+    },
 };
-
-pub const TEMPLATE: &str = include_str!("./templates/app_theme_selector.aml");
 
 // TODO: Fix the default project row color to the correct gray
 const DEFAULT_PROJECT_ROW_COLOR: &str = "#333333";
@@ -65,7 +66,7 @@ impl AppThemeSelector {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "app_theme_selector",
-            TEMPLATE.to_template(),
+            template("floating_windows/templates/app_theme_selector"),
             AppThemeSelector::new(ids.clone()),
             AppThemeSelectorState::new(),
         )?;

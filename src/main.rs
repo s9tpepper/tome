@@ -12,6 +12,7 @@ mod messages;
 mod options;
 mod projects;
 mod requests;
+mod templates;
 mod theme;
 mod themes;
 

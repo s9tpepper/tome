@@ -2,13 +2,14 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{ToSourceKind, TuiBackend},
+    prelude::TuiBackend,
     runtime::RuntimeBuilder,
     state::{State, Value},
 };
 
 use crate::{
     messages::confirm_actions::{ConfirmAction, ConfirmDetails, ConfirmationAnswer},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
@@ -17,9 +18,6 @@ use super::{
     floating_windows::FloatingWindow,
     send_message,
 };
-
-pub const CONFIRM_ACTION_WINDOW_TEMPLATE: &str =
-    include_str!("./templates/confirm_action_window.aml");
 
 #[derive(Default)]
 pub struct ConfirmActionWindow {
@@ -43,7 +41,7 @@ impl ConfirmActionWindow {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "confirm_action_window",
-            CONFIRM_ACTION_WINDOW_TEMPLATE.to_template(),
+            template("templates/confirm_action_window"),
             ConfirmActionWindow::new(ids.clone()),
             ConfirmActionWindowState::new(),
         )?;

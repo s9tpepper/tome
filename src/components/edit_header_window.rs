@@ -1,8 +1,12 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+};
 
 use anathema::{
-    component::{self, Component, ComponentId, KeyCode},
-    prelude::{ToSourceKind, TuiBackend},
+    component::{self, CommonVal, Component, ComponentId, KeyCode},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -10,12 +14,14 @@ use anathema::{
 
 use crate::{
     projects::HeaderState,
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
-use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow};
-
-pub const EDIT_HEADER_WINDOW_TEMPLATE: &str = include_str!("./templates/edit_header_window.aml");
+use super::{
+    dashboard::{DashboardMessageHandler, DashboardState},
+    floating_windows::FloatingWindow,
+};
 
 #[derive(Default)]
 pub struct EditHeaderWindow {
@@ -30,7 +36,7 @@ impl EditHeaderWindow {
     ) -> anyhow::Result<()> {
         let edit_header_window_id = builder.register_component(
             "edit_header_window",
-            EDIT_HEADER_WINDOW_TEMPLATE.to_template(),
+            template("templates/edit_header_window"),
             EditHeaderWindow {
                 component_ids: ids.clone(),
             },
@@ -70,12 +76,12 @@ impl EditHeaderWindowState {
 
 impl DashboardMessageHandler for EditHeaderWindow {
     fn handle_message(
-        value: component::CommonVal<'_>,
+        value: CommonVal<'_>,
         ident: impl Into<String>,
-        state: &mut super::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
+        state: &mut DashboardState,
+        mut context: Context<'_, DashboardState>,
         _: Elements<'_, '_>,
-        _component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
+        _component_ids: Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
         let event: String = ident.into();
 
@@ -101,14 +107,19 @@ impl DashboardMessageHandler for EditHeaderWindow {
                 state.edit_header_name.set("".to_string());
                 state.edit_header_value.set("".to_string());
 
-                let header = state.header_being_edited.to_mut();
-                let header = header.as_ref();
-                if let Some(header) = header {
-                    state.endpoint.to_mut().headers.push(HeaderState {
-                        name: header.to_ref().name.to_ref().clone().into(),
-                        value: header.to_ref().value.to_ref().clone().into(),
-                    });
-                }
+                // let header = header.as_ref();
+                // if let header) = &state.header_being_edited {
+                // state
+                //     .endpoint
+                //     .to_mut()
+                //     .headers
+                //     .push(*state.header_being_edited.to_ref().as_ref());
+
+                let header = state.header_being_edited.to_ref();
+                state.endpoint.to_mut().headers.push(HeaderState {
+                    name: header.name.to_ref().clone().into(),
+                    value: header.value.to_ref().clone().into(),
+                });
 
                 context.set_focus("id", "app");
             }
@@ -127,7 +138,7 @@ impl Component for EditHeaderWindow {
         message: Self::Message,
         _: &mut Self::State,
         _: Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        mut context: Context<'_, Self::State>,
     ) {
         #[allow(clippy::single_match)]
         match message.as_str() {
@@ -143,7 +154,7 @@ impl Component for EditHeaderWindow {
         &mut self,
         state: &mut Self::State,
         _: Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
     }
@@ -154,7 +165,7 @@ impl Component for EditHeaderWindow {
         value: anathema::state::CommonVal<'_>,
         state: &mut Self::State,
         _elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        mut context: Context<'_, Self::State>,
     ) {
         match ident {
             "edit_header_name_update" => {
@@ -181,7 +192,7 @@ impl Component for EditHeaderWindow {
         key: component::KeyEvent,
         _state: &mut Self::State,
         _elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        mut context: Context<'_, Self::State>,
     ) {
         match key.code {
             KeyCode::Esc => {

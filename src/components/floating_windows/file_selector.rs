@@ -11,7 +11,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -25,12 +25,11 @@ use crate::{
         send_message,
     },
     projects::save_project,
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
 use super::FloatingWindow;
-
-pub const FILE_SELECTOR_TEMPLATE: &str = include_str!("./templates/file_selector.aml");
 
 #[derive(Debug, Default, State)]
 pub struct FileSelectorState {
@@ -115,7 +114,7 @@ impl FileSelector {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             ident,
-            FILE_SELECTOR_TEMPLATE.to_template(),
+            template("floating_windows/templates/file_selector"),
             FileSelector::new(ids.clone()),
             FileSelectorState::new(),
         )?;

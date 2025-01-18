@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -15,6 +15,7 @@ use crate::{
         send_message,
     },
     projects::{rename_endpoint, PersistedEndpoint},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
@@ -22,8 +23,6 @@ use super::{
     edit_project_name::{SpecificNameChange, SpecificNameUpdate},
     FloatingWindow,
 };
-
-const TEMPLATE: &str = include_str!("./templates/edit_endpoint_name.aml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EditEndpointNameMessages {
@@ -286,7 +285,7 @@ impl EditEndpointName {
         let app_theme = get_app_theme();
         let id = builder.register_component(
             "edit_endpoint_name",
-            TEMPLATE.to_template(),
+            template("floating_windows/templates/edit_endpoint_name"),
             EditEndpointName {
                 persisted_project_name: None,
                 persisted_endpoint: None,

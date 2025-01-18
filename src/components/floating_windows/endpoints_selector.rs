@@ -7,7 +7,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
     widgets::Elements,
@@ -18,6 +18,7 @@ use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{Endpoint, PersistedEndpoint},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
@@ -27,8 +28,6 @@ use super::FloatingWindow;
 pub enum EndpointsSelectorMessages {
     EndpointsList(Vec<PersistedEndpoint>),
 }
-
-pub const ENDPOINTS_SELECTOR_TEMPLATE: &str = include_str!("./templates/endpoints_selector.aml");
 
 #[derive(Default, State)]
 pub struct EndpointsSelectorState {
@@ -73,7 +72,7 @@ impl EndpointsSelector {
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "endpoints_selector_window",
-            ENDPOINTS_SELECTOR_TEMPLATE.to_template(),
+            template("floating_windows/templates/endpoints_selector"),
             EndpointsSelector::new(ids.clone()),
             EndpointsSelectorState::new(),
         )?;

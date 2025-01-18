@@ -6,7 +6,7 @@ use std::{
 
 use anathema::{
     component::{self, Component, ComponentId},
-    prelude::{ToSourceKind, TuiBackend},
+    prelude::TuiBackend,
     runtime::RuntimeBuilder,
     state::{State, Value},
     widgets::Elements,
@@ -19,6 +19,7 @@ use crate::{
         send_message,
     },
     projects::{PersistedProject, PersistedVariable},
+    templates::template,
     theme::{get_app_theme, AppTheme},
 };
 
@@ -26,8 +27,6 @@ use super::{
     add_project_variable::AddProjectVariableMessages, project_variables::ProjectVariablesMessages,
     FloatingWindow,
 };
-
-const TEMPLATE: &str = include_str!("./templates/commands.aml");
 
 #[derive(Default)]
 pub struct Commands;
@@ -39,7 +38,7 @@ impl Commands {
     ) -> anyhow::Result<()> {
         let app_id = builder.register_component(
             "commands_window",
-            TEMPLATE.to_template(),
+            template("floating_windows/templates/commands"),
             Commands {},
             CommandsState::new(),
         )?;

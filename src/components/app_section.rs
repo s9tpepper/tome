@@ -5,8 +5,6 @@ use anathema::{
 
 use crate::theme::{get_app_theme, AppTheme};
 
-pub const APP_SECTION_TEMPLATE: &str = include_str!("./templates/app_section.aml");
-
 #[derive(Default)]
 pub struct AppSection;
 

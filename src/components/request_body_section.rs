@@ -3,9 +3,6 @@ use anathema::{
     state::{CommonVal, State},
 };
 
-pub const REQUEST_BODY_SECTION_TEMPLATE: &str =
-    include_str!("./templates/request_body_section.aml");
-
 #[derive(Default)]
 pub struct RequestBodySection;
 
