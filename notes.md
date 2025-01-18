@@ -39,6 +39,7 @@
 [x] Unique endpoint names are broken again (broken when changing names via N, change vs rename)
 [x] Scrolling is not working correctly in endpoint names list
 
+[ ] (POST-LAUNCH) Add Mouse Support
 [ ] (POST-LAUNCH) Pretty print responses that are minified
 [ ] (POST-LAUNCH) Fix code gen with variables
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
