@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::projects::{PersistedEndpoint, PersistedProject, PersistedVariable};
+use crate::projects::{Header, PersistedEndpoint, PersistedProject, PersistedVariable};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ConfirmAction {
@@ -12,6 +12,9 @@ pub enum ConfirmAction {
 
     ConfirmDeletePersistedEndpoint(ConfirmDetails<PersistedEndpoint>),
     ConfirmationDeletePersistedEndpoint(ConfirmationAnswer<PersistedEndpoint>),
+
+    ConfirmDeleteHeader(ConfirmDetails<Header>),
+    ConfirmationDeleteHeader(ConfirmationAnswer<Header>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

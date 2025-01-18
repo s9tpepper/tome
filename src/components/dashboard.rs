@@ -2,7 +2,7 @@ use anathema::{
     component::{ComponentId, KeyCode, KeyEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{CommonVal, List, Value},
+    state::{AnyState, CommonVal, List, Value},
     widgets::Elements,
 };
 use std::ops::Deref;
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     fs::save_response,
     messages::confirm_actions::ConfirmAction,
-    projects::{delete_endpoint, delete_project, PersistedVariable},
+    projects::{delete_endpoint, delete_project, Header, PersistedVariable},
     templates::template,
     theme::get_app_theme,
 };
@@ -34,7 +34,7 @@ use crate::{requests::do_request, theme::get_app_theme_persisted};
 use super::{
     add_header_window::AddHeaderWindow,
     app_layout::AppLayoutMessages,
-    edit_header_selector::EditHeaderSelector,
+    edit_header_selector::{EditHeaderSelector, EditHeaderSelectorMessages},
     edit_header_window::EditHeaderWindow,
     floating_windows::{
         code_gen::CodeGen,
@@ -623,6 +623,10 @@ impl DashboardComponent {
         );
     }
 
+    fn delete_header(&self, index: usize, header: &Value<HeaderState>, state: &mut DashboardState) {
+        state.endpoint.to_mut().headers.remove(index);
+    }
+
     fn confirm_action(
         &self,
         confirm_action: ConfirmAction,
@@ -630,6 +634,63 @@ impl DashboardComponent {
         mut context: Context<'_, DashboardState>,
     ) {
         match confirm_action {
+            ConfirmAction::ConfirmationDeleteHeader(delete_header_answer) => {
+                match delete_header_answer.answer {
+                    true => {
+                        let header = delete_header_answer.data;
+                        let mut current_endpoint: PersistedEndpoint =
+                            state.endpoint.to_ref().deref().into();
+
+                        current_endpoint.headers.remove(
+                            current_endpoint
+                                .headers
+                                .iter()
+                                .enumerate()
+                                .find(|(_, h)| h.name == header.name)
+                                .map(|(ndx, _)| ndx)
+                                .expect("Header should exist in the current endpoint"),
+                        );
+
+                        let mut current_project: PersistedProject =
+                            state.project.to_ref().deref().into();
+
+                        let e = current_project
+                            .endpoints
+                            .iter_mut()
+                            .find(|endpoint| endpoint.name == current_endpoint.name)
+                            .expect("Expect the endpoint to exist");
+
+                        let new_endpoint: Endpoint = (&current_endpoint).into();
+                        e.headers = current_endpoint.headers;
+
+                        let result = delete_project(&current_project)
+                            .map(|_| save_project(&current_project));
+
+                        match result {
+                            Ok(_) => {
+                                let new_project: Project = (&current_project).into();
+                                state.project.set(new_project);
+                                state.endpoint.set(new_endpoint);
+
+                                self.show_message(
+                                    "Delete Header",
+                                    "Header was deleted successfully",
+                                    state,
+                                );
+                            }
+                            Err(_) => {
+                                self.show_error("There was an error deleting the header", state)
+                            }
+                        }
+                    }
+
+                    false => {
+                        state.floating_window.set(FloatingWindow::None);
+                        context.set_focus("id", "app");
+                    }
+                }
+            }
+
             ConfirmAction::ConfirmationDeletePersistedProject(delete_project_details_answer) => {
                 match delete_project_details_answer.answer {
                     true => {
@@ -1178,6 +1239,34 @@ impl anathema::component::Component for DashboardComponent {
                                 .floating_window
                                 .set(FloatingWindow::EditHeaderSelector);
                             context.set_focus("id", "edit_header_selector");
+
+                            let headers: Vec<Header> = state
+                                .endpoint
+                                .to_ref()
+                                .headers
+                                .to_ref()
+                                .iter()
+                                .map(|header_state| (&*header_state.to_ref()).into())
+                                .collect();
+
+                            let edit_header_selector_messages =
+                                EditHeaderSelectorMessages::HeadersList(headers);
+
+                            let Ok(message) = serde_json::to_string(&edit_header_selector_messages)
+                            else {
+                                return;
+                            };
+
+                            let Ok(ids) = self.component_ids.try_borrow() else {
+                                return;
+                            };
+
+                            let _ = send_message(
+                                "edit_header_selector",
+                                message,
+                                &ids,
+                                context.emitter,
+                            );
                         }
                         DashboardDisplay::ResponseBody => {
                             state.main_display.set(DashboardDisplay::ResponseHeaders)

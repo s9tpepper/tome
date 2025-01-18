@@ -1,29 +1,43 @@
-use std::collections::HashMap;
+use std::{
+    cell::RefCell,
+    cmp::{max, min},
+    collections::HashMap,
+    rc::Rc,
+};
 
 use anathema::{
-    component::{self, Component},
-    state::{State, Value},
+    component::{Component, ComponentId},
+    prelude::{Context, TuiBackend},
+    runtime::RuntimeBuilder,
+    state::{List, State, Value},
     widgets::Elements,
 };
-use log::info;
+use serde::{Deserialize, Serialize};
 
-use crate::theme::{get_app_theme, AppTheme};
+use crate::{
+    components::dashboard::{DashboardMessageHandler, DashboardState},
+    messages::confirm_actions::{ConfirmAction, ConfirmDetails},
+    projects::{Header, HeaderState, PersistedEndpoint},
+    templates::template,
+    theme::{get_app_theme, AppTheme},
+};
 
-use super::{dashboard::DashboardMessageHandler, floating_windows::FloatingWindow, send_message};
+use super::floating_windows::FloatingWindow;
 
-#[derive(Default)]
-pub struct EditHeaderSelector;
-
-impl EditHeaderSelector {
-    fn update_app_theme(&self, state: &mut EditHeaderSelectorState) {
-        let app_theme = get_app_theme();
-        state.app_theme.set(app_theme);
-    }
+#[derive(Debug, Serialize, Deserialize)]
+pub enum EditHeaderSelectorMessages {
+    HeadersList(Vec<Header>),
 }
 
 #[derive(Default, State)]
 pub struct EditHeaderSelectorState {
-    selection: Value<Option<char>>,
+    cursor: Value<u8>,
+    current_first_index: Value<u8>,
+    current_last_index: Value<u8>,
+    visible_rows: Value<u8>,
+    window_list: Value<List<HeaderState>>,
+    count: Value<u8>,
+    selected_item: Value<String>,
     app_theme: Value<AppTheme>,
 }
 
@@ -32,9 +46,232 @@ impl EditHeaderSelectorState {
         let app_theme = get_app_theme();
 
         EditHeaderSelectorState {
-            selection: None.into(),
+            cursor: 0.into(),
+            count: 0.into(),
+            current_first_index: 0.into(),
+            current_last_index: 4.into(),
+            visible_rows: 5.into(),
+            window_list: List::empty(),
+            selected_item: "".to_string().into(),
             app_theme: app_theme.into(),
         }
+    }
+}
+
+#[derive(Default)]
+pub struct EditHeaderSelector {
+    #[allow(dead_code)]
+    component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+    items_list: Vec<Header>,
+}
+
+impl EditHeaderSelector {
+    pub fn register(
+        ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+    ) -> anyhow::Result<()> {
+        let id = builder.register_component(
+            "edit_header_selector",
+            template("templates/edit_header_selector"),
+            EditHeaderSelector::new(ids.clone()),
+            EditHeaderSelectorState::new(),
+        )?;
+
+        let mut ids_ref = ids.borrow_mut();
+        ids_ref.insert(String::from("edit_header_selector"), id);
+
+        Ok(())
+    }
+
+    fn update_app_theme(&self, state: &mut EditHeaderSelectorState) {
+        let app_theme = get_app_theme();
+        state.app_theme.set(app_theme);
+    }
+
+    pub fn new(component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>) -> Self {
+        EditHeaderSelector {
+            component_ids,
+            items_list: vec![],
+        }
+    }
+
+    fn move_cursor_down(&self, state: &mut EditHeaderSelectorState) {
+        let last_complete_list_index = self.items_list.len().saturating_sub(1);
+        let new_cursor = min(*state.cursor.to_ref() + 1, last_complete_list_index as u8);
+        state.cursor.set(new_cursor);
+
+        let mut first_index = *state.current_first_index.to_ref();
+        let mut last_index = *state.current_last_index.to_ref();
+
+        if new_cursor > last_index {
+            last_index = new_cursor;
+            first_index = new_cursor - (*state.visible_rows.to_ref() - 1);
+
+            state.current_first_index.set(first_index);
+            state.current_last_index.set(last_index);
+        }
+
+        self.update_list(
+            first_index.into(),
+            last_index.into(),
+            new_cursor.into(),
+            state,
+        );
+    }
+
+    fn move_cursor_up(&self, state: &mut EditHeaderSelectorState) {
+        let new_cursor = max(state.cursor.to_ref().saturating_sub(1), 0);
+        state.cursor.set(new_cursor);
+
+        let mut first_index = *state.current_first_index.to_ref();
+        let mut last_index = *state.current_last_index.to_ref();
+
+        if new_cursor < first_index {
+            first_index = new_cursor;
+            last_index = new_cursor + (*state.visible_rows.to_ref() - 1);
+
+            state.current_first_index.set(first_index);
+            state.current_last_index.set(last_index);
+        }
+
+        self.update_list(
+            first_index.into(),
+            last_index.into(),
+            new_cursor.into(),
+            state,
+        );
+    }
+
+    fn update_list(
+        &self,
+        first_index: usize,
+        last_index: usize,
+        selected_index: usize,
+        state: &mut EditHeaderSelectorState,
+    ) {
+        if self.items_list.is_empty() {
+            loop {
+                if state.window_list.len() > 0 {
+                    state.window_list.pop_front();
+                } else {
+                    break;
+                }
+            }
+
+            return;
+        }
+
+        let mut range_end = last_index;
+        let actual_last_index = self.items_list.len().saturating_sub(1);
+        if last_index > actual_last_index {
+            range_end = actual_last_index;
+        }
+
+        let display_items = &self.items_list[first_index..=range_end];
+        let mut new_items_list: Vec<HeaderState> = vec![];
+        display_items.iter().for_each(|display_header| {
+            new_items_list.push(display_header.into());
+        });
+
+        loop {
+            if state.window_list.len() > 0 {
+                state.window_list.pop_front();
+            } else {
+                break;
+            }
+        }
+
+        let mut new_list_state = List::<HeaderState>::empty();
+        new_items_list
+            .into_iter()
+            .enumerate()
+            .for_each(|(index, mut header)| {
+                let visible_index = selected_index.saturating_sub(first_index);
+                if index == visible_index {
+                    header.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
+                    header.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+                } else {
+                    header.row_fg_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_foreground
+                        .to_ref()
+                        .clone()
+                        .into();
+                    header.row_color = state
+                        .app_theme
+                        .to_ref()
+                        .overlay_background
+                        .to_ref()
+                        .clone()
+                        .into();
+                }
+
+                new_list_state.push(header);
+            });
+
+        state.window_list = new_list_state;
+    }
+
+    fn delete_header(
+        &self,
+        state: &mut EditHeaderSelectorState,
+        mut context: Context<'_, EditHeaderSelectorState>,
+    ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let persisted_header = self.items_list.get(selected_index);
+
+        match persisted_header {
+            Some(persisted_header) => match serde_json::to_string(persisted_header) {
+                Ok(project_json) => {
+                    state.selected_item.set(project_json);
+                    context.publish("edit_header_selector__delete", |state| &state.selected_item)
+                }
+
+                Err(_) => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+            },
+            None => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+        }
+    }
+
+    fn edit_header(
+        &self,
+        state: &mut EditHeaderSelectorState,
+        mut context: Context<'_, EditHeaderSelectorState>,
+    ) {
+        let selected_index = *state.cursor.to_ref() as usize;
+        let header = self.items_list.get(selected_index);
+
+        match header {
+            Some(header) => match serde_json::to_string(header) {
+                Ok(header_json) => {
+                    state.selected_item.set(header_json);
+                    context.publish("edit_header", |state| &state.selected_item)
+                }
+
+                Err(_) => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+            },
+            None => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+        }
+    }
+
+    fn add_header(
+        &self,
+        state: &mut EditHeaderSelectorState,
+        mut context: Context<'_, EditHeaderSelectorState>,
+    ) {
     }
 }
 
@@ -42,10 +279,10 @@ impl DashboardMessageHandler for EditHeaderSelector {
     fn handle_message(
         value: anathema::state::CommonVal<'_>,
         ident: impl Into<String>,
-        state: &mut super::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
+        state: &mut DashboardState,
+        mut context: anathema::prelude::Context<'_, DashboardState>,
         _: Elements<'_, '_>,
-        component_ids: std::cell::Ref<'_, HashMap<String, component::ComponentId<String>>>,
+        component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
         let event: String = ident.into();
 
@@ -56,55 +293,50 @@ impl DashboardMessageHandler for EditHeaderSelector {
             }
 
             "edit_header_selector__selection" => {
-                let selection: usize = value.to_string().parse().unwrap();
-                info!("selection: {selection}");
+                state.floating_window.set(FloatingWindow::None);
+                context.set_focus("id", "app");
 
-                let mut endpoint = state.endpoint.to_mut();
+                let value = &*value.to_common_str();
+                let header = serde_json::from_str::<Header>(value);
 
-                let last_index = endpoint.headers.len().saturating_sub(1);
-                if selection > last_index {
-                    return;
-                }
+                // TODO: update DashboardState with the selection, needs a field
+                // match header {
+                //     Ok(header) => {
+                //         state.endpoint.set((&header).into());
+                //     }
+                //     Err(_) => todo!(),
+                // }
+            }
 
-                endpoint.headers.for_each(|header_state| {
-                    info!("headers before {:?}", *header_state.name.to_ref());
-                });
+            "edit_header_selector__delete" => {
+                state.floating_window.set(FloatingWindow::ConfirmAction);
+                context.set_focus("id", "confirm_action_window");
 
-                let header = endpoint.headers.remove(selection);
-                if header.is_none() {
-                    return;
-                }
+                let value = &*value.to_common_str();
+                let header = serde_json::from_str::<Header>(value);
 
-                endpoint.headers.for_each(|header_state| {
-                    info!("headers after {:?}", *header_state.name.to_ref());
-                });
+                match header {
+                    Ok(header) => {
+                        let confirm_delete_header = ConfirmDetails {
+                            title: format!("Delete {}", header.name),
+                            message: "Are you sure you want to delete?".into(),
+                            data: header,
+                        };
 
-                if let Some(selected_header) = &header {
-                    let header = selected_header.to_ref();
-                    state.edit_header_name.set(header.name.to_ref().clone());
-                    state.edit_header_value.set(header.value.to_ref().clone());
-                };
+                        let confirm_message =
+                            ConfirmAction::ConfirmDeleteHeader(confirm_delete_header);
 
-                state.header_being_edited = header.unwrap();
-                state.floating_window.set(FloatingWindow::EditHeader);
+                        if let Ok(message) = serde_json::to_string(&confirm_message) {
+                            let confirm_action_window_id =
+                                component_ids.get("confirm_action_window");
+                            if let Some(id) = confirm_action_window_id {
+                                context.emit(*id, message);
+                            }
+                        }
+                    }
 
-                let edit_header_name_input_id = component_ids.get("edit_header_name_input");
-                if let Some(id) = edit_header_name_input_id {
-                    context.emit(*id, state.edit_header_name.to_ref().clone());
-
-                    context.set_focus("id", "edit_header_window");
-
-                    let _ = send_message(
-                        "edit_header_window",
-                        "open".to_string(),
-                        &component_ids,
-                        context.emitter,
-                    );
-                }
-
-                let edit_header_value_input_id = component_ids.get("edit_header_value_input");
-                if let Some(id) = edit_header_value_input_id {
-                    context.emit(*id, state.edit_header_value.to_ref().clone());
+                    // TODO: Fix these todo()!
+                    Err(_) => todo!(),
                 }
             }
 
@@ -115,7 +347,7 @@ impl DashboardMessageHandler for EditHeaderSelector {
 
 impl Component for EditHeaderSelector {
     type State = EditHeaderSelectorState;
-    type Message = ();
+    type Message = String;
 
     fn accept_focus(&self) -> bool {
         true
@@ -132,28 +364,88 @@ impl Component for EditHeaderSelector {
 
     fn on_key(
         &mut self,
-        event: component::KeyEvent,
+        event: anathema::component::KeyEvent,
         state: &mut Self::State,
         _: anathema::widgets::Elements<'_, '_>,
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match event.code {
-            component::KeyCode::Char(char) => {
-                state.selection.set(Some(char));
-                // NOTE: THIS IS STUPID, this needs to change
-                if let '0'..='9' = char {
-                    context.publish("edit_header_selector__selection", |state| &state.selection)
+            anathema::component::KeyCode::Char(char) => match char {
+                'j' => self.move_cursor_down(state),
+                'k' => self.move_cursor_up(state),
+                'd' => self.delete_header(state, context),
+                'e' => self.edit_header(state, context),
+                'a' => self.add_header(state, context),
+                _ => {}
+            },
+
+            anathema::component::KeyCode::Up => self.move_cursor_up(state),
+            anathema::component::KeyCode::Down => self.move_cursor_down(state),
+
+            anathema::component::KeyCode::Esc => {
+                // NOTE: This sends cursor to satisfy publish() but is not used
+                context.publish("edit_header_selector__cancel", |state| &state.cursor)
+            }
+
+            anathema::component::KeyCode::Enter => {
+                let selected_index = *state.cursor.to_ref() as usize;
+                let endpoint = self.items_list.get(selected_index);
+
+                match endpoint {
+                    Some(endpoint) => match serde_json::to_string(endpoint) {
+                        Ok(endpoint_json) => {
+                            state.selected_item.set(endpoint_json);
+                            context.publish("edit_header_selector__selection", |state| {
+                                &state.selected_item
+                            });
+                        }
+                        Err(_) => {
+                            context.publish("edit_header_selector__cancel", |state| &state.cursor)
+                        }
+                    },
+                    None => context.publish("edit_header_selector__cancel", |state| &state.cursor),
                 }
             }
 
-            component::KeyCode::Esc => {
-                // NOTE: This selection state needs a Some in order for the associated function to
-                // fire
-                state.selection.set(Some('x'));
-                context.publish("edit_header_selector__cancel", |state| &state.selection)
-            }
-
             _ => {}
+        }
+    }
+
+    fn message(
+        &mut self,
+        message: Self::Message,
+        state: &mut Self::State,
+        _: anathema::widgets::Elements<'_, '_>,
+        _: anathema::prelude::Context<'_, Self::State>,
+    ) {
+        let endpoints_selector_message =
+            serde_json::from_str::<EditHeaderSelectorMessages>(&message);
+
+        match endpoints_selector_message {
+            Ok(deserialized_message) => match deserialized_message {
+                EditHeaderSelectorMessages::HeadersList(endpoints) => {
+                    self.items_list = endpoints;
+
+                    let current_last_index =
+                        min(*state.visible_rows.to_ref(), self.items_list.len() as u8)
+                            .saturating_sub(1);
+                    state.cursor.set(0);
+                    state.current_first_index.set(0);
+                    state.current_last_index.set(current_last_index);
+
+                    let first_index: usize = *state.current_first_index.to_ref() as usize;
+                    let last_index: usize = *state.current_last_index.to_ref() as usize;
+                    let selected_index = 0;
+
+                    self.update_list(first_index, last_index, selected_index, state);
+                }
+            },
+
+            // TODO: Figure out what to do with deserialization errors
+            Err(_error) => {
+                // eprintln!("{error}");
+                // dbg!(error);
+            }
         }
     }
 }

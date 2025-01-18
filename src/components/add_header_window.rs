@@ -102,6 +102,8 @@ impl DashboardMessageHandler for AddHeaderWindow {
                 let header = HeaderState {
                     name: header_name.into(),
                     value: header_value.into(),
+                    row_color: "".to_string().into(),
+                    row_fg_color: "".to_string().into(),
                 };
                 state.endpoint.to_mut().headers.push(header);
             }

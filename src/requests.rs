@@ -295,6 +295,8 @@ fn handle_successful_response(
         state.response_headers.push(HeaderState {
             name: name.clone().into(),
             value: value.to_string().clone().into(),
+            row_color: "".to_string().into(),
+            row_fg_color: "".to_string().into(),
         });
     }
 

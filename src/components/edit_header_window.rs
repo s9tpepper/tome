@@ -95,6 +95,8 @@ impl DashboardMessageHandler for EditHeaderWindow {
                 let header = HeaderState {
                     name: header_name.into(),
                     value: header_value.into(),
+                    row_color: "".to_string().into(),
+                    row_fg_color: "".to_string().into(),
                 };
 
                 state.endpoint.to_mut().headers.push(header);
@@ -119,6 +121,8 @@ impl DashboardMessageHandler for EditHeaderWindow {
                 state.endpoint.to_mut().headers.push(HeaderState {
                     name: header.name.to_ref().clone().into(),
                     value: header.value.to_ref().clone().into(),
+                    row_color: "".to_string().into(),
+                    row_fg_color: "".to_string().into(),
                 });
 
                 context.set_focus("id", "app");

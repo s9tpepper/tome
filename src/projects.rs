@@ -151,6 +151,8 @@ impl Endpoint {
 pub struct HeaderState {
     pub name: Value<String>,
     pub value: Value<String>,
+    pub row_color: Value<String>,
+    pub row_fg_color: Value<String>,
 }
 
 impl HeaderState {
@@ -158,6 +160,8 @@ impl HeaderState {
         HeaderState {
             name: self.name.to_ref().to_string().into(),
             value: self.value.to_ref().to_string().into(),
+            row_color: "".to_string().into(),
+            row_fg_color: "".to_string().into(),
         }
     }
 }
@@ -252,10 +256,14 @@ fn get_default_headers() -> Vec<HeaderState> {
         HeaderState {
             name: "user-agent".to_string().into(),
             value: "tome-tui".to_string().into(),
+            row_color: "".to_string().into(),
+            row_fg_color: "".to_string().into(),
         },
         HeaderState {
             name: "content-type".to_string().into(),
             value: "application/json".to_string().into(),
+            row_color: "".to_string().into(),
+            row_fg_color: "".to_string().into(),
         },
     ]
 }
@@ -563,6 +571,8 @@ impl From<&Header> for HeaderState {
         HeaderState {
             name: header.name.clone().into(),
             value: header.value.clone().into(),
+            row_color: "".to_string().into(),
+            row_fg_color: "".to_string().into(),
         }
     }
 }

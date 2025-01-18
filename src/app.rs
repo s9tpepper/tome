@@ -15,7 +15,7 @@ use crate::{
         app_section::{AppSection, AppSectionState},
         confirm_action_window::ConfirmActionWindow,
         dashboard::DashboardComponent,
-        edit_header_selector::{EditHeaderSelector, EditHeaderSelectorState},
+        edit_header_selector::EditHeaderSelector,
         edit_header_window::EditHeaderWindow,
         edit_input::EditInput,
         floating_windows::{
@@ -196,13 +196,6 @@ impl App {
             AppSectionState::new,
         )?;
 
-        builder.register_prototype(
-            "edit_header_selector",
-            template("templates/edit_header_selector"),
-            || EditHeaderSelector,
-            EditHeaderSelectorState::new,
-        )?;
-
         builder.register_prototype("row", template("templates/row"), || Row, RowState::new)?;
 
         Ok(())
@@ -355,6 +348,7 @@ impl App {
         AddProjectVariable::register(&self.component_ids, builder)?;
         ProjectVariables::register(&self.component_ids, builder)?;
         FileSelector::register("postman_file_selector", &self.component_ids, builder)?;
+        EditHeaderSelector::register(&self.component_ids, builder)?;
 
         TextArea::register(
             &self.component_ids,
