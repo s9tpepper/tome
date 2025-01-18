@@ -13,26 +13,32 @@ jobs:
           - os-name: FreeBSD-x86_64
             runs-on: ubuntu-20.04
             target: x86_64-unknown-freebsd
+            command: build
             skip_tests: true
 
           - os-name: Linux-x86_64
             runs-on: ubuntu-20.04
+            command: build
             target: x86_64-unknown-linux-musl
 
           - os-name: Linux-aarch64
             runs-on: ubuntu-20.04
+            command: build
             target: aarch64-unknown-linux-musl
 
           - os-name: Linux-riscv64
             runs-on: ubuntu-20.04
+            command: build
             target: riscv64gc-unknown-linux-gnu
 
           - os-name: Windows-x86_64
             runs-on: windows-latest
+            command: build
             target: x86_64-pc-windows-msvc
 
           - os-name: macOS-x86_64
             runs-on: macOS-latest
+            command: build
             target: x86_64-apple-darwin
 
           # more targets here ...
