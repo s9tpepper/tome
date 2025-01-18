@@ -267,11 +267,8 @@ impl EditHeaderSelector {
         }
     }
 
-    fn add_header(
-        &self,
-        state: &mut EditHeaderSelectorState,
-        mut context: Context<'_, EditHeaderSelectorState>,
-    ) {
+    fn add_header(&self, mut context: Context<'_, EditHeaderSelectorState>) {
+        context.publish("edit_header_selector__add", |state| &state.cursor);
     }
 }
 
@@ -287,6 +284,11 @@ impl DashboardMessageHandler for EditHeaderSelector {
         let event: String = ident.into();
 
         match event.as_str() {
+            "edit_header_selector__add" => {
+                state.floating_window.set(FloatingWindow::AddHeader);
+                context.set_focus("id", "add_header_window");
+            }
+
             "edit_header_selector__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
                 context.set_focus("id", "app");
@@ -375,7 +377,7 @@ impl Component for EditHeaderSelector {
                 'k' => self.move_cursor_up(state),
                 'd' => self.delete_header(state, context),
                 'e' => self.edit_header(state, context),
-                'a' => self.add_header(state, context),
+                'a' => self.add_header(context),
                 _ => {}
             },
 
