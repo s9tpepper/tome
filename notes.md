@@ -4,7 +4,7 @@
 
 ### Release Checklist
 [ ] Flesh out the README.md
-[ ] Add GitHub Action(s) for producing binaries and release
+[x] Add GitHub Action(s) for producing binaries and release
 [ ] Screenshots for the README
 [ ] Do a pass through the keybindings, make sure they make sense
 [x] Squash bugs for MVP
