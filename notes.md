@@ -3,10 +3,10 @@
 ## TODO
 
 ### Release Checklist
-[ ] Flesh out the README.md
+[x] Flesh out the README.md
 [x] Add GitHub Action(s) for producing binaries and release
-[ ] Screenshots for the README
-[ ] Do a pass through the keybindings, make sure they make sense
+[x] Screenshots for the README
+[x] Do a pass through the keybindings, make sure they make sense
 [x] Squash bugs for MVP
 [x] Test on other terminals? (Ghostty, Kitty, Alacritty, iTerm, gnome terminal, konsole, terminator, xterm, gtk terminal)
 [x] Update the application name

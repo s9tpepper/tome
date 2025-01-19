@@ -49,3 +49,4 @@ Tome will generate basic code for TS/JS/Rust, but this feature is currently in p
 - [ ] NeoVim plugin
 - [ ] Endpoint dependencies and response chaining to request bodies
 - [ ] Automated project test runs
+- [ ] Mouse support
