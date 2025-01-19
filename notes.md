@@ -62,7 +62,7 @@
 
 
 ### Options
-[ ] (MVP?) Set up GitHub integration in the options?
+[ ] (POST-LAUNCH) Set up GitHub integration in the options?
 [N] Allow keybinding customizations?? (not really sure about this one)
 [x] Themes for UI colors
 
