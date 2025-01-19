@@ -94,11 +94,6 @@ pub static TEMPLATE_MAP: LazyLock<HashMap<&str, &str>> =
         );
 
         theme_map.insert(
-            "templates/edit_header_window",
-            include_str!("components/templates/edit_header_window.aml"),
-        );
-
-        theme_map.insert(
             "templates/app_layout",
             include_str!("components/templates/app_layout.aml"),
         );
