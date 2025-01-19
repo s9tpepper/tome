@@ -22,7 +22,7 @@ Download the correct binary for your architecture from the Releases section.
 - Pretty print responses that have been minified.
 
 ## Upcoming Features
-[ ] OpenAPI import support
-[ ] NeoVim plugin
-[ ] Endpoint dependencies and response chaining to request bodies
-[ ] Automated project test runs
+- [ ] OpenAPI import support
+- [ ] NeoVim plugin
+- [ ] Endpoint dependencies and response chaining to request bodies
+- [ ] Automated project test runs
