@@ -2,7 +2,7 @@ use anathema::{
     component::{ComponentId, KeyCode, KeyEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{AnyState, CommonVal, List, Value},
+    state::{CommonVal, List, Value},
     widgets::Elements,
 };
 use std::ops::Deref;
@@ -35,7 +35,6 @@ use super::{
     add_header_window::AddHeaderWindow,
     app_layout::AppLayoutMessages,
     edit_header_selector::{EditHeaderSelector, EditHeaderSelectorMessages},
-    edit_header_window::EditHeaderWindow,
     floating_windows::{
         code_gen::CodeGen,
         commands::Commands,
@@ -111,9 +110,6 @@ pub struct DashboardState {
     pub edit_header_name: Value<String>,
     pub edit_header_value: Value<String>,
 
-    #[state_ignore]
-    pub header_being_edited: Value<HeaderState>,
-
     pub project: Value<Project>,
     // pub project_count: Value<u8>,
     pub endpoint_count: Value<u8>,
@@ -184,7 +180,6 @@ impl DashboardState {
                 label: "(P)rojects".to_string().into(),
             }]),
             response_headers: List::from_iter(vec![]),
-            header_being_edited: HeaderState::default().into(),
             filter_indexes: List::empty(),
             filter_total: 0.into(),
             filter_nav_index: 0.into(),
@@ -623,10 +618,6 @@ impl DashboardComponent {
         );
     }
 
-    fn delete_header(&self, index: usize, header: &Value<HeaderState>, state: &mut DashboardState) {
-        state.endpoint.to_mut().headers.remove(index);
-    }
-
     fn confirm_action(
         &self,
         confirm_action: ConfirmAction,
@@ -1046,17 +1037,6 @@ impl anathema::component::Component for DashboardComponent {
 
                 "add_header" => {
                     AddHeaderWindow::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "edit_header" => {
-                    EditHeaderWindow::handle_message(
                         value,
                         ident,
                         state,

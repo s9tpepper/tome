@@ -16,7 +16,6 @@ use crate::{
         confirm_action_window::ConfirmActionWindow,
         dashboard::DashboardComponent,
         edit_header_selector::EditHeaderSelector,
-        edit_header_window::EditHeaderWindow,
         edit_input::EditInput,
         floating_windows::{
             add_project_variable::AddProjectVariable,
@@ -338,7 +337,6 @@ impl App {
             "code_sample_renderer".to_string(),
         )?;
         AppLayoutComponent::register(&self.component_ids, builder)?;
-        EditHeaderWindow::register(&self.component_ids, builder)?;
         ProjectWindow::register(&self.component_ids, builder)?;
         EndpointsSelector::register(&self.component_ids, builder)?;
 

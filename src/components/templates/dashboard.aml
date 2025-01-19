@@ -141,24 +141,11 @@ zstack [background: app_theme.background]
 
   if floating_window == "EditHeaderSelector"
     @edit_header_selector (
-      edit_header_selector__selection -> edit_header_selector__selection,
       edit_header_selector__cancel -> edit_header_selector__cancel,
       edit_header_selector__delete -> edit_header_selector__delete,
       edit_header_selector__add -> edit_header_selector__add,
       edit_header_selector__edit -> edit_header_selector__edit
     ) [id: "edit_header_selector", headers: request_headers]
-
-  if floating_window == "EditHeader"
-    @edit_header_window (
-      edit_header__submit->edit_header__submit,
-      edit_header__cancel->edit_header__cancel,
-      edit_header__name_update->edit_header__name_update,
-      edit_header__value_update->edit_header__value_update
-    ) [
-      id: "edit_header_window",
-      name: edit_header_name,
-      value: edit_header_value
-    ]
 
   if floating_window == "Project"
     @project_selector (

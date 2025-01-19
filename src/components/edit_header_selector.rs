@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
-    projects::{Header, HeaderState, PersistedEndpoint},
+    projects::{Header, HeaderState},
     templates::template,
     theme::{get_app_theme, AppTheme},
 };
@@ -335,22 +335,6 @@ impl DashboardMessageHandler for EditHeaderSelector {
                 context.set_focus("id", "app");
             }
 
-            "edit_header_selector__selection" => {
-                state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
-
-                let value = &*value.to_common_str();
-                let header = serde_json::from_str::<Header>(value);
-
-                // TODO: update DashboardState with the selection, needs a field
-                // match header {
-                //     Ok(header) => {
-                //         state.endpoint.set((&header).into());
-                //     }
-                //     Err(_) => todo!(),
-                // }
-            }
-
             "edit_header_selector__delete" => {
                 state.floating_window.set(FloatingWindow::ConfirmAction);
                 context.set_focus("id", "confirm_action_window");
@@ -428,26 +412,6 @@ impl Component for EditHeaderSelector {
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
                 context.publish("edit_header_selector__cancel", |state| &state.cursor)
-            }
-
-            anathema::component::KeyCode::Enter => {
-                let selected_index = *state.cursor.to_ref() as usize;
-                let endpoint = self.items_list.get(selected_index);
-
-                match endpoint {
-                    Some(endpoint) => match serde_json::to_string(endpoint) {
-                        Ok(endpoint_json) => {
-                            state.selected_item.set(endpoint_json);
-                            context.publish("edit_header_selector__selection", |state| {
-                                &state.selected_item
-                            });
-                        }
-                        Err(_) => {
-                            context.publish("edit_header_selector__cancel", |state| &state.cursor)
-                        }
-                    },
-                    None => context.publish("edit_header_selector__cancel", |state| &state.cursor),
-                }
             }
 
             _ => {}
