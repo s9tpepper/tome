@@ -1322,9 +1322,43 @@ impl anathema::component::Component for DashboardComponent {
         &mut self,
         state: &mut Self::State,
         _: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut context: Context<'_, Self::State>,
     ) {
         update_theme(state);
+
+        match *state.main_display.to_ref() {
+            DashboardDisplay::RequestBody => context.set_focus("id", "request"),
+
+            DashboardDisplay::RequestHeadersEditor => {
+                context.set_focus("id", "request_headers_editor")
+            }
+            DashboardDisplay::ResponseBody => context.set_focus("id", "response_renderer"),
+            DashboardDisplay::ResponseHeaders => context.set_focus("id", "response_headers"),
+        }
+
+        match *state.floating_window.to_ref() {
+            FloatingWindow::None => {}
+            FloatingWindow::Method => {
+                context.set_focus("id", "method_selector");
+            }
+            FloatingWindow::AddHeader => context.set_focus("id", "add_header_window"),
+            FloatingWindow::Error => {}
+            FloatingWindow::Message => {}
+            FloatingWindow::EditHeaderSelector => context.set_focus("id", "edit_header_selector"),
+            FloatingWindow::Project => context.set_focus("id", "project_selector"),
+            FloatingWindow::ConfirmAction => context.set_focus("id", "confirm_action_window"),
+            FloatingWindow::ChangeEndpointName => context.set_focus("id", "edit_endpoint_name"),
+            FloatingWindow::ChangeProjectName => context.set_focus("id", "edit_project_name"),
+            FloatingWindow::EndpointsSelector => {
+                context.set_focus("id", "endpoints_selector_window")
+            }
+            FloatingWindow::Commands => context.set_focus("id", "commands_window"),
+            FloatingWindow::CodeGen => context.set_focus("id", "codegen_window"),
+            FloatingWindow::PostmanFileSelector => context.set_focus("id", "postman_file_selector"),
+            FloatingWindow::BodyModeSelector => context.set_focus("id", "body_mode_selector"),
+            FloatingWindow::AddProjectVariable => context.set_focus("id", "add_project_variable"),
+            FloatingWindow::ViewProjectVariables => context.set_focus("id", "project_variables"),
+        }
 
         if self.test {
             return;

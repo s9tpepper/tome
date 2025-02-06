@@ -7,3 +7,4 @@
     - input border grays out when not focused
     - added mouse support to submit/cancel buttons
 - fix: added hints for scrolling response up/down
+- fix: refocus app applies focus to correct UI component
