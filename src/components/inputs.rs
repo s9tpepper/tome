@@ -5,6 +5,8 @@ use anathema::{
     widgets::Elements,
 };
 
+use crate::theme::get_app_theme;
+
 #[derive(Default)]
 pub struct TextInput;
 
@@ -21,10 +23,22 @@ pub struct InputState {
     pub cursor_selected_bg: Value<String>,
     pub cursor_unselected_fg: Value<String>,
     pub cursor_unselected_bg: Value<String>,
+
+    pub border_color: Value<String>,
+
+    #[state_ignore]
+    border_color_focused: String,
+    #[state_ignore]
+    border_color_unfocused: String,
 }
 
 impl InputState {
     pub fn new(fg_color: &str, bg_color: &str) -> Self {
+        let app_theme = get_app_theme();
+
+        let border_unfocused = app_theme.border_unfocused.to_ref().to_string();
+        let border_focused = app_theme.border_focused.to_ref().to_string();
+
         InputState {
             input: String::from("").into(),
             cursor_prefix: String::from("").into(),
@@ -37,6 +51,10 @@ impl InputState {
             cursor_unselected_fg: String::from(fg_color).into(),
             cursor_unselected_bg: String::from("").into(),
             focused: false.into(),
+
+            border_color: border_unfocused.clone().into(),
+            border_color_focused: border_focused,
+            border_color_unfocused: border_unfocused,
         }
     }
 }
@@ -127,6 +145,8 @@ pub trait InputReceiver {
             .set(state.cursor_selected_bg.to_ref().to_string());
         state.focused.set(true);
 
+        state.border_color.set(state.border_color_focused.clone());
+
         context.publish("textarea_focus", |state| &state.focused);
     }
 
@@ -144,6 +164,8 @@ pub trait InputReceiver {
             .bg_color
             .set(state.cursor_unselected_bg.to_ref().to_string());
         state.focused.set(false);
+
+        state.border_color.set(state.border_color_unfocused.clone());
 
         context.publish("textarea_focus", |state| &state.focused);
 

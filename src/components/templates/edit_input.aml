@@ -1,6 +1,6 @@
 container [height: 1]
   zstack
-    border [width: 58, height: 3, border_style: "╭─╮│╯─╰│"]
+    border [foreground: border_color, width: 58, height: 3, border_style: "╭─╮│╯─╰│"]
       zstack
         text input
         text cursor_prefix

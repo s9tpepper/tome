@@ -173,7 +173,7 @@ zstack [background: app_theme.background]
       edit_project_name__cancel -> edit_project_name__cancel,
       edit_project_name__submit -> edit_project_name__submit,
       edit_project_name__specific_project_rename -> edit_project_name__specific_project_rename
-    ) [id: "edit_project_name", border_color: "#ffffff"]
+    ) [id: "edit_project_name"]
 
   if floating_window == "EndpointsSelector"
     @endpoints_selector_window (

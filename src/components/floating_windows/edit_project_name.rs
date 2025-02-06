@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId},
+    component::{Component, ComponentId, MouseEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, State, Value},
@@ -127,6 +127,59 @@ impl Component for EditProjectName {
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
+
+        state
+            .cancel_button_color
+            .set(state.success_color_focused.clone());
+
+        state
+            .success_button_color
+            .set(state.cancel_color_focused.clone());
+    }
+
+    fn on_blur(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state
+            .cancel_button_color
+            .set(state.button_color_unfocused.clone());
+
+        state
+            .success_button_color
+            .set(state.button_color_unfocused.clone());
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        let mut context_ref = RefCell::new(context);
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "submit_button")
+            .first(|_, _| {
+                // TODO: Remove this state.active after Anathema update
+                if state.active && mouse.lsb_up() {
+                    self.submit(state, &mut context_ref);
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "cancel_button")
+            .first(|_, _| {
+                // TODO: Remove this state.active after Anathema update
+                if state.active && mouse.lsb_up() {
+                    self.cancel(state, &mut context_ref);
+                }
+            });
     }
 
     fn message(
@@ -155,6 +208,7 @@ impl Component for EditProjectName {
                     self.set_name_input(&input_value, context);
 
                     state.name.set(input_value);
+                    state.active = true;
                 }
 
                 EditProjectNameMessages::Specifically(persisted_project) => {
@@ -164,6 +218,7 @@ impl Component for EditProjectName {
                     self.set_name_input(input_value, context);
 
                     self.persisted_project = Some(persisted_project);
+                    state.active = true;
                 }
             }
         }
@@ -194,16 +249,9 @@ impl Component for EditProjectName {
     ) {
         match key.code {
             anathema::component::KeyCode::Char(char) => match char {
-                'p' => context.set_focus("id", "project_name_input"),
-                's' => match &self.persisted_project {
-                    Some(persisted_project) => {
-                        self.rename_specific_project(persisted_project, state, context);
-                    }
-                    None => {
-                        context.publish("edit_project_name__submit", |state| &state.name);
-                    }
-                },
-                'c' => context.publish("edit_project_name__cancel", |state| &state.name),
+                'p' | 'P' => context.set_focus("id", "project_name_input"),
+                's' | 'S' => self.submit(state, &mut context.into()),
+                'c' | 'C' => self.cancel(state, &mut context.into()),
 
                 _ => {}
             },
@@ -223,6 +271,10 @@ impl EditProjectName {
     ) -> anyhow::Result<()> {
         let app_theme = get_app_theme();
 
+        let submit_bg = app_theme.overlay_submit_background.to_ref().to_string();
+        let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
+        let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
+
         let id = builder.register_component(
             "edit_project_name",
             template("floating_windows/templates/edit_project_name"),
@@ -231,9 +283,16 @@ impl EditProjectName {
                 persisted_project: None,
             },
             EditProjectNameState {
-                app_theme: app_theme.into(),
                 name: String::from("").into(),
                 specific_name_change: None.into(),
+                success_color_focused: submit_bg,
+                cancel_color_focused: cancel_bg,
+                button_color_unfocused: unfocused_bg.clone(),
+                success_button_color: unfocused_bg.clone().into(),
+                cancel_button_color: unfocused_bg.into(),
+
+                app_theme: app_theme.into(),
+                active: false,
             },
         )?;
 
@@ -265,8 +324,10 @@ impl EditProjectName {
         &self,
         project: &PersistedProject,
         state: &mut EditProjectNameState,
-        mut context: Context<'_, EditProjectNameState>,
+        context_ref: &mut RefCell<Context<'_, EditProjectNameState>>,
     ) {
+        let mut context = context_ref.borrow_mut();
+
         let specific_name_update = SpecificNameUpdate {
             old_name: project.name.to_string(),
             new_name: state.name.to_ref().to_string(),
@@ -317,6 +378,38 @@ impl EditProjectName {
             }
         }
     }
+
+    fn submit(
+        &self,
+        state: &mut EditProjectNameState,
+        context: &mut RefCell<Context<'_, EditProjectNameState>>,
+    ) {
+        match &self.persisted_project {
+            Some(persisted_project) => {
+                self.rename_specific_project(persisted_project, state, context);
+            }
+
+            None => {
+                context
+                    .borrow_mut()
+                    .publish("edit_project_name__submit", |state| &state.name);
+            }
+        }
+
+        state.active = false;
+    }
+
+    fn cancel(
+        &self,
+        state: &mut EditProjectNameState,
+        context: &mut RefCell<Context<'_, EditProjectNameState>>,
+    ) {
+        context
+            .borrow_mut()
+            .publish("edit_project_name__cancel", |state| &state.name);
+
+        state.active = false;
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -329,8 +422,24 @@ pub struct SpecificNameUpdate {
 pub struct EditProjectNameState {
     app_theme: Value<AppTheme>,
     name: Value<String>,
+    success_button_color: Value<String>,
+    cancel_button_color: Value<String>,
 
     specific_name_change: Value<Option<SpecificNameChange>>,
+
+    #[state_ignore]
+    success_color_focused: String,
+
+    #[state_ignore]
+    cancel_color_focused: String,
+
+    #[state_ignore]
+    button_color_unfocused: String,
+
+    // TODO: Remove this active flag when Anathema gets updated to next version, the
+    // component will no longer be a part of the tree when it gets conditionally rendered
+    #[state_ignore]
+    active: bool,
 }
 
 pub struct SpecificNameChange {

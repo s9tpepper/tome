@@ -87,12 +87,14 @@ impl App {
         let tui = TuiBackend::builder()
             .enable_alt_screen()
             .enable_raw_mode()
+            .enable_mouse()
             .hide_cursor()
             .finish();
 
         #[cfg(feature = "runtime_templates")]
         let tui = TuiBackend::builder()
             .enable_raw_mode()
+            .enable_mouse()
             .hide_cursor()
             .finish();
 
