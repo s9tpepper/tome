@@ -811,6 +811,19 @@ impl DashboardComponent {
             _ => {}
         }
     }
+
+    fn add_test_url(&mut self, context: Context<'_, DashboardState>) {
+        if let Ok(ids) = self.component_ids.try_borrow() {
+            let _ = send_message(
+                "url_text_input",
+                "https://jsonplaceholder.typicode.com/todos".to_string(),
+                &ids,
+                context.emitter,
+            );
+
+            self.test = true;
+        }
+    }
 }
 
 pub trait DashboardMessageHandler {
@@ -1317,17 +1330,8 @@ impl anathema::component::Component for DashboardComponent {
             return;
         }
 
-        // TODO: REMOVE THIS - ONLY FOR TESTING
-        if let Ok(ids) = self.component_ids.try_borrow() {
-            let _ = send_message(
-                "url_text_input",
-                "https://jsonplaceholder.typicode.com/todos".to_string(),
-                &ids,
-                context.emitter,
-            );
-
-            self.test = true;
-        }
+        #[cfg(feature = "runtime_templates")]
+        self.add_test_url(context);
     }
 
     fn accept_focus(&self) -> bool {
