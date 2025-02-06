@@ -51,6 +51,11 @@ jobs:
             command: build
             target: x86_64-apple-darwin
 
+          - os-name: macOS-aarch64-apple-darwin
+            runs-on: macOS-latest
+            command: build
+            target: aarch64-apple-darwin
+
           # more targets here ...
 
     runs-on: ${{ matrix.platform.runs-on }}
