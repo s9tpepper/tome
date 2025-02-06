@@ -14,10 +14,10 @@ zstack
             for span in line.spans
               span [foreground: span.foreground, background: span.background, bold: span.bold] span.text
 
-
   vstack
     expand
       hstack
+        text "╭─ Response: Scroll (Ctrl D / U)"
         spacer
         text "(F)ilter:["
         @response_filter_input (
