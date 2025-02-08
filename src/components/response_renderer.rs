@@ -344,7 +344,6 @@ impl ResponseRenderer {
         // });
 
         state.viewable_response.set(viewable_response);
-        info!("hello");
     }
 
     fn update_size(
@@ -505,11 +504,14 @@ impl ResponseRenderer {
         elements: Elements<'_, '_>,
         context: Context<'_, ResponseRendererState>,
     ) {
-        // Go to the first search match
-        let default_index = 0;
-        let first_index = self.text_filter.indexes.first().unwrap_or(&default_index);
-        let scroll_index = self.get_index_page(*first_index);
-        self.scroll_to_line(state, elements, context, scroll_index);
+        // NOTE: Go to the first search match if user is still typing in search filter
+        // don't do this if user is scrolling with Ctrl D/U or N/P
+        if state.filter_input_focused {
+            let default_index = 0;
+            let first_index = self.text_filter.indexes.first().unwrap_or(&default_index);
+
+            self.scroll_to_line(state, elements, context, *first_index);
+        }
 
         self.apply_filter_highlights(state);
     }
@@ -617,6 +619,9 @@ pub struct ResponseRendererState {
     pub filter_indexes: Value<List<usize>>,
     pub filter_total: Value<usize>,
     pub filter_nav_index: Value<usize>,
+
+    #[state_ignore]
+    pub filter_input_focused: bool,
 }
 
 impl ResponseRendererState {
@@ -624,6 +629,8 @@ impl ResponseRendererState {
         let app_theme = get_app_theme();
 
         ResponseRendererState {
+            filter_input_focused: false,
+
             viewable_response: "".to_string().into(),
             scroll_position: 0.into(),
             doc_height: 1.into(),
@@ -681,12 +688,14 @@ impl Component for ResponseRenderer {
 
     fn on_focus(
         &mut self,
-        _: &mut Self::State,
+        state: &mut Self::State,
         mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
         self.update_size(context, &mut elements);
         info!("response_renderer has focus");
+
+        state.filter_input_focused = false;
     }
 
     fn on_blur(&mut self, _: &mut Self::State, _: Elements<'_, '_>, _: Context<'_, Self::State>) {
@@ -732,6 +741,7 @@ impl Component for ResponseRenderer {
                 false => match char {
                     'f' => {
                         context.set_focus("id", "response_body_input");
+                        state.filter_input_focused = true;
                         info!("Set focus to response_body_input");
 
                         if !state.filter.to_ref().is_empty() {
@@ -892,7 +902,7 @@ fn highlight_matches(
                             s.foreground.set(Hex::from((0, 0, 0)));
                         }
                     }
-                })
+                });
             };
         };
     });
