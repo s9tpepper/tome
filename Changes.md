@@ -8,3 +8,4 @@
     - added mouse support to submit/cancel buttons
 - fix: added hints for scrolling response up/down
 - fix: refocus app applies focus to correct UI component
+- fix: scrolling through filter matches works again
