@@ -19,13 +19,17 @@ zstack
       hstack
         text "╭─ Response: Scroll (Ctrl D / U)"
         spacer
-        text "(F)ilter:["
-        @response_filter_input (
-          text_change -> response_filter__input_update,
-          escape -> response_filter__input_escape
-        ) [id: "response_body_input"]
-        text "]:"
-        text filter_total
+        vstack
+          hstack
+            text "(F)ilter:["
+            @response_filter_input (
+              text_change -> response_filter__input_update,
+              escape -> response_filter__input_escape
+            ) [id: "response_body_input"]
+            text "]:"
+            text filter_total
+          if has_search_matches == true
+            text " ╰>Ctrl (N)/(P) Matches"
         container [width: 2]
     spacer
     hstack

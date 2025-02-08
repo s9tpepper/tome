@@ -482,19 +482,13 @@ impl ResponseRenderer {
 
             self.do_filter(state, elements, context);
         } else {
-            clear_highlights(state);
-        }
-    }
-
-    fn get_index_page(&self, index: usize) -> usize {
-        match self.size {
-            Some(size) => {
-                let page_size = size.height;
-                let page = (index as f32 / page_size as f32).ceil() as usize;
-
-                page.saturating_sub(1)
+            if self.text_filter.total > 0 {
+                self.text_filter.total = 0;
+                self.text_filter.indexes.clear();
+                self.text_filter.search_navigation_cursor = 0;
             }
-            None => self.response_offset,
+
+            clear_highlights(state);
         }
     }
 
@@ -619,6 +613,7 @@ pub struct ResponseRendererState {
     pub filter_indexes: Value<List<usize>>,
     pub filter_total: Value<usize>,
     pub filter_nav_index: Value<usize>,
+    pub has_search_matches: Value<bool>,
 
     #[state_ignore]
     pub filter_input_focused: bool,
@@ -630,6 +625,7 @@ impl ResponseRendererState {
 
         ResponseRendererState {
             filter_input_focused: false,
+            has_search_matches: false.into(),
 
             viewable_response: "".to_string().into(),
             scroll_position: 0.into(),
@@ -675,6 +671,13 @@ impl Component for ResponseRenderer {
                 info!("response_filter__input_update");
                 state.filter.set(value.to_string());
                 self.apply_response_filter(value.to_string(), state, context, elements);
+
+                info!("self.text_filter.total: {}", self.text_filter.total);
+                if self.text_filter.total > 0 {
+                    state.has_search_matches.set(true);
+                } else {
+                    state.has_search_matches.set(false);
+                }
             }
 
             "response_filter__input_escape" => {
