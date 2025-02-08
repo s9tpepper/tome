@@ -9,3 +9,4 @@
 - fix: added hints for scrolling response up/down
 - fix: refocus app applies focus to correct UI component
 - fix: scrolling through filter matches works again
+- fix: scrolling next/previous thru filter matches now loops to first/last match

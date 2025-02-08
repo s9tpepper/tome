@@ -9,8 +9,7 @@ use std::{
 
 use anathema::{
     component::{Component, ComponentId},
-    default_widgets::Overflow,
-    geometry::{Pos, Size},
+    geometry::Size,
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{Hex, List, State, Value},
@@ -373,6 +372,52 @@ impl ResponseRenderer {
         });
     }
 
+    fn next_filter_match(
+        &mut self,
+        state: &mut ResponseRendererState,
+        elements: Elements<'_, '_>,
+        context: Context<'_, ResponseRendererState>,
+    ) {
+        let current_index = self.text_filter.search_navigation_cursor;
+        let last_index = self.text_filter.indexes.len().saturating_sub(1);
+
+        self.text_filter.search_navigation_cursor = if current_index == last_index {
+            0
+        } else {
+            current_index + 1
+        };
+
+        let line = self
+            .text_filter
+            .indexes
+            .get(self.text_filter.search_navigation_cursor);
+
+        let line = line.unwrap_or(&0);
+
+        self.scroll_to_line(state, elements, context, *line);
+    }
+
+    fn previous_filter_match(
+        &mut self,
+        state: &mut ResponseRendererState,
+        elements: Elements<'_, '_>,
+        context: Context<'_, ResponseRendererState>,
+    ) {
+        let current_index = self.text_filter.search_navigation_cursor;
+        self.text_filter.search_navigation_cursor = if current_index > 0 {
+            current_index.saturating_sub(1)
+        } else {
+            self.text_filter.indexes.len().saturating_sub(1)
+        };
+
+        let line = self
+            .text_filter
+            .indexes
+            .get(self.text_filter.search_navigation_cursor)
+            .unwrap_or(&0);
+        self.scroll_to_line(state, elements, context, *line);
+    }
+
     fn scroll(
         &mut self,
         state: &mut ResponseRendererState,
@@ -675,64 +720,29 @@ impl Component for ResponseRenderer {
                 info!("Set focus back to app");
             }
 
-            anathema::component::KeyCode::Char(char) => {
-                match event.ctrl {
-                    true => {
-                        match char {
-                            'd' => self.scroll(state, elements, context, ScrollDirection::Down),
-                            'u' => self.scroll(state, elements, context, ScrollDirection::Up),
+            anathema::component::KeyCode::Char(char) => match event.ctrl {
+                true => match char {
+                    'd' => self.scroll(state, elements, context, ScrollDirection::Down),
+                    'u' => self.scroll(state, elements, context, ScrollDirection::Up),
+                    'p' => self.previous_filter_match(state, elements, context),
+                    'n' => self.next_filter_match(state, elements, context),
+                    _ => {}
+                },
 
-                            'p' => {
-                                // move to previous find
-                                let current_index = self.text_filter.search_navigation_cursor;
-                                let line = if current_index == 0 {
-                                    self.text_filter.indexes.len().saturating_sub(1)
-                                } else {
-                                    current_index.saturating_sub(1)
-                                };
+                false => match char {
+                    'f' => {
+                        context.set_focus("id", "response_body_input");
+                        info!("Set focus to response_body_input");
 
-                                self.text_filter.search_navigation_cursor =
-                                    current_index.saturating_sub(1);
-
-                                let line = self.text_filter.indexes.get(line).unwrap_or(&0);
-                                self.scroll_to_line(state, elements, context, *line);
-                            }
-
-                            'n' => {
-                                // move to next find
-                                let current_index = self.text_filter.search_navigation_cursor;
-                                let last_index = self.text_filter.indexes.len().saturating_sub(1);
-                                let line = if current_index == last_index {
-                                    self.text_filter.indexes.first()
-                                } else {
-                                    self.text_filter.indexes.get(current_index + 1)
-                                };
-
-                                let line = line.unwrap_or(&0);
-
-                                self.text_filter.search_navigation_cursor = current_index + 1;
-
-                                self.scroll_to_line(state, elements, context, *line);
-                            }
-                            _ => {}
+                        if !state.filter.to_ref().is_empty() {
+                            let filter = state.filter.to_ref().to_string();
+                            self.apply_response_filter(filter, state, context, elements);
                         }
                     }
 
-                    false => match char {
-                        'f' => {
-                            context.set_focus("id", "response_body_input");
-                            info!("Set focus to response_body_input");
-
-                            if !state.filter.to_ref().is_empty() {
-                                let filter = state.filter.to_ref().to_string();
-                                self.apply_response_filter(filter, state, context, elements);
-                            }
-                        }
-
-                        _ => {}
-                    },
-                }
-            }
+                    _ => {}
+                },
+            },
 
             _ => {}
         }
