@@ -10,3 +10,4 @@
 - fix: refocus app applies focus to correct UI component
 - fix: scrolling through filter matches works again
 - fix: scrolling next/previous thru filter matches now loops to first/last match
+- fix: scroll by page does not panic if a search filter is applied
