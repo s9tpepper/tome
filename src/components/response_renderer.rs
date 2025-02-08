@@ -464,8 +464,12 @@ impl ResponseRenderer {
         let default_index = 0;
         let first_index = self.text_filter.indexes.first().unwrap_or(&default_index);
         let scroll_index = self.get_index_page(*first_index);
-        scroll_to_line(state, elements, context, scroll_index);
+        self.scroll_to_line(state, elements, context, scroll_index);
 
+        self.apply_filter_highlights(state);
+    }
+
+    fn apply_filter_highlights(&mut self, state: &mut ResponseRendererState) {
         if let Some(size) = self.size {
             let rows = size.height;
             let range_end = (self.response_offset + rows).saturating_sub(1);
@@ -495,6 +499,18 @@ impl ResponseRenderer {
             search_navigation_cursor: *state.filter_nav_index.to_ref(),
             filter: state.filter.to_ref().to_string(),
         }
+    }
+
+    fn scroll_to_line(
+        &mut self,
+        state: &mut ResponseRendererState,
+        mut elements: Elements<'_, '_>,
+        _context: Context<'_, ResponseRendererState>,
+        line: usize,
+    ) {
+        self.scroll_response(&mut elements, state, line);
+
+        self.apply_filter_highlights(state);
     }
 }
 
@@ -675,14 +691,15 @@ impl Component for ResponseRenderer {
                                     current_index.saturating_sub(1)
                                 };
 
-                                self.text_filter.search_navigation_cursor = line;
-                                let line = self.text_filter.indexes.get(line).unwrap_or(&0);
+                                self.text_filter.search_navigation_cursor =
+                                    current_index.saturating_sub(1);
 
-                                scroll_to_line(state, elements, context, *line);
+                                let line = self.text_filter.indexes.get(line).unwrap_or(&0);
+                                self.scroll_to_line(state, elements, context, *line);
                             }
 
                             'n' => {
-                                // move to previous find
+                                // move to next find
                                 let current_index = self.text_filter.search_navigation_cursor;
                                 let last_index = self.text_filter.indexes.len().saturating_sub(1);
                                 let line = if current_index == last_index {
@@ -693,9 +710,9 @@ impl Component for ResponseRenderer {
 
                                 let line = line.unwrap_or(&0);
 
-                                self.text_filter.search_navigation_cursor = *line;
+                                self.text_filter.search_navigation_cursor = current_index + 1;
 
-                                scroll_to_line(state, elements, context, *line);
+                                self.scroll_to_line(state, elements, context, *line);
                             }
                             _ => {}
                         }
@@ -869,32 +886,6 @@ fn highlight_matches(
             };
         };
     });
-}
-
-fn scroll_to_line(
-    state: &mut ResponseRendererState,
-    mut elements: Elements<'_, '_>,
-    _: Context<'_, ResponseRendererState>,
-    line: usize,
-) {
-    elements
-        .by_attribute("id", "container")
-        .each(|el, _attributes| {
-            let overflow = el.to::<Overflow>();
-
-            state.scroll_position.set(line);
-
-            let pos = Pos {
-                x: 0,
-                y: line as i32,
-            };
-
-            overflow.scroll_to(pos);
-
-            // NOTE: This call to scroll_up_by(0) is to paint the Overflow widget as dirty and
-            // scroll to the exact line that I want to scroll to
-            overflow.scroll_up_by(0);
-        });
 }
 
 fn get_file_reader(file_path: &str) -> anyhow::Result<BufReader<File>> {
