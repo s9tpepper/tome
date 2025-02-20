@@ -27,9 +27,9 @@ pub struct InputState {
     pub border_color: Value<String>,
 
     #[state_ignore]
-    border_color_focused: String,
+    pub border_color_focused: String,
     #[state_ignore]
-    border_color_unfocused: String,
+    pub border_color_unfocused: String,
 }
 
 impl InputState {

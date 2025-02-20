@@ -7,6 +7,7 @@ use anathema::{
     state::{CommonVal, State, Value},
     widgets::Elements,
 };
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -16,7 +17,7 @@ use crate::{
     },
     projects::{rename_project, PersistedProject},
     templates::template,
-    theme::{get_app_theme, AppTheme},
+    theme::{get_app_theme, get_app_theme_persisted, AppTheme},
 };
 
 use super::FloatingWindow;
@@ -303,8 +304,10 @@ impl EditProjectName {
     }
 
     fn update_app_theme(&self, state: &mut EditProjectNameState) {
-        let app_theme = get_app_theme();
-        state.app_theme.set(app_theme);
+        // let app_theme = get_app_theme();
+        // state.app_theme.set(app_theme);
+        info!("update_app_theme()");
+        update_theme(state);
     }
 
     fn set_name_input(&self, input_value: &str, mut context: Context<'_, EditProjectNameState>) {
@@ -481,4 +484,55 @@ impl ::anathema::state::State for SpecificNameChange {
     fn to_common(&self) -> ::core::prelude::v1::Option<::anathema::state::CommonVal<'_>> {
         Some(CommonVal::Str(&self.common))
     }
+}
+
+fn update_theme(state: &mut EditProjectNameState) {
+    let app_theme = get_app_theme_persisted();
+
+    // TODO: Figure out why this breaks the styling and messaging of the dashboard components
+    // println!("{app_theme:?}");
+    // state.app_theme.set(app_theme.into());
+    // state.app_theme.set(app_theme.into());
+
+    let mut at = state.app_theme.to_mut();
+    at.background.set(app_theme.background);
+    at.foreground.set(app_theme.foreground);
+    at.project_name_background
+        .set(app_theme.project_name_background);
+    at.project_name_foreground
+        .set(app_theme.project_name_foreground);
+    at.border_focused.set(app_theme.border_focused);
+    at.border_unfocused.set(app_theme.border_unfocused);
+    at.overlay_heading.set(app_theme.overlay_heading);
+    at.overlay_background.set(app_theme.overlay_background);
+    at.overlay_foreground.set(app_theme.overlay_foreground);
+    at.overlay_submit_background
+        .set(app_theme.overlay_submit_background);
+    at.overlay_submit_foreground
+        .set(app_theme.overlay_submit_foreground);
+
+    at.overlay_cancel_background
+        .set(app_theme.overlay_cancel_background);
+    at.overlay_cancel_foreground
+        .set(app_theme.overlay_cancel_foreground);
+    at.menu_color_1.set(app_theme.menu_color_1);
+    at.menu_color_2.set(app_theme.menu_color_2);
+    at.menu_color_3.set(app_theme.menu_color_3);
+    at.menu_color_4.set(app_theme.menu_color_4);
+    at.menu_color_5.set(app_theme.menu_color_5);
+
+    at.endpoint_name_background
+        .set(app_theme.endpoint_name_background);
+    at.endpoint_name_foreground
+        .set(app_theme.endpoint_name_foreground);
+    at.menu_opt_background.set(app_theme.menu_opt_background);
+    at.menu_opt_foreground.set(app_theme.menu_opt_foreground);
+    at.top_bar_background.set(app_theme.top_bar_background);
+    at.top_bar_foreground.set(app_theme.top_bar_foreground);
+    at.bottom_bar_background
+        .set(app_theme.bottom_bar_background);
+    at.bottom_bar_foreground
+        .set(app_theme.bottom_bar_foreground);
+
+    // *state.app_theme.to_mut() = app_theme.into();
 }

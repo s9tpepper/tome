@@ -6,8 +6,9 @@ use anathema::{
     runtime::RuntimeBuilder,
     widgets::Elements,
 };
+use log::info;
 
-use crate::theme::{get_app_theme, AppTheme};
+use crate::theme::{get_app_theme, get_app_theme_persisted, AppTheme};
 
 use super::{
     dashboard::DashboardMessages,
@@ -134,6 +135,7 @@ impl Component for EditInput {
         context: Context<'_, Self::State>,
     ) {
         self._on_focus(state, elements, context);
+        update_theme(self, state);
     }
 
     fn on_blur(
@@ -173,4 +175,126 @@ impl Component for EditInput {
     fn accept_focus(&self) -> bool {
         true
     }
+}
+
+fn update_theme(edit_input: &mut EditInput, state: &mut InputState) {
+    info!("updating theme for edit_input()");
+
+    let app_theme = get_app_theme_persisted();
+
+    // TODO: Figure out why this breaks the styling and messaging of the dashboard components
+    // println!("{app_theme:?}");
+    // state.app_theme.set(app_theme.into());
+    // state.app_theme.set(app_theme.into());
+
+    // let mut at = state.app_theme;
+    edit_input.app_theme.background.set(app_theme.background);
+    edit_input.app_theme.foreground.set(app_theme.foreground);
+    edit_input
+        .app_theme
+        .project_name_background
+        .set(app_theme.project_name_background);
+    edit_input
+        .app_theme
+        .project_name_foreground
+        .set(app_theme.project_name_foreground);
+    edit_input
+        .app_theme
+        .border_focused
+        .set(app_theme.border_focused);
+    edit_input
+        .app_theme
+        .border_unfocused
+        .set(app_theme.border_unfocused);
+    edit_input
+        .app_theme
+        .overlay_heading
+        .set(app_theme.overlay_heading);
+    edit_input
+        .app_theme
+        .overlay_background
+        .set(app_theme.overlay_background);
+    edit_input
+        .app_theme
+        .overlay_foreground
+        .set(app_theme.overlay_foreground);
+    edit_input
+        .app_theme
+        .overlay_submit_background
+        .set(app_theme.overlay_submit_background);
+    edit_input
+        .app_theme
+        .overlay_submit_foreground
+        .set(app_theme.overlay_submit_foreground);
+
+    edit_input
+        .app_theme
+        .overlay_cancel_background
+        .set(app_theme.overlay_cancel_background);
+    edit_input
+        .app_theme
+        .overlay_cancel_foreground
+        .set(app_theme.overlay_cancel_foreground);
+    edit_input
+        .app_theme
+        .menu_color_1
+        .set(app_theme.menu_color_1);
+    edit_input
+        .app_theme
+        .menu_color_2
+        .set(app_theme.menu_color_2);
+    edit_input
+        .app_theme
+        .menu_color_3
+        .set(app_theme.menu_color_3);
+    edit_input
+        .app_theme
+        .menu_color_4
+        .set(app_theme.menu_color_4);
+    edit_input
+        .app_theme
+        .menu_color_5
+        .set(app_theme.menu_color_5);
+
+    edit_input
+        .app_theme
+        .endpoint_name_background
+        .set(app_theme.endpoint_name_background);
+    edit_input
+        .app_theme
+        .endpoint_name_foreground
+        .set(app_theme.endpoint_name_foreground);
+    edit_input
+        .app_theme
+        .menu_opt_background
+        .set(app_theme.menu_opt_background);
+    edit_input
+        .app_theme
+        .menu_opt_foreground
+        .set(app_theme.menu_opt_foreground);
+    edit_input
+        .app_theme
+        .top_bar_background
+        .set(app_theme.top_bar_background);
+    edit_input
+        .app_theme
+        .top_bar_foreground
+        .set(app_theme.top_bar_foreground);
+    edit_input
+        .app_theme
+        .bottom_bar_background
+        .set(app_theme.bottom_bar_background);
+    edit_input
+        .app_theme
+        .bottom_bar_foreground
+        .set(app_theme.bottom_bar_foreground);
+
+    state.border_color_focused = edit_input.app_theme.border_focused.to_ref().to_string();
+    state.border_color_unfocused = edit_input.app_theme.border_unfocused.to_ref().to_string();
+
+    state
+        .border_color
+        .set(edit_input.app_theme.border_focused.to_ref().to_string());
+
+    // *state.app_theme.to_mut() = app_theme.into();
 }
