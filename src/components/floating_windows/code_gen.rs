@@ -13,6 +13,7 @@ use anathema::{
 };
 
 use crate::{
+    app::GlobalEventHandler,
     code_gen::{generate_rust, generate_web, WebType},
     components::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
@@ -32,7 +33,7 @@ pub struct CodeGen {
 impl CodeGen {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let mut languages = HashMap::<char, String>::new();
         languages.insert('r', String::from("rust"));

@@ -15,6 +15,7 @@ use anathema::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    app::GlobalEventHandler,
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{Header, HeaderState},
@@ -70,7 +71,7 @@ pub struct EditHeaderSelector {
 impl EditHeaderSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "edit_header_selector",

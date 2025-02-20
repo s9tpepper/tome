@@ -14,6 +14,7 @@ use anathema::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    app::GlobalEventHandler,
     projects::{Header, HeaderState},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -30,7 +31,7 @@ pub struct AddHeaderWindow {
 impl AddHeaderWindow {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let name: String = "add_header_window".to_string();
 

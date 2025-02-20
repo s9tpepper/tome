@@ -10,6 +10,7 @@ use anathema::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    app::GlobalEventHandler,
     components::{
         dashboard::{DashboardMessageHandler, DashboardMessages},
         send_message,
@@ -280,7 +281,7 @@ impl Component for EditEndpointName {
 impl EditEndpointName {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let app_theme = get_app_theme();
         let id = builder.register_component(

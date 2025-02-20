@@ -9,7 +9,7 @@ use anathema::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::templates::template;
+use crate::{app::GlobalEventHandler, templates::template};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum AppLayoutMessages {
@@ -44,7 +44,7 @@ pub struct AppLayoutComponent {
 impl AppLayoutComponent {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let app_id = builder.register_component(
             "app",

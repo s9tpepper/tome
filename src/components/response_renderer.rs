@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use syntect::highlighting::Theme;
 
 use crate::{
+    app::GlobalEventHandler,
     options::get_syntax_theme,
     templates::template,
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
@@ -58,7 +59,7 @@ pub struct ResponseRenderer {
 impl ResponseRenderer {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
         ident: String,
     ) -> anyhow::Result<()> {
         let template = if ident == "response_renderer" {

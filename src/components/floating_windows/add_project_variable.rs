@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
 use crate::{
+    app::GlobalEventHandler,
     components::{self, dashboard::DashboardMessageHandler, send_message},
     projects::{PersistedVariable, ProjectVariable},
     templates::template,
@@ -247,7 +248,7 @@ impl Component for AddProjectVariable {
 impl AddProjectVariable {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> Result<()> {
         let app_theme = get_app_theme();
 

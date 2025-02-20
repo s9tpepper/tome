@@ -13,6 +13,7 @@ use anathema::{
 };
 
 use crate::{
+    app::GlobalEventHandler,
     templates::template,
     theme::{
         get_app_theme, get_app_theme_by_name, get_app_themes_list, AppTheme, AppThemePersisted,
@@ -62,7 +63,7 @@ pub struct AppThemeSelector {
 impl AppThemeSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "app_theme_selector",

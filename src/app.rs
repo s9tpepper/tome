@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc};
 use anathema::{
     component::ComponentId,
     prelude::{Document, ToSourceKind, TuiBackend},
-    runtime::{Runtime, RuntimeBuilder},
+    runtime::{GlobalEvents, Runtime, RuntimeBuilder},
 };
 use log::{info, LevelFilter};
 use simplelog::{Config, WriteLogger};
@@ -53,6 +53,23 @@ pub fn app() -> anyhow::Result<()> {
 
 struct App {
     component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+}
+
+pub struct GlobalEventHandler;
+
+impl GlobalEvents for GlobalEventHandler {
+    fn enable_tab_navigation(&mut self) -> bool {
+        false
+    }
+
+    fn handle(
+        &mut self,
+        event: anathema::component::Event,
+        _elements: &mut anathema::widgets::Elements<'_, '_>,
+        _ctx: &mut anathema::prelude::GlobalContext<'_>,
+    ) -> Option<anathema::component::Event> {
+        Some(event)
+    }
 }
 
 impl App {
@@ -107,7 +124,10 @@ impl App {
         }
 
         let backend = tui.unwrap();
-        let mut runtime_builder = Runtime::builder(doc, backend);
+        let runtime_builder = Runtime::builder(doc, backend);
+        let global_event_handler = GlobalEventHandler {};
+        let mut runtime_builder =
+            runtime_builder.set_global_event_handler::<GlobalEventHandler>(global_event_handler);
 
         info!("Registering components...");
         self.register_components(&mut runtime_builder)?;
@@ -129,7 +149,7 @@ impl App {
 
     fn register_prototypes(
         &self,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let mut component_ids = self.component_ids.clone();
 
@@ -210,7 +230,7 @@ impl App {
 
     fn register_components(
         &mut self,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         self.register_prototypes(builder)?;
 

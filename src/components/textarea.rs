@@ -18,8 +18,10 @@ use anathema::{
     },
 };
 use arboard::Clipboard;
+use log::info;
 use serde::{Deserialize, Serialize};
 
+use crate::app::GlobalEventHandler;
 use crate::theme::{get_app_theme, AppTheme};
 
 use super::dashboard::DashboardMessages;
@@ -245,7 +247,7 @@ impl anathema::component::Component for TextArea {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        elements: anathema::widgets::Elements<'_, '_>,
+        mut elements: anathema::widgets::Elements<'_, '_>,
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match event.code {
@@ -268,8 +270,17 @@ impl anathema::component::Component for TextArea {
 
             // TODO: Ask togglebit Discord if I'm supposed to get this key event
             anathema::component::KeyCode::Tab => {
-                let char = '\u{0009}'; // Tab
-                self.add_character(char, state, context, elements, event);
+                info!("Got tab key code");
+
+                // NOTE: These escape sequences won't render
+                // let char = '\u{0009}'; // Tab
+                // let char = '\u{000b}'; // Tab
+                // let char = '\t'; // Tab
+                // self.add_character(char, state, &mut context, &mut elements, event);
+
+                // NOTE: This is a HACK, the two Tab characters above do not work
+                self.add_character(' ', state, &mut context, &mut elements, event);
+                self.add_character(' ', state, &mut context, &mut elements, event);
             }
 
             anathema::component::KeyCode::Char(char) => match event.ctrl {
@@ -281,7 +292,7 @@ impl anathema::component::Component for TextArea {
 
                 false => {
                     let emitter = context.emitter.clone();
-                    self.add_character(char, state, context, elements, event);
+                    self.add_character(char, state, &mut context, &mut elements, event);
                     self.send_to_listeners(event.code, state, emitter);
                 }
             },
@@ -296,7 +307,7 @@ impl anathema::component::Component for TextArea {
             anathema::component::KeyCode::Enter => {
                 let emitter = context.emitter.clone();
                 let char = '\u{000A}';
-                self.add_character(char, state, context, elements, event);
+                self.add_character(char, state, &mut context, &mut elements, event);
                 self.send_to_listeners(event.code, state, emitter);
             }
 
@@ -322,12 +333,14 @@ impl anathema::component::Component for TextArea {
     }
 }
 
-fn log(output: String, file: Option<&str>) {
-    let file_name = file.unwrap_or("logs.txt");
-    let file = std::fs::OpenOptions::new().append(true).open(file_name);
-    if let Ok(mut file) = file {
-        let _ = file.write(output.as_bytes());
-    }
+fn log(output: String, _file: Option<&str>) {
+    info!("{output}");
+
+    // let file_name = file.unwrap_or("logs.txt");
+    // let file = std::fs::OpenOptions::new().append(true).open(file_name);
+    // if let Ok(mut file) = file {
+    //     let _ = file.write(output.as_bytes());
+    // }
 }
 
 fn update_cursor_char(input: &mut Chars, update_index: usize) -> String {
@@ -379,7 +392,7 @@ pub enum TextAreaMessages {
 impl TextArea {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
         ident: String,
         tpl: impl ToSourceKind,
         input_for: Option<String>,
@@ -436,8 +449,8 @@ impl TextArea {
         &mut self,
         char: char,
         state: &mut TextAreaInputState,
-        mut context: Context<'_, TextAreaInputState>,
-        mut elements: anathema::widgets::Elements<'_, '_>,
+        context: &mut Context<'_, TextAreaInputState>,
+        elements: &mut anathema::widgets::Elements<'_, '_>,
         event: anathema::component::KeyEvent,
     ) {
         let mut input = state.input.to_mut();
@@ -543,7 +556,7 @@ impl TextArea {
                 log(format!("Final update_index: {update_index}\n"), None);
                 log(format!("input.len(): {}\n", input.len()), None);
                 log(format!(
-                    "Inserting at index: {update_index} character: {char}, current input length: {} \n", input.len()
+                    "Inserting at index: {update_index} character: '{char}', current input length: {} \n", input.len()
                 ), None);
                 log(
                     "----------------------------------------\n".to_string(), None

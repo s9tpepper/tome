@@ -19,6 +19,7 @@ use anathema::{
 use log::info;
 
 use crate::{
+    app::GlobalEventHandler,
     compatibility::postman::PostmanJson,
     components::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
@@ -110,7 +111,7 @@ impl FileSelector {
     pub fn register(
         ident: &str,
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             ident,

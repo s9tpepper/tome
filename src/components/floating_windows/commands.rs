@@ -13,6 +13,7 @@ use anathema::{
 };
 
 use crate::{
+    app::GlobalEventHandler,
     compatibility::postman::export_postman,
     components::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
@@ -34,7 +35,7 @@ pub struct Commands;
 impl Commands {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let app_id = builder.register_component(
             "commands_window",

@@ -8,6 +8,7 @@ use anathema::{
 };
 
 use crate::{
+    app::GlobalEventHandler,
     messages::confirm_actions::{ConfirmAction, ConfirmDetails, ConfirmationAnswer},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -37,7 +38,7 @@ impl ConfirmActionWindow {
 
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "confirm_action_window",

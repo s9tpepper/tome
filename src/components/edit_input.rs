@@ -8,7 +8,10 @@ use anathema::{
 };
 use log::info;
 
-use crate::theme::{get_app_theme, get_app_theme_persisted, AppTheme};
+use crate::{
+    app::GlobalEventHandler,
+    theme::{get_app_theme, get_app_theme_persisted, AppTheme},
+};
 
 use super::{
     dashboard::DashboardMessages,
@@ -29,7 +32,7 @@ pub struct EditInput {
 impl EditInput {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
         ident: impl Into<String>,
         template: impl ToSourceKind,
         input_for: Option<String>,

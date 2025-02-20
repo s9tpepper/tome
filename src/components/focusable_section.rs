@@ -7,7 +7,10 @@ use anathema::{
     state::{State, Value},
 };
 
-use crate::theme::{get_app_theme, AppTheme};
+use crate::{
+    app::GlobalEventHandler,
+    theme::{get_app_theme, AppTheme},
+};
 
 #[derive(Default)]
 pub struct FocusableSection {
@@ -18,7 +21,7 @@ pub struct FocusableSection {
 impl FocusableSection {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
         ident: impl Into<String>,
         template: impl ToSourceKind,
     ) -> anyhow::Result<()> {

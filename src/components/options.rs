@@ -1,4 +1,5 @@
 use crate::{
+    app::GlobalEventHandler,
     options::{save_options, Options},
     templates::template,
     theme::{get_app_theme_by_name, AppTheme},
@@ -86,7 +87,7 @@ impl OptionsView {
 
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let options = get_options();
         let id = builder.register_component(

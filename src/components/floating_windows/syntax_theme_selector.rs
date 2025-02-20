@@ -7,6 +7,7 @@ use std::{
 };
 
 use crate::{
+    app::GlobalEventHandler,
     components::response_renderer::{ResponseRendererMessages, CODE_SAMPLE},
     options::{get_syntax_theme, get_syntax_themes},
     templates::template,
@@ -88,7 +89,7 @@ pub struct SyntaxThemeSelector {
 impl SyntaxThemeSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "syntax_theme_selector",

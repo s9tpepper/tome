@@ -16,6 +16,7 @@ use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    app::GlobalEventHandler,
     fs::save_response,
     messages::confirm_actions::ConfirmAction,
     projects::{delete_endpoint, delete_project, Header, PersistedVariable},
@@ -197,7 +198,7 @@ pub struct DashboardComponent {
 impl DashboardComponent {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let theme = get_highlight_theme(None);
 

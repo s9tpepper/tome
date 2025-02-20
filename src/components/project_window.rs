@@ -14,6 +14,7 @@ use anathema::{
 };
 
 use crate::{
+    app::GlobalEventHandler,
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{get_projects, Endpoint, PersistedProject, Project},
     templates::template,
@@ -66,7 +67,7 @@ pub struct ProjectWindow {
 impl ProjectWindow {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, ()>,
+        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let id = builder.register_component(
             "project_selector",
