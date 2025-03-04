@@ -1,10 +1,11 @@
 use anathema::{
-    component::{ComponentId, KeyCode, KeyEvent},
+    component::{Component, ComponentId, KeyCode, KeyEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, List, Value},
     widgets::Elements,
 };
+use log::info;
 use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
@@ -846,9 +847,10 @@ pub enum DashboardMessages {
     ShowSucces((String, String)),
     ShowError(String),
     Confirmations(ConfirmAction),
+    BackToRequest,
 }
 
-impl anathema::component::Component for DashboardComponent {
+impl Component for DashboardComponent {
     type State = DashboardState;
     type Message = String;
 
@@ -861,6 +863,11 @@ impl anathema::component::Component for DashboardComponent {
     ) {
         if let Ok(dashboard_message) = serde_json::from_str::<DashboardMessages>(&message) {
             match dashboard_message {
+                DashboardMessages::BackToRequest => {
+                    state.main_display.set(DashboardDisplay::RequestBody);
+                    context.set_focus("id", "app");
+                }
+
                 DashboardMessages::Confirmations(confirm_action) => {
                     self.confirm_action(confirm_action, state, context);
                 }
@@ -1190,9 +1197,8 @@ impl anathema::component::Component for DashboardComponent {
                             state.main_display.set(DashboardDisplay::RequestBody);
                         }
                         DashboardDisplay::ResponseBody => {
-                            // NOTE: Maybe revert this, needs testing to check focus UX
-                            // state.main_display.set(DashboardDisplay::RequestBody);
-                            context.set_focus("id", "response_renderer");
+                            state.main_display.set(DashboardDisplay::RequestBody);
+                            context.set_focus("id", "app");
                         }
                         DashboardDisplay::ResponseHeaders => {
                             state.main_display.set(DashboardDisplay::ResponseBody)

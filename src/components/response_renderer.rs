@@ -18,6 +18,7 @@ use anathema::{
 use log::info;
 use serde::{Deserialize, Serialize};
 use syntect::highlighting::Theme;
+use ureq::json;
 
 use crate::{
     app::GlobalEventHandler,
@@ -554,6 +555,16 @@ impl ResponseRenderer {
 
         self.apply_filter_highlights(state);
     }
+
+    fn back_to_request(&self, context: Context<'_, ResponseRendererState>) {
+        if let Ok(message) = serde_json::to_string(&DashboardMessages::BackToRequest) {
+            let Ok(ids) = self.component_ids.try_borrow() else {
+                return;
+            };
+
+            let _ = send_message("dashboard", message, &ids, context.emitter);
+        }
+    }
 }
 
 #[derive(Debug, State)]
@@ -728,10 +739,7 @@ impl Component for ResponseRenderer {
     ) {
         #[allow(clippy::single_match)]
         match event.code {
-            anathema::component::KeyCode::Esc => {
-                context.set_focus("id", "app");
-                info!("Set focus back to app");
-            }
+            anathema::component::KeyCode::Esc => self.back_to_request(context),
 
             anathema::component::KeyCode::Char(char) => match event.ctrl {
                 true => match char {
@@ -743,6 +751,7 @@ impl Component for ResponseRenderer {
                 },
 
                 false => match char {
+                    'b' => self.back_to_request(context),
                     'f' => {
                         context.set_focus("id", "response_body_input");
                         state.filter_input_focused = true;
