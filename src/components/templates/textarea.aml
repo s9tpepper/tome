@@ -1,5 +1,6 @@
 overflow [id: "container"]
   zstack
     text [id: "contents", foreground: text_color] display_input
-    text cursor_prefix
-      span [foreground: background, background: foreground] cursor_char
+    if focused == true
+      text cursor_prefix
+        span [foreground: background, background: foreground] cursor_char
