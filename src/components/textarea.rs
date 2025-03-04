@@ -1,392 +1,80 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::iter::Iterator;
-use std::rc::Rc;
-use std::{io::Write, str::Chars};
+#![allow(clippy::too_many_arguments)]
 
-use anathema::component::{ComponentId, Emitter, KeyCode};
-use anathema::prelude::{ToSourceKind, TuiBackend};
-use anathema::runtime::RuntimeBuilder;
+use std::{cell::RefCell, cmp::min, collections::HashMap, rc::Rc};
+
 use anathema::{
-    default_widgets::{Overflow, Text},
-    geometry::Pos,
-    prelude::Context,
-    state::{Number, State, Value},
-    widgets::{
-        layout::text::{Line, Segment},
-        Elements,
-    },
+    component::{Component, ComponentId, Emitter, KeyCode, KeyEvent},
+    default_widgets::Overflow,
+    geometry::{Pos, Size},
+    prelude::{Context, ToSourceKind, TuiBackend},
+    runtime::RuntimeBuilder,
+    state::{State, Value},
+    widgets::{Element, Elements},
 };
 use arboard::Clipboard;
 use log::info;
+use rstest::rstest;
 use serde::{Deserialize, Serialize};
 
-use crate::app::GlobalEventHandler;
-use crate::theme::{get_app_theme, AppTheme};
+use crate::{
+    app::GlobalEventHandler,
+    theme::{AppTheme, get_app_theme},
+};
 
 use super::dashboard::DashboardMessages;
 
-#[derive(Default)]
+#[derive(State, Default)]
+pub struct TextAreaState {
+    pub foreground: Value<String>,
+    pub background: Value<String>,
+    pub display_input: Value<String>,
+    pub cursor_prefix: Value<String>,
+    pub cursor_char: Value<char>,
+    pub focused: Value<bool>,
+
+    #[state_ignore]
+    pub input: String,
+
+    #[state_ignore]
+    pub cursor_pos: CursorPosition,
+
+    #[state_ignore]
+    pub ident: String,
+}
+
+impl TextAreaState {
+    #[allow(dead_code)]
+    pub fn new(input: String, prefix: String, x: usize, y: usize, fg: &str, bg: &str) -> Self {
+        TextAreaState {
+            display_input: input.into(),
+            cursor_prefix: prefix.into(),
+            cursor_pos: CursorPosition { x, y },
+            focused: false.into(),
+            foreground: fg.to_string().into(),
+            background: bg.to_string().into(),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct CursorPosition {
+    x: usize,
+    y: usize,
+}
+
 pub struct TextArea {
     #[allow(unused)]
     pub input_for: Option<String>,
+
+    #[allow(unused)]
     pub listeners: Vec<String>,
+
+    #[allow(unused)]
     pub component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
+
     #[allow(unused)]
     pub app_theme: AppTheme,
-}
-
-#[derive(Default, anathema::state::State)]
-pub struct TextAreaInputState {
-    log_output: Value<String>,
-    input: Value<String>,
-    cursor_prefix: Value<String>,
-    cursor_char: Value<String>,
-    cursor_position: Value<Coordinates>,
-    line_count: Value<usize>,
-    text_color: Value<String>,
-    fg_color: Value<String>,
-    bg_color: Value<String>,
-    cursor_selected_fg: Value<String>,
-    cursor_selected_bg: Value<String>,
-    cursor_unselected_fg: Value<String>,
-    cursor_unselected_bg: Value<String>,
-    focused: Value<bool>,
-    width: Value<usize>,
-    height: Value<usize>,
-    scroll_position: Value<usize>,
-}
-
-#[derive(Default, anathema::state::State)]
-struct Coordinates {
-    x: Value<usize>,
-    y: Value<usize>,
-}
-
-impl Coordinates {
-    pub fn new(x_pos: usize, y_pos: usize) -> Self {
-        Coordinates {
-            x: x_pos.into(),
-            y: y_pos.into(),
-        }
-    }
-}
-
-impl TextAreaInputState {
-    pub fn new(fg_color: &str, bg_color: &str) -> Self {
-        TextAreaInputState {
-            input: String::from("").into(),
-            cursor_prefix: String::from("").into(),
-            cursor_char: String::from("").into(),
-            cursor_position: Coordinates::new(0, 0).into(),
-            line_count: 1.into(),
-            text_color: String::from(fg_color).into(),
-            fg_color: String::from(fg_color).into(),
-            bg_color: String::from("").into(),
-            cursor_selected_fg: String::from(bg_color).into(),
-            cursor_selected_bg: String::from(fg_color).into(),
-            cursor_unselected_fg: String::from(fg_color).into(),
-            cursor_unselected_bg: String::from("").into(),
-            focused: false.into(),
-            log_output: String::from("").into(),
-            width: 0.into(),
-            height: 0.into(),
-            scroll_position: 0.into(),
-        }
-    }
-}
-
-enum ScrollDirection {
-    Up,
-    Down,
-}
-
-// NOTE: keep around for future, maybe
-// fn scroll_to_line(
-//     state: &mut TextAreaInputState,
-//     mut elements: Elements<'_, '_>,
-//     _: Context<'_, TextAreaInputState>,
-//     line: usize,
-// ) {
-//     elements
-//         .by_attribute("id", "container")
-//         .each(|el, _attributes| {
-//             let overflow = el.to::<Overflow>();
-//
-//             state.scroll_position.set(line);
-//
-//             let pos = Pos {
-//                 x: 0,
-//                 y: line as i32,
-//             };
-//
-//             overflow.scroll_to(pos);
-//         });
-// }
-
-fn scroll(
-    state: &mut TextAreaInputState,
-    mut elements: Elements<'_, '_>,
-    context: Context<'_, TextAreaInputState>,
-    direction: ScrollDirection,
-) {
-    elements
-        .by_attribute("id", "container")
-        .each(|el, _attributes| {
-            let overflow = el.to::<Overflow>();
-
-            let scroll_amount = context.viewport.size().height / 2;
-            let scroll_position = *state.scroll_position.to_ref();
-            let new_scroll_position = match direction {
-                ScrollDirection::Up => scroll_position.saturating_sub(scroll_amount),
-                ScrollDirection::Down => scroll_position + scroll_amount,
-            };
-
-            state.scroll_position.set(new_scroll_position);
-
-            let pos = Pos {
-                x: 0,
-                y: new_scroll_position as i32,
-            };
-
-            overflow.scroll_to(pos);
-        });
-}
-
-impl anathema::component::Component for TextArea {
-    type State = TextAreaInputState;
-    type Message = String;
-
-    fn accept_focus(&self) -> bool {
-        true
-    }
-
-    fn message(
-        &mut self,
-        message: Self::Message,
-        state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
-    ) {
-        if let Ok(deserialized_msg) = serde_json::from_str::<TextAreaMessages>(&message) {
-            #[allow(clippy::single_match)]
-            match deserialized_msg {
-                TextAreaMessages::SetInput(value) => {
-                    state.input.set(value);
-                }
-
-                TextAreaMessages::InputChange(_) => {}
-            }
-        }
-    }
-
-    fn resize(
-        &mut self,
-        state: &mut Self::State,
-        _elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
-    ) {
-        if let Some(color) = context.get_external("color") {
-            state.text_color.set(color.to_common().unwrap().to_string());
-        };
-    }
-
-    fn tick(
-        &mut self,
-        state: &mut Self::State,
-        mut _elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
-        _dt: std::time::Duration,
-    ) {
-        if let Some(output) = context.get_external("output") {
-            state.input.set(output.to_common().unwrap().to_string());
-        };
-
-        if let Some(color) = context.get_external("color") {
-            state.text_color.set(color.to_common().unwrap().to_string());
-        };
-    }
-
-    fn on_focus(
-        &mut self,
-        state: &mut Self::State,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
-    ) {
-        state
-            .fg_color
-            .set(state.cursor_selected_fg.to_ref().to_string());
-        state
-            .bg_color
-            .set(state.cursor_selected_bg.to_ref().to_string());
-        state.focused.set(true);
-
-        context.publish("textarea_focus", |state| &state.focused);
-    }
-
-    fn on_blur(
-        &mut self,
-        state: &mut Self::State,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
-    ) {
-        state.cursor_char.set("".to_string());
-        state
-            .fg_color
-            .set(state.cursor_unselected_fg.to_ref().to_string());
-        state
-            .bg_color
-            .set(state.cursor_unselected_bg.to_ref().to_string());
-        state.focused.set(false);
-
-        context.publish("textarea_focus", |state| &state.focused);
-        context.set_focus("id", "app");
-    }
-
-    fn on_key(
-        &mut self,
-        event: anathema::component::KeyEvent,
-        state: &mut Self::State,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
-    ) {
-        match event.code {
-            // NOTE: Unused for TextInput
-            // anathema::component::KeyCode::Home => todo!(),
-            // anathema::component::KeyCode::End => todo!(),
-            // anathema::component::KeyCode::PageUp => todo!(),
-            // anathema::component::KeyCode::PageDown => todo!(),
-            // anathema::component::KeyCode::F(_) => todo!(),
-            // anathema::component::KeyCode::Null => todo!(),
-            // anathema::component::KeyCode::CapsLock => todo!(),
-            // anathema::component::KeyCode::ScrollLock => todo!(),
-            // anathema::component::KeyCode::NumLock => todo!(),
-            // anathema::component::KeyCode::PrintScreen => todo!(),
-            // anathema::component::KeyCode::Pause => todo!(),
-            // anathema::component::KeyCode::Menu => todo!(),
-            // anathema::component::KeyCode::KeypadBegin => todo!(),
-
-            // Text Input events
-
-            // TODO: Ask togglebit Discord if I'm supposed to get this key event
-            anathema::component::KeyCode::Tab => {
-                info!("Got tab key code");
-
-                // NOTE: These escape sequences won't render
-                // let char = '\u{0009}'; // Tab
-                // let char = '\u{000b}'; // Tab
-                // let char = '\t'; // Tab
-                // self.add_character(char, state, &mut context, &mut elements, event);
-
-                // NOTE: This is a HACK, the two Tab characters above do not work
-                self.add_character(' ', state, &mut context, &mut elements, event);
-                self.add_character(' ', state, &mut context, &mut elements, event);
-            }
-
-            anathema::component::KeyCode::Char(char) => match event.ctrl {
-                true => match char {
-                    'd' => scroll(state, elements, context, ScrollDirection::Down),
-                    'u' => scroll(state, elements, context, ScrollDirection::Up),
-                    _ => {}
-                },
-
-                false => {
-                    let emitter = context.emitter.clone();
-                    self.add_character(char, state, &mut context, &mut elements, event);
-                    self.send_to_listeners(event.code, state, emitter);
-                }
-            },
-            anathema::component::KeyCode::Backspace => self.backspace(state, context, elements),
-            anathema::component::KeyCode::Delete => self.delete(state, context),
-            anathema::component::KeyCode::Left => self.move_cursor_left(state, elements),
-            anathema::component::KeyCode::Right => self.move_cursor_right(state, elements),
-            anathema::component::KeyCode::Up => self.move_cursor_up(state, elements),
-            anathema::component::KeyCode::Down => self.move_cursor_down(state, elements),
-
-            // TODO: This will need to call some callback or something?
-            anathema::component::KeyCode::Enter => {
-                let emitter = context.emitter.clone();
-                let char = '\u{000A}';
-                self.add_character(char, state, &mut context, &mut elements, event);
-                self.send_to_listeners(event.code, state, emitter);
-            }
-
-            // TODO: Maybe I'll implement this later
-            anathema::component::KeyCode::Insert => todo!(),
-
-            // TODO: Ask togglebit Discord if I'm supposed to get this key event
-            anathema::component::KeyCode::BackTab => todo!(),
-
-            // TODO: Maybe implement this later, this will require implementing selections in the
-            // input
-            anathema::component::KeyCode::CtrlC => todo!(),
-
-            // Move focus with this
-            anathema::component::KeyCode::Esc => {
-                context.set_focus("id", "app");
-
-                context.publish("textarea_focus", |state| &state.focused);
-            }
-
-            _ => {}
-        }
-    }
-}
-
-fn log(output: String, _file: Option<&str>) {
-    info!("{output}");
-
-    // let file_name = file.unwrap_or("logs.txt");
-    // let file = std::fs::OpenOptions::new().append(true).open(file_name);
-    // if let Ok(mut file) = file {
-    //     let _ = file.write(output.as_bytes());
-    // }
-}
-
-fn update_cursor_char(input: &mut Chars, update_index: usize) -> String {
-    if let Some(cursor_char) = input.nth(update_index) {
-        cursor_char.to_string()
-    } else {
-        " ".to_string()
-    }
-}
-
-fn get_line_lengths<'textarea>(
-    lines: impl Iterator<Item = Line<impl Iterator<Item = Segment<'textarea>>>>,
-) -> Vec<usize> {
-    let mut line_lengths: Vec<usize> = [].to_vec();
-    lines.for_each(|current_line| {
-        let mut length_of_line = 0;
-        current_line.entries.for_each(|entry| {
-            if let Segment::Str(text) = entry {
-                let chunk_length = text.len();
-
-                length_of_line += chunk_length;
-            };
-        });
-
-        line_lengths.push(length_of_line);
-    });
-
-    // Account for newline characters, but remove one because the last line doesn't
-    // have a newline character
-    line_lengths.push(line_lengths.len() - 1);
-
-    line_lengths
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct CursorData {
-    x: usize,
-    y: usize,
-    cursor_index: usize,
-    cursor_prefix: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum TextAreaMessages {
-    InputChange(String),
-    SetInput(String),
 }
 
 impl TextArea {
@@ -398,13 +86,23 @@ impl TextArea {
         input_for: Option<String>,
         listeners: Vec<String>,
     ) -> anyhow::Result<()> {
-        let name: String = ident;
+        let name: String = ident.clone();
+
+        let state = TextAreaState {
+            foreground: "#ffffff".to_string().into(),
+            background: "#000000".to_string().into(),
+
+            display_input: "".to_string().into(),
+            cursor_char: ' '.into(),
+            cursor_prefix: "".to_string().into(),
+
+            input: "".to_string(),
+            cursor_pos: CursorPosition::default(),
+            focused: false.into(),
+            ident,
+        };
 
         let app_theme = get_app_theme();
-        let state = TextAreaInputState::new(
-            &app_theme.foreground.to_ref(),
-            &app_theme.background.to_ref(),
-        );
 
         let app_id = builder.register_component(
             name.clone(),
@@ -424,12 +122,12 @@ impl TextArea {
         Ok(())
     }
 
-    fn send_to_listeners(&self, code: KeyCode, state: &mut TextAreaInputState, emitter: Emitter) {
+    fn send_to_listeners(&self, code: KeyCode, state: &mut TextAreaState, emitter: Emitter) {
         if let KeyCode::Char(_) = code {
             // TODO: Fix the outgoing message so it is not 100% coupled to only response body
             // editing, use InputUpdate instead of InputChange, like in edit_input.rs
             if let Ok(ids) = self.component_ids.try_borrow() {
-                let input_value = state.input.to_ref().to_string();
+                let input_value = state.input.clone();
                 let input_change_message =
                     DashboardMessages::TextArea(TextAreaMessages::InputChange(input_value));
 
@@ -444,839 +142,935 @@ impl TextArea {
             }
         }
     }
+}
 
-    fn add_character(
+#[derive(Debug, Serialize, Deserialize)]
+pub enum TextAreaMessages {
+    InputChange(String),
+    SetInput(String),
+}
+
+impl Component for TextArea {
+    type State = TextAreaState;
+    type Message = String;
+
+    fn on_blur(
         &mut self,
-        char: char,
-        state: &mut TextAreaInputState,
-        context: &mut Context<'_, TextAreaInputState>,
-        elements: &mut anathema::widgets::Elements<'_, '_>,
-        event: anathema::component::KeyEvent,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
-        let mut input = state.input.to_mut();
-
-        elements
-            .by_attribute("id", "contents")
-            .each(|el, _attributes| {
-                let text = el.to::<Text>();
-                let editable = context.get_external("editable");
-                if let Some(editable) = editable {
-                    let is_editable = editable.load_bool();
-                    if !is_editable {
-                        return;
-                    }
-                }
-
-                if event.ctrl && char == 'c' {
-                    // TODO: Add support for pasting at cursor position, replaces for now
-                    if let Ok(mut clipboard) = Clipboard::new() {
-                        if let Ok(text) = clipboard.get_text() {
-                            *input = text;
-
-                            return;
-                        };
-                    }
-                }
-
-                // Update line count
-                let current_line_count = text.get_line_count();
-                let prev_line_count = state
-                    .line_count
-                    .to_number()
-                    .unwrap_or(Number::Usize(0))
-                    .as_uint();
-                state.line_count.set(current_line_count);
-
-                // Get coordinates before this character input
-                let mut cursor_coordinates = state.cursor_position.to_mut();
-                let prev_cursor_x = cursor_coordinates
-                    .x
-                    .to_number()
-                    .unwrap_or(Number::Usize(0))
-                    .as_uint();
-                let prev_cursor_y = cursor_coordinates
-                    .y
-                    .to_number()
-                    .unwrap_or(Number::Usize(0))
-                    .as_uint();
-
-                log(format!("prev_x: {prev_cursor_x}\n"), None);
-                log(format!("prev_y: {prev_cursor_y}\n"), None);
-
-                // Calculate new cursor X/Y position
-                let new_cursor_x = if current_line_count > prev_line_count {
-                    Number::Usize(0).as_uint()
-                } else {
-                    Number::Usize(prev_cursor_x + 1).as_uint()
-                };
-                cursor_coordinates.x.set(new_cursor_x);
-
-                let new_cursor_y = if current_line_count > prev_line_count {
-                    Number::Usize(prev_cursor_y + 1).as_uint()
-                } else {
-                    Number::Usize(prev_cursor_y).as_uint()
-                };
-                cursor_coordinates.y.set(new_cursor_y);
-
-                log(format!("new_x: {new_cursor_x}\n"), None);
-                log(format!("new_y: {new_cursor_y}\n"), None);
-
-                // Get line lengths for all lines in input
-                let lines = text.get_lines();
-                let mut line_lengths: Vec<usize> = [].to_vec();
-
-                lines.enumerate().for_each(|(index, current_line)| {
-                    log(format!("Looking at line_number: {index}\n"), None);
-                    log(
-                        format!("Length of line {index}: {}\n", current_line.width),
-                        None,
-                    );
-
-                    line_lengths.push(current_line.width.into());
-                });
-
-                // Account for newline characters, but remove one because the last line doesn't
-                // have a newline character
-                line_lengths.push(line_lengths.len().saturating_sub(1));
-
-                log(format!("Length of all lines: {}\n", line_lengths.iter().sum::<usize>()), None);
-                log(format!("Length of line_lengths array: {}\n", line_lengths.len()), None);
-
-                // Sets update index to the end of the input string
-                let mut update_index = line_lengths.iter().sum::<usize>();
-                log(format!("Initial update_index: {update_index}\n"), None);
-
-
-                if !is_at_end_of_input(&line_lengths, prev_cursor_x, prev_cursor_y) {
-                    log(format!("get_update_index(): {line_lengths:?}, {prev_cursor_x}, {prev_cursor_y}\n"), None);
-                    log(format!("get_update_index() line_lengths.len(): {}\n", line_lengths.len()), None);
-                    update_index = get_update_index(&line_lengths, prev_cursor_x, prev_cursor_y);
-                }
-
-                log(format!("Final update_index: {update_index}\n"), None);
-                log(format!("input.len(): {}\n", input.len()), None);
-                log(format!(
-                    "Inserting at index: {update_index} character: '{char}', current input length: {} \n", input.len()
-                ), None);
-                log(
-                    "----------------------------------------\n".to_string(), None
-                );
-
-                // Insert new character
-                // TODO: Remove this hack when I find the bug
-                if update_index > input.len() {
-                    update_index = input.len();
-                }
-
-                input.insert(update_index, char);
-
-                // Update text prefix
-                let prefix_text = input.chars().take(update_index + 1).collect::<String>();
-                state.cursor_prefix.set(prefix_text);
-
-                let mut chars = input.chars();
-                let cursor_char = update_cursor_char(&mut chars, update_index + 1);
-                state.cursor_char.set(cursor_char);
-            });
-
-        elements
-            .by_attribute("id", "container")
-            .each(|el, _attributes| {
-                let coordinates = state.cursor_position.to_ref();
-                let x = coordinates.x.to_number().unwrap_or(Number::I32(0)).as_int() as i32;
-                let y = coordinates.y.to_number().unwrap_or(Number::I32(0)).as_int() as i32;
-
-                let position = Pos { x, y };
-                let overflow = el.to::<Overflow>();
-                overflow.scroll_to(position);
-            });
-
-        context.publish("text_change", |state| &state.input)
+        state.focused.set(false);
+        context.publish("textarea_focus", |state| &state.focused);
     }
 
-    fn delete(&self, _state: &mut TextAreaInputState, _context: Context<'_, TextAreaInputState>) {
-        // let mut input = state.input.to_mut();
-        // let Some(cursor_position) = state.cursor_position.to_number() else {
-        //     return;
-        // };
-        //
-        // let pos = cursor_position.as_uint();
-        //
-        // if pos == input.len() {
-        //     return;
-        // }
-        //
-        // input.remove(pos);
-        //
-        // if let Some(cursor_char) = input.chars().nth(pos) {
-        //     state.cursor_char.set(cursor_char.to_string());
-        // } else {
-        //     state.cursor_char.set(' '.to_string());
-        // }
-        //
-        // state
-        //     .cursor_prefix
-        //     .set(input.chars().take(pos).collect::<String>());
-        //
-        // context.publish("text_change", |state| &state.input)
-    }
-
-    fn backspace(
+    fn on_focus(
         &mut self,
-        state: &mut TextAreaInputState,
-        mut context: Context<'_, TextAreaInputState>,
-        mut elements: anathema::widgets::Elements<'_, '_>,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
-        elements
-            .by_attribute("id", "contents")
-            .each(|el, _attributes| {
-                log(
-                    "----------------------------------------\n".to_string(),
-                    Some("backspace.txt"),
-                );
-                let text = el.to::<Text>();
-                let lines = text.get_lines();
-
-                let prev_cursor_x = *state.cursor_position.to_ref().x.to_ref();
-                let prev_cursor_y = *state.cursor_position.to_ref().y.to_ref();
-                let line_lengths = get_line_lengths(lines);
-
-                let mut input = state.input.to_mut();
-                let mut backspace_index = input.len().saturating_sub(1);
-                log(
-                    format!("backspace_index: {backspace_index}\n"),
-                    Some("backspace.txt"),
-                );
-
-                if !is_at_end_of_input(&line_lengths, prev_cursor_x, prev_cursor_y) {
-                    backspace_index = get_update_index(&line_lengths, prev_cursor_x, prev_cursor_y)
-                        .saturating_sub(1);
-                }
-                log(
-                    format!(">backspace_index: {backspace_index}\n"),
-                    Some("backspace.txt"),
-                );
-                log(
-                    format!("input.len(): {}\n", input.len()),
-                    Some("backspace.txt"),
-                );
-
-                if backspace_index < input.len() {
-                    log(
-                        format!("Deleting backspace_index: {backspace_index}\n"),
-                        Some("backspace.txt"),
-                    );
-                    input.remove(backspace_index);
-                    context.publish("text_change", |state| &state.input);
-
-                    // let mut prefix = state.cursor_prefix.to_mut();
-                    // prefix.remove(backspace_index);
-
-                    let chars = input.chars();
-                    let Some(previous_line) = text.get_lines().nth(prev_cursor_y.saturating_sub(1))
-                    else {
-                        return;
-                    };
-
-                    let prev_cursor_index =
-                        self.get_cursor_index(prev_cursor_x, prev_cursor_y, text.get_lines());
-                    let new_cursor_data = get_cursor_data_left(
-                        chars,
-                        prev_cursor_x,
-                        prev_cursor_y,
-                        previous_line.width.into(),
-                        prev_cursor_index,
-                    );
-                    let char = input
-                        .chars()
-                        .nth(new_cursor_data.cursor_index)
-                        .unwrap_or(' ');
-
-                    state.cursor_position.to_mut().x.set(new_cursor_data.x);
-                    state.cursor_position.to_mut().y.set(new_cursor_data.y);
-                    state.cursor_prefix.set(new_cursor_data.cursor_prefix);
-                    state.cursor_char.set(char.to_string());
-                }
-
-                log(
-                    ">>>----------------------------------------\n".to_string(),
-                    Some("backspace.txt"),
-                );
-            });
+        state.focused.set(true);
+        context.publish("textarea_focus", |state| &state.focused);
     }
 
-    fn get_cursor_index<'a>(
-        &self,
-        x: usize,
-        y: usize,
-        lines: impl Iterator<Item = Line<impl Iterator<Item = Segment<'a>>>>,
-    ) -> usize {
-        let mut previous_lines_width: usize = 0;
-
-        lines
-            .take(y)
-            .for_each(|line| previous_lines_width += line.width as usize);
-
-        previous_lines_width + y + x
-    }
-
-    fn move_cursor_left(
-        &self,
-        state: &mut TextAreaInputState,
-        mut elements: anathema::widgets::Elements<'_, '_>,
+    fn on_key(
+        &mut self,
+        key: KeyEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
     ) {
-        // TODO: Refactor this so its not repeated when moving right
-        let cursor_index = state.cursor_prefix.to_ref().len();
-        let new_cursor_index = cursor_index.saturating_sub(1);
-        let current_input = state.input.to_ref();
-        let new_prefix = current_input.chars().take(new_cursor_index);
-        state.cursor_prefix.set(new_prefix.collect::<String>());
+        match key.code {
+            KeyCode::Char(c) => {
+                let emitter = context.emitter.clone();
+                handle_typing(c, state, &mut elements, context);
+                self.send_to_listeners(key.code, state, emitter);
+            }
 
-        let input = state.input.to_ref();
-        let mut chars = input.chars();
-        let cursor_char = update_cursor_char(&mut chars, new_cursor_index);
-        state.cursor_char.set(cursor_char);
+            KeyCode::Enter => {
+                let emitter = context.emitter.clone();
+                handle_typing('\n', state, &mut elements, context);
+                self.send_to_listeners(key.code, state, emitter);
+            }
 
-        // Update cursor x/y position
-        let mut coordinates = state.cursor_position.to_mut();
-        let mut x = *coordinates.x.to_ref();
-        let mut y = *coordinates.y.to_ref();
+            KeyCode::Backspace => backspace(state, context, &mut elements),
+            KeyCode::Delete => delete(state, context, &mut elements),
 
-        if x > 0 {
-            coordinates.x.set(x - 1);
-        } else {
-            elements
-                .by_attribute("id", "contents")
-                .each(|el, _attributes| {
-                    let text = el.to::<Text>();
-                    let mut lines = text.get_lines();
+            // TODO: Get back to handling tab characters after updating to the
+            // latest version of Anathema to use runtime_builder.with_global_events_handler()
+            // to toggle focus management on/off at runtime
+            KeyCode::Tab => todo!(),
+            KeyCode::BackTab => todo!(),
 
-                    y = y.saturating_sub(1);
-                    if let Some(previous_line) = lines.nth(y) {
-                        x = previous_line.width as usize + 1;
-                    }
-                });
+            // TODO: Get back to handling Ctrl-C copy command after updating to the
+            // latest version of Anathema to use runtime_builder.with_global_events_handler()
+            // to toggle focus management on/off at runtime
+            KeyCode::CtrlC => copy(state),
 
-            coordinates.x.set(x);
-            coordinates.y.set(y);
+            KeyCode::Left => move_left(state),
+            KeyCode::Right => move_right(state),
+            KeyCode::Up => handle_move_up(state, &mut elements),
+            KeyCode::Down => handle_move_down(state, &mut elements),
+
+            KeyCode::Esc => escape(state, context),
+
+            _ => {} // anathema::component::KeyCode::Insert => todo!(),
+                    // anathema::component::KeyCode::F(_) => todo!(),
+                    // anathema::component::KeyCode::Null => todo!(),
+                    // anathema::component::KeyCode::CapsLock => todo!(),
+                    // anathema::component::KeyCode::ScrollLock => todo!(),
+                    // anathema::component::KeyCode::NumLock => todo!(),
+                    // anathema::component::KeyCode::PrintScreen => todo!(),
+                    // anathema::component::KeyCode::Pause => todo!(),
+                    // anathema::component::KeyCode::Menu => todo!(),
+                    // anathema::component::KeyCode::KeypadBegin => todo!(),
+                    // Maybe?
+                    // KeyCode::Home => todo!(),
+                    // KeyCode::End => todo!(),
+                    // KeyCode::PageUp => todo!(),
+                    // KeyCode::PageDown => todo!(),
         }
     }
-
-    fn move_cursor_right(
-        &self,
-        state: &mut TextAreaInputState,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-    ) {
-        elements
-            .by_attribute("id", "contents")
-            .each(|el, _attributes| {
-                // TODO: Fix this clone
-                let prefix = state.cursor_prefix.to_ref().clone();
-                let input = state.input.to_ref();
-                if prefix.len() == input.len() {
-                    // At the end, can't move to the right
-                    return;
-                }
-
-                let text = el.to::<Text>();
-                let mut lines = text.get_lines();
-
-                let mut coordinates = state.cursor_position.to_mut();
-                let x = *coordinates.x.to_ref();
-                let y = *coordinates.y.to_ref();
-
-                let Some(current_line) = lines.nth(y) else {
-                    return;
-                };
-
-                let current_input = state.input.to_ref();
-                let last_current_line_x = current_line.width + 1;
-
-                match x == Into::<usize>::into(last_current_line_x) {
-                    true => {
-                        coordinates.x.set(0);
-                        coordinates.y.set(y + 1);
-                    }
-                    false => {
-                        coordinates.x.set(x + 1);
-                    }
-                }
-
-                let cursor_index = prefix.len();
-                let new_cursor_index = cursor_index + 1;
-                let new_prefix = current_input.chars().take(new_cursor_index);
-                state.cursor_prefix.set(new_prefix.collect::<String>());
-
-                // let input = state.input.to_ref();
-                let mut chars = current_input.chars();
-                let cursor_char = update_cursor_char(&mut chars, new_cursor_index);
-                state.cursor_char.set(cursor_char);
-
-                log(
-                    format!(
-                        "x: {}, y: {}\n",
-                        *coordinates.x.to_ref(),
-                        *coordinates.y.to_ref()
-                    ),
-                    Some("move_right.txt"),
-                );
-            });
-    }
-
-    fn move_cursor_up(
-        &self,
-        state: &mut TextAreaInputState,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-    ) {
-        elements
-            .by_attribute("id", "contents")
-            .each(|el, _attributes| {
-                let text = el.to::<Text>();
-                cursor_up(text, state);
-            })
-    }
-
-    fn move_cursor_down(
-        &self,
-        state: &mut TextAreaInputState,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-    ) {
-        elements
-            .by_attribute("id", "contents")
-            .each(|el, _attributes| {
-                let text = el.to::<Text>();
-                cursor_down(text, state);
-            })
-    }
 }
 
-fn get_cursor_data_left(
-    chars: Chars,
-    prev_x: usize,
-    prev_y: usize,
-    prev_line_width: usize,
-    prev_cursor_index: usize,
-) -> CursorData {
-    let cursor_index = prev_cursor_index.saturating_sub(1);
-    let cursor_prefix = chars.take(cursor_index).collect::<String>();
-
-    let mut x = prev_line_width + 1;
-    let mut y = prev_y.saturating_sub(1);
-
-    if prev_x > 0 {
-        x = prev_x - 1;
-        y = prev_y;
-    }
-
-    CursorData {
-        x,
-        y,
-        cursor_index,
-        cursor_prefix,
-    }
-}
-
-#[test]
-fn test_get_cursor_data_left_1() {
-    // Cursor on 'g' test
-
-    let chars = "ab\ncde\nfg".chars();
-
-    let cursor_data = get_cursor_data_left(chars, 1, 2, 3, 8);
-
-    assert_eq!(
-        cursor_data,
-        CursorData {
-            x: 0,
-            y: 2,
-            cursor_index: 7,
-            cursor_prefix: "ab\ncde\n".to_string()
-        }
-    )
-}
-
-#[test]
-fn test_get_cursor_data_left_2() {
-    // Cursor after 'g' test
-
-    let chars = "ab\ncde\nfg".chars();
-
-    let cursor_data = get_cursor_data_left(chars, 2, 2, 3, 9);
-
-    assert_eq!(
-        cursor_data,
-        CursorData {
-            x: 1,
-            y: 2,
-            cursor_index: 8,
-            cursor_prefix: "ab\ncde\nf".to_string()
-        }
-    )
-}
-
-#[test]
-fn test_get_cursor_data_left_3() {
-    // Cursor after g on single line text
-    let chars = "abcdefg".chars();
-
-    let cursor_data = get_cursor_data_left(chars, 7, 0, 0, 7);
-
-    assert_eq!(
-        cursor_data,
-        CursorData {
-            x: 6,
-            y: 0,
-            cursor_index: 6,
-            cursor_prefix: "abcdef".to_string()
-        }
-    )
-}
-
-#[test]
-fn test_get_cursor_data_left_4() {
-    // Cursor on e on single line text
-    let chars = "abcdefg".chars();
-
-    let cursor_data = get_cursor_data_left(chars, 4, 0, 0, 4);
-
-    assert_eq!(
-        cursor_data,
-        CursorData {
-            x: 3,
-            y: 0,
-            cursor_index: 3,
-            cursor_prefix: "abc".to_string()
-        }
-    )
-}
-
-fn get_cursor_up_x_y(x: usize, y: usize, target_line_width: u16) -> Coordinates {
-    let last_target_line_index = target_line_width;
-    let target_x_position = if x <= last_target_line_index.into() {
-        x
-    } else {
-        last_target_line_index.into()
+fn copy(state: &mut TextAreaState) {
+    let Ok(mut clipboard) = Clipboard::new() else {
+        return;
     };
 
-    let target_y_position = y - 1;
-
-    Coordinates::new(target_x_position, target_y_position)
+    let set_operation = clipboard.set();
+    let _ = set_operation.text(state.display_input.to_ref().to_string());
 }
 
-fn cursor_up(text: &mut Text, state: &mut TextAreaInputState) {
-    let mut coordinates = state.cursor_position.to_mut();
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
+// TODO: Add tests for the backspace function
+fn backspace(
+    state: &mut TextAreaState,
+    mut context: Context<'_, TextAreaState>,
+    elements: &mut Elements<'_, '_>,
+) {
+    let mut block = false;
+    elements
+        .by_attribute("id", "container")
+        .first(|_, attributes| {
+            if let Some(editable) = attributes.get::<bool>("editable") {
+                if !editable {
+                    block = true;
+                }
+            }
+        });
 
-    log(
-        format!(
-            "x: {}, y: {}\n",
-            *coordinates.x.to_ref(),
-            *coordinates.y.to_ref()
-        ),
-        Some("move_up.txt"),
-    );
+    if block {
+        return;
+    }
+
+    let CursorPosition { x, y } = state.cursor_pos;
+    if x == 0 && y == 0 {
+        return;
+    }
+
+    let cursor_pos = &state.cursor_pos;
+    let index = get_insert_position(&mut state.input, cursor_pos);
+
+    let mut indices = state.input.char_indices();
+    let Some((remove_index, _)) = indices.nth(index - 1) else {
+        return;
+    };
+
+    state.input.remove(remove_index);
+    state.display_input.set(state.input.clone());
+
+    if x > 0 {
+        state.cursor_pos.x -= 1;
+    } else if x == 0 && y > 0 {
+        state.cursor_pos.y -= 1;
+
+        let new_input = state.display_input.to_ref();
+        let new_line = new_input.lines().nth(state.cursor_pos.y).unwrap_or("");
+        state.cursor_pos.x = new_line.len();
+    }
+
+    update_cursor_after_move(state);
+
+    let event_name = format!("{}_textchange", state.ident);
+    context.publish(&event_name, |state| &state.display_input);
+}
+
+fn escape(state: &mut TextAreaState, mut context: Context<'_, TextAreaState>) {
+    context.set_focus("id", "app");
+
+    let event_name = format!("{}_escape", state.ident);
+    context.publish(&event_name, |state| &state.cursor_char);
+    context.publish("textarea_focus", |state| &state.focused);
+}
+
+// TODO: Add tests for the delete function
+fn delete(
+    state: &mut TextAreaState,
+    mut context: Context<'_, TextAreaState>,
+    elements: &mut Elements<'_, '_>,
+) {
+    let mut block = false;
+    elements
+        .by_attribute("id", "container")
+        .first(|_, attributes| {
+            if let Some(editable) = attributes.get::<bool>("editable") {
+                if !editable {
+                    block = true;
+                }
+            }
+        });
+
+    if block {
+        return;
+    }
+
+    let CursorPosition { x, y } = state.cursor_pos;
+
+    let lines = state.input.lines().count();
+    let last_line = state.input.lines().last().unwrap_or("");
+
+    if x == last_line.len() - 1 && y == lines - 1 {
+        return;
+    }
+
+    let cursor_pos = &state.cursor_pos;
+
+    let current_input_index = get_insert_position(&mut state.input, cursor_pos);
+    let Some((delete_index, _)) = state.input.char_indices().nth(current_input_index) else {
+        return;
+    };
+
+    state.input.remove(delete_index);
+    state.display_input.set(state.input.clone());
+
+    update_cursor_after_move(state);
+
+    let event_name = format!("{}_textchange", state.ident);
+    context.publish(&event_name, |state| &state.display_input);
+}
+
+fn move_down(state: &mut TextAreaState, size: Size) {
+    let CursorPosition { x, y } = state.cursor_pos;
+    let input = state.display_input.to_ref().to_string();
+
+    let current_line = input.lines().nth(state.cursor_pos.y).unwrap_or("");
+
+    let starting_index = input
+        .lines()
+        .take(state.cursor_pos.y)
+        .fold(0, |ndx, line| ndx + line.len().saturating_sub(1));
+    let ending_index = starting_index + current_line.len().saturating_sub(1);
+
+    let is_wider_than_width = current_line.len() > size.width;
+    let is_cursor_not_on_last_subline =
+        state.cursor_pos.x < current_line.len().saturating_sub(size.width);
+
+    let total_sublines = ((current_line.len() / size.width) as f32).ceil() as usize;
+    let last_full_line_start = starting_index + (total_sublines.saturating_sub(1) * size.width);
+    let last_full_line_end = last_full_line_start + size.width;
+
+    if is_wider_than_width && is_cursor_not_on_last_subline {
+        state.cursor_pos.x += size.width;
+        return;
+    } else if is_wider_than_width
+        && state.cursor_pos.x >= last_full_line_start
+        && state.cursor_pos.x <= last_full_line_end
+    {
+        let last_line_pos = state.cursor_pos.x + size.width;
+        state.cursor_pos.x = min(last_line_pos, ending_index);
+        return;
+    }
+
+    let total_lines = state.input.lines().count();
+    if y == total_lines.saturating_sub(1) {
+        return;
+    }
+
+    state.cursor_pos.y += 1;
+
+    let input = state.display_input.to_ref().to_string();
+    let new_line_contents = input.lines().nth(state.cursor_pos.y).unwrap_or("");
+    if x > new_line_contents.len() {
+        state.cursor_pos.x = new_line_contents.len();
+    }
+
+    render_display(state);
+}
+
+fn handle_move_down(state: &mut TextAreaState, elements: &mut Elements<'_, '_>) {
+    elements
+        .by_attribute("id", "container")
+        .first(|element, _| {
+            let size = element.size();
+
+            move_down(state, size);
+            scroll_into_view(element, state);
+        });
+
+    update_cursor_after_move(state);
+}
+
+fn move_up(state: &mut TextAreaState, size: Size) {
+    let CursorPosition { x, y } = state.cursor_pos;
+
+    let input = state.display_input.to_ref().to_string();
+    let current_line = input.lines().nth(state.cursor_pos.y).unwrap_or("");
+    let is_wider_than_width = current_line.len() > size.width;
+    let is_cursor_on_subline = state.cursor_pos.x > size.width;
+
+    if is_wider_than_width && is_cursor_on_subline {
+        state.cursor_pos.x -= size.width;
+        return;
+    }
 
     if y == 0 {
         return;
     }
 
-    let mut lines = text.get_lines();
+    // Otherwise, if current line isn't wider than available width
+    // then we move up a line
+    state.cursor_pos.y -= 1;
 
-    let Some(target_line) = lines.nth(y - 1) else {
-        log("Couldnt get target line\n".to_string(), Some("move_up.txt"));
-        return;
-    };
+    let new_line_contents = input.lines().nth(state.cursor_pos.y).unwrap_or("");
+    if x > new_line_contents.len() {
+        state.cursor_pos.x = new_line_contents.len();
+    }
+    let line_width = new_line_contents.len();
 
-    let Coordinates { x, y } = get_cursor_up_x_y(x, y, target_line.width);
-    let target_x_position = *x.to_ref();
-    let target_y_position = *y.to_ref();
-    log(
-        format!("tx: {target_x_position}, ty: {target_y_position}\n"),
-        Some("move_up.txt"),
-    );
+    if line_width > size.width {
+        let sub_lines = (line_width / size.width) as i16;
+        let shift = sub_lines as usize * size.width;
 
-    coordinates.x.set(target_x_position);
-    coordinates.y.set(target_y_position);
+        state.cursor_pos.x += shift;
+    }
 
-    log(
-        format!("target_y_position: {target_y_position}\n"),
-        Some("move_up.txt"),
-    );
-    let prefix_lines = text.get_lines().take(target_y_position + 1);
-    log(
-        format!("prefix_lines length: {}\n", prefix_lines.count()),
-        Some("move_up.txt"),
-    );
-
-    let mut cursor_index = 0;
-    let prefix_lines = text.get_lines().take(target_y_position + 1);
-    prefix_lines.enumerate().for_each(|(index, line)| {
-        if index == target_y_position {
-            cursor_index += target_x_position;
-            log(
-                format!(
-                    "after adding x pos -> {target_x_position}: {}\n",
-                    cursor_index
-                ),
-                Some("move_up.txt"),
-            );
-        } else {
-            cursor_index += (line.width + 1) as usize;
-            log(
-                format!("after adding line width: {}\n", cursor_index),
-                Some("move_up.txt"),
-            );
-        }
-    });
-    log(
-        format!("cursor_index: {cursor_index}\n"),
-        Some("move_up.txt"),
-    );
-
-    // TODO: Refactor this so its not repeated everywhere
-    let current_input = state.input.to_ref();
-
-    let new_prefix = current_input.chars().take(cursor_index);
-    state.cursor_prefix.set(new_prefix.collect::<String>());
-
-    let mut chars = current_input.chars();
-    let cursor_char = update_cursor_char(&mut chars, cursor_index);
-    state.cursor_char.set(cursor_char);
+    render_display(state);
 }
 
-fn get_cursor_down_x_y(x: usize, y: usize, target_line_width: u16) -> Coordinates {
-    let last_target_line_index = target_line_width;
-    let target_x_position = if x <= last_target_line_index.into() {
-        x
+fn handle_move_up(state: &mut TextAreaState, elements: &mut Elements<'_, '_>) {
+    elements
+        .by_attribute("id", "container")
+        .first(|element, _| {
+            let size = element.size();
+
+            move_up(state, size);
+
+            scroll_into_view(element, state);
+        });
+
+    update_cursor_after_move(state);
+}
+
+fn move_right(state: &mut TextAreaState) {
+    let CursorPosition { x, y } = state.cursor_pos;
+
+    let input = state.display_input.to_ref().to_string();
+    let total_lines = input.lines().count();
+    let current_line = input.lines().nth(state.cursor_pos.y).unwrap_or(" ");
+
+    let is_at_end_of_line = x == current_line.len();
+    let is_at_last_line = y == total_lines.saturating_sub(1);
+
+    if is_at_end_of_line && is_at_last_line {
+        return;
+    } else if is_at_end_of_line && !is_at_last_line {
+        state.cursor_pos.x = 0;
+        state.cursor_pos.y += 1;
     } else {
-        last_target_line_index.into()
-    };
-
-    let target_y_position = y + 1;
-
-    Coordinates::new(target_x_position, target_y_position)
-}
-
-fn cursor_down(text: &mut Text, state: &mut TextAreaInputState) {
-    let mut lines = text.get_lines();
-    let mut coordinates = state.cursor_position.to_mut();
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
-
-    let line_count = *state.line_count.to_ref();
-    let last_line_index = line_count - 1;
-
-    // Already at last line, can't go any lower
-    if y == last_line_index {
-        return;
+        state.cursor_pos.x += 1;
     }
 
-    let Some(target_line) = lines.nth(y + 1) else {
-        log(
-            "Couldnt get target line\n".to_string(),
-            Some("move_down.txt"),
-        );
+    update_cursor_after_move(state);
+}
+
+fn move_left(state: &mut TextAreaState) {
+    let CursorPosition { x, y } = state.cursor_pos;
+
+    if x == 0 && y == 0 {
         return;
-    };
+    } else if x == 0 {
+        let input = state.display_input.to_ref();
+        let prev_line_ndx = y.saturating_sub(1);
+        let Some(previous_line) = input.lines().nth(prev_line_ndx) else {
+            return;
+        };
 
-    let Coordinates { x, y } = get_cursor_down_x_y(x, y, target_line.width);
-    let target_x_position = *x.to_ref();
-    let target_y_position = *y.to_ref();
-    log(
-        format!("tx: {target_x_position}, ty: {target_y_position}\n"),
-        Some("move_down.txt"),
-    );
+        state.cursor_pos.x = previous_line.len();
+        state.cursor_pos.y = state.cursor_pos.y.saturating_sub(1);
+    } else {
+        state.cursor_pos.x = state.cursor_pos.x.saturating_sub(1);
+    }
 
-    coordinates.x.set(target_x_position);
-    coordinates.y.set(target_y_position);
+    update_cursor_after_move(state);
+}
 
-    log(
-        format!("target_y_position: {target_y_position}\n"),
-        Some("move_down.txt"),
-    );
+fn update_cursor_after_move(state: &mut TextAreaState) {
+    let input = state.display_input.to_ref().to_string();
+    let cursor_input_pos = get_insert_position(&mut input.to_string(), &state.cursor_pos);
 
-    let mut cursor_index = 0;
-    let prefix_lines = text.get_lines().take(target_y_position + 1);
-    prefix_lines.enumerate().for_each(|(index, line)| {
-        if index == target_y_position {
-            cursor_index += target_x_position;
-            log(
-                format!(
-                    "after adding x pos -> {target_x_position}: {}\n",
-                    cursor_index
-                ),
-                Some("move_down.txt"),
-            );
-        } else {
-            cursor_index += (line.width + 1) as usize;
-            log(
-                format!("after adding line width: {}\n", cursor_index),
-                Some("move_down.txt"),
-            );
-        }
-    });
-    log(
-        format!("cursor_index: {cursor_index}\n"),
-        Some("move_down.txt"),
-    );
+    let indices = input.char_indices();
 
-    // TODO: Refactor this so its not repeated everywhere
-    let current_input = state.input.to_ref();
+    let prefix_end = cursor_input_pos;
+    let cursor_char_index = cursor_input_pos;
 
-    let new_prefix = current_input.chars().take(cursor_index);
-    state.cursor_prefix.set(new_prefix.collect::<String>());
+    let prefix: String = indices.take(prefix_end).map(|(_, c)| c).collect();
 
-    let mut chars = current_input.chars();
-    let cursor_char = update_cursor_char(&mut chars, cursor_index);
+    let mut indices = input.char_indices();
+
+    let mut cursor_char: char = indices
+        .nth(cursor_char_index)
+        .map(|(_, c)| c)
+        .unwrap_or(' ');
+
+    // Replace newline with space when the cursor moves to the end of a line
+    if cursor_char == '\n' {
+        cursor_char = ' ';
+    }
+
+    state.cursor_prefix.set(prefix);
     state.cursor_char.set(cursor_char);
 }
 
-fn is_at_end_of_input(line_lengths: &[usize], x: usize, y: usize) -> bool {
-    // Subtract 2 from line_lengths because the last entry is a count of newlines
-    let on_last_line = y == line_lengths.len().saturating_sub(2);
-    if !on_last_line {
-        return false;
+fn handle_typing(
+    c: char,
+    state: &mut TextAreaState,
+    elements: &mut Elements<'_, '_>,
+    mut context: Context<'_, TextAreaState>,
+) {
+    elements
+        .by_attribute("id", "container")
+        .first(|element, attributes| {
+            if let Some(editable) = attributes.get::<bool>("editable") {
+                if !editable {
+                    return;
+                }
+            }
+
+            add_character(c, state);
+            render_display(state);
+            scroll_into_view(element, state);
+
+            let event_name = format!("{}_textchange", state.ident);
+            context.publish(&event_name, |state| &state.display_input);
+        });
+}
+
+// TODO: add tests to render_display
+fn render_display(state: &mut TextAreaState) {
+    state.display_input.set(state.input.clone());
+
+    let prefix = get_cursor_prefix(state);
+    state.cursor_prefix.set(prefix);
+}
+
+fn scroll_into_view(element: &mut Element<'_>, state: &mut TextAreaState) {
+    let overflow = element.to::<Overflow>();
+    let CursorPosition { x, y } = state.cursor_pos;
+    let pos = Pos::new(x as i32, y as i32);
+    overflow.scroll_to(pos);
+}
+
+fn get_cursor_prefix(state: &mut TextAreaState) -> String {
+    let index = get_insert_position(&mut state.input, &state.cursor_pos);
+
+    let mut prefix = state.input.clone();
+    let Some((split_index, _)) = prefix.char_indices().nth(index) else {
+        return state.input.clone();
+    };
+
+    let _ = prefix.split_off(split_index);
+
+    prefix
+}
+
+fn add_character(c: char, state: &mut TextAreaState) {
+    let TextAreaState { cursor_pos, .. } = state;
+
+    // let mut current_input = state.input.clone();
+    let insert_position = get_insert_position(&mut state.input, cursor_pos);
+    do_insert(&mut state.input, insert_position, c);
+
+    if c == '\n' {
+        cursor_pos.x = 0;
+        cursor_pos.y += 1;
+    } else {
+        cursor_pos.x += 1;
     }
 
-    // Uses nth_back(1) to skip the final entry which is a count of newlines
-    let last_line_length = *line_lengths.iter().nth_back(1).unwrap_or(&usize::MIN);
+    // state.display_input.set(current_input);
+    // update_cursor_display(prefix, state);
 
-    last_line_length.saturating_sub(1) == x
+    // let adjusted = adjust_lines(&current_input, width);
+    // Update state
+    // state.input.set(adjusted);
+    // update_cursor_after_move(state);
 }
 
-fn get_update_index(line_lengths: &[usize], x: usize, y: usize) -> usize {
-    let previous_lines = line_lengths.iter().take(y);
-    let newlines = previous_lines.len();
-    let previous_lines_sum = previous_lines.sum::<usize>();
+#[allow(unused)]
+fn adjust_lines(input: &str, width: usize) -> String {
+    // Adjust lines that have gotten wider than the available area
+    let mut carry_over: Option<String> = None;
+    let lines = input.lines();
+    let mut adjusted: String = String::new();
+    for line in lines {
+        let mut this_line = String::new();
 
-    previous_lines_sum + newlines + x
+        if let Some(carry) = &carry_over {
+            this_line.push_str(carry);
+            carry_over = None;
+        }
+
+        this_line.push_str(line);
+
+        if this_line.len() >= width - 1 {
+            let line_copy = this_line.clone();
+
+            let Some((split_index, _)) = line_copy.char_indices().nth(width - 1) else {
+                continue;
+            };
+
+            let (left, right) = line_copy.split_at(split_index);
+            this_line = left.to_string();
+            this_line.push('\n');
+
+            let right = right.to_string();
+            carry_over = Some(right.replace('\n', ""));
+        }
+
+        adjusted.push_str(&this_line);
+    }
+
+    if let Some(carry) = carry_over {
+        adjusted.push_str(&carry);
+    }
+
+    adjusted
 }
 
-#[test]
-fn test_get_update_index() {
-    let lengths: Vec<usize> = vec![10, 20, 3, 5, 8];
-    let update_index = get_update_index(&lengths, 1, 2);
+#[rstest]
+#[ignore]
+fn test_adjust_lines() {
+    let input = "Here is a line\n and more text";
+    let width = 5;
 
-    assert_eq!(update_index, 34);
+    let adjusted = adjust_lines(input, width);
+
+    assert_eq!(adjusted, "Here\n is \na li\nne\n and\n mor\ne te\nxt");
 }
 
-#[test]
-fn test_is_at_end_of_input_false() {
-    let lengths: Vec<usize> = vec![10, 20, 3, 5, 8];
-    let at_the_end = is_at_end_of_input(&lengths, 7, 1);
+// TODO: Determine if I can get rid of this after adjusting textarea
+// to update newline characters if an edit makes a line longer than
+// the available horizontal area
+#[allow(unused)]
+fn update_cursor_display(prefix: String, state: &mut TextAreaState) {
+    state.cursor_prefix.set(prefix.clone());
 
-    assert!(!at_the_end);
-}
-
-#[test]
-fn test_is_at_end_of_input_true() {
-    let lengths: Vec<usize> = vec![10, 20, 3, 5, 8, 5];
-    let at_the_end = is_at_end_of_input(&lengths, 7, 4);
-
-    assert!(at_the_end);
-}
-
-#[test]
-fn test_is_at_end_of_input_false_for_first_char() {
-    let lengths: Vec<usize> = vec![0, 0];
-    let at_the_end = is_at_end_of_input(&lengths, 0, 0);
-
-    assert!(at_the_end);
-}
-
-#[test]
-fn test_get_cursor_down_x_y_target_shorter() {
-    let coordinates = get_cursor_down_x_y(3, 2, 2);
-
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
-
-    assert_eq!(
-        (x, y),
-        (2, 3),
-        "Expected x,y to equal {:?} but got {:?}",
-        (2, 3),
-        (x, y)
+    let is_at_end = is_cursor_at_end(
+        &state.cursor_pos,
+        &mut state.display_input.to_ref().to_string(),
     );
+
+    if is_at_end {
+        state.cursor_char.set(' ');
+    } else {
+        let cursor_char = prefix.chars().last().unwrap();
+        state.cursor_char.set(cursor_char);
+    }
 }
 
-#[test]
-fn test_get_cursor_down_x_y_target_longer() {
-    let coordinates = get_cursor_down_x_y(3, 5, 6);
+fn is_cursor_at_end(cursor: &CursorPosition, input: &mut str) -> bool {
+    let Some((last_index, _)) = input.char_indices().last() else {
+        return true;
+    };
 
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
+    let curr_pos = get_insert_position(input, cursor);
 
-    assert_eq!(
-        (x, y),
-        (3, 6),
-        "Expected x,y to equal {:?} but got {:?}",
-        (3, 6),
-        (x, y)
+    let last_cursor_index = last_index + 1;
+    info!(
+        "input: {input}, last_index: {last_index}, curr_pos: {curr_pos}, last_cursor_index: {last_cursor_index}"
     );
+
+    last_cursor_index == curr_pos
 }
 
-#[test]
-fn test_get_cursor_down_x_y_target_same_length() {
-    let coordinates = get_cursor_down_x_y(3, 5, 3);
+/// Returns the index of the next character insertion in the input string
+fn get_insert_position(input: &mut str, cursor_pos: &CursorPosition) -> usize {
+    let CursorPosition { x, y } = cursor_pos;
+    let lines = input.split('\n').take(*y);
 
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
-
-    assert_eq!(
-        (x, y),
-        (3, 6),
-        "Expected x,y to equal {:?} but got {:?}",
-        (3, 6),
-        (x, y)
-    );
+    x + y + lines.fold(0, |sum, line| sum + line.len())
 }
 
-#[test]
-fn test_get_cursor_up_x_y_target_shorter() {
-    let coordinates = get_cursor_up_x_y(3, 2, 2);
+fn do_insert(current_input: &mut String, insert_position: usize, c: char) {
+    let mut indices = current_input.char_indices();
+    match indices.nth(insert_position) {
+        Some((index, _)) => {
+            current_input.insert(index, c);
 
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
+            // let mut prefix = current_input.clone();
+            // let _ = prefix.split_off(index + 1);
+            // prefix
+        }
 
-    assert_eq!(
-        (x, y),
-        (2, 1),
-        "Expected x,y to equal {:?} but got {:?}",
-        (2, 1),
-        (x, y)
-    );
+        // current_input is empty
+        None => {
+            if current_input.is_empty() {
+                current_input.push(c);
+                // current_input.clone()
+            } else {
+                info!("insert_position: {insert_position}, c: '{c}'");
+                current_input.insert(insert_position, c);
+                // let mut prefix = current_input.clone();
+                // let _ = prefix.split_off(insert_position + 1);
+                //
+                // prefix
+            }
+        }
+    }
 }
 
-#[test]
-fn test_get_cursor_up_x_y_target_longer() {
-    let coordinates = get_cursor_up_x_y(3, 5, 6);
+#[rstest]
+#[ignore]
+fn test_copy() {
+    let mut state = TextAreaState {
+        display_input: "Some stuff".to_string().into(),
+        ..Default::default()
+    };
 
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
+    copy(&mut state);
 
-    assert_eq!(
-        (x, y),
-        (3, 4),
-        "Expected x,y to equal {:?} but got {:?}",
-        (3, 4),
-        (x, y)
-    );
+    let Ok(mut clipboard) = Clipboard::new() else {
+        panic!("Could not get clipboard access");
+    };
+
+    let get_op = clipboard.get();
+    let text = get_op.text().unwrap_or("failed".to_string());
+
+    assert_eq!(text, "Some stuff");
 }
 
-#[test]
-fn test_get_cursor_up_x_y_target_same_length() {
-    let coordinates = get_cursor_up_x_y(3, 5, 3);
+#[rstest]
+#[case(
+    TextAreaState {
+        cursor_pos: CursorPosition { x: 2, y: 0 },
+        display_input: "ab".to_string().into(),
+        input: "ab".to_string(),
+        cursor_prefix: "".to_string().into(),
+        cursor_char: ' '.into(),
+        ..Default::default()
+    },
+    'x',
+    TestMoveCursorResult {
+        char_result: ' ',
+        prefix_result: "",
+        x_result: 3,
+        y_result: 0,
+    }
+)]
+#[case(
+    TextAreaState {
+        cursor_pos: CursorPosition { x: 0, y: 0 },
+        display_input: "".to_string().into(),
+        input: "".to_string(),
+        cursor_prefix: "".to_string().into(),
+        cursor_char: ' '.into(),
+        ..Default::default()
+    },
+    'a',
+    TestMoveCursorResult {
+        char_result: ' ',
+        prefix_result: "",
+        x_result: 1,
+        y_result: 0,
+    }
+)]
+#[case(
+    TextAreaState {
+        cursor_pos: CursorPosition { x: 0, y: 0 },
+        display_input: "ab\n".to_string().into(),
+        input: "ab\n".to_string(),
+        cursor_prefix: "".to_string().into(),
+        cursor_char: 'a'.into(),
+        ..Default::default()
+    },
+    'x',
+    TestMoveCursorResult {
+        char_result: 'a',
+        prefix_result: "",
+        x_result: 1,
+        y_result: 0,
+    }
+)]
+fn test_add_character(
+    #[case] mut state: TextAreaState,
+    #[case] new_char: char,
+    #[case] expected: TestMoveCursorResult,
+) {
+    add_character(new_char, &mut state);
 
-    let x = *coordinates.x.to_ref();
-    let y = *coordinates.y.to_ref();
+    let actual = TestMoveCursorResult {
+        char_result: *state.cursor_char.to_ref(),
+        prefix_result: &state.cursor_prefix.to_ref(),
+        x_result: state.cursor_pos.x,
+        y_result: state.cursor_pos.y,
+    };
 
-    assert_eq!(
-        (x, y),
-        (3, 4),
-        "Expected x,y to equal {:?} but got {:?}",
-        (3, 4),
-        (x, y)
-    );
+    dbg!(&*state.input);
+
+    assert_eq!(actual, expected);
+}
+
+#[allow(unused)]
+#[derive(Debug, PartialEq, Eq)]
+struct TestMoveCursorResult<'a> {
+    char_result: char,
+    prefix_result: &'a str,
+    x_result: usize,
+    y_result: usize,
+}
+
+#[rstest]
+#[case(CursorPosition {x: 3, y: 0}, " ", "abc\n", "abc\ndef", ' ', "abc\ndef", 3, 1)]
+#[case(CursorPosition {x: 6, y: 0}, " ", "abcdef\n", "abcdef\nghi", ' ', "abcdef\nghi", 3, 1)]
+#[case(CursorPosition {x: 6, y: 1}, " ", "abcdef\nghi", "abcdef\nghi", ' ', "abcdef\nghi", 6, 1)]
+fn test_move_down(
+    #[case] cursor_pos: CursorPosition,
+    #[case] cursor_char: char,
+    #[case] cursor_prefix: &str,
+    #[case] input: &str,
+
+    #[case] char_result: char,
+    #[case] prefix_result: &str,
+    #[case] x_result: usize,
+    #[case] y_result: usize,
+) {
+    let mut text_area_state = TextAreaState {
+        cursor_pos,
+        cursor_char: cursor_char.into(),
+        cursor_prefix: cursor_prefix.to_string().into(),
+        display_input: input.to_string().into(),
+        input: input.to_string(),
+        background: "#000000".to_string().into(),
+        foreground: "#ffffff".to_string().into(),
+        ..Default::default()
+    };
+
+    let size = Size::new(100, 100);
+
+    move_down(&mut text_area_state, size);
+
+    let actual = TestMoveCursorResult {
+        char_result: *text_area_state.cursor_char.to_ref(),
+        prefix_result: &text_area_state.cursor_prefix.to_ref(),
+        x_result: text_area_state.cursor_pos.x,
+        y_result: text_area_state.cursor_pos.y,
+    };
+
+    let expected = TestMoveCursorResult {
+        char_result,
+        prefix_result,
+        x_result,
+        y_result,
+    };
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case(CursorPosition {x: 3, y: 1}, " ", "abc\ndef", "abc\ndef", ' ', "abc", 3, 0)]
+#[case(CursorPosition {x: 5, y: 1}, " ", "abc\ndefgh", "abc\ndefgh", ' ', "abc", 3, 0)]
+#[case(CursorPosition {x: 3, y: 0}, " ", "abc", "abc\ndef", ' ', "abc", 3, 0)]
+fn test_move_up(
+    #[case] cursor_pos: CursorPosition,
+    #[case] cursor_char: char,
+    #[case] cursor_prefix: &str,
+    #[case] input: &str,
+
+    #[case] char_result: char,
+    #[case] prefix_result: &str,
+    #[case] x_result: usize,
+    #[case] y_result: usize,
+) {
+    let mut text_area_state = TextAreaState {
+        cursor_pos,
+        cursor_char: cursor_char.into(),
+        cursor_prefix: cursor_prefix.to_string().into(),
+        display_input: input.to_string().into(),
+        input: input.to_string(),
+        background: "#000000".to_string().into(),
+        foreground: "#ffffff".to_string().into(),
+        ..Default::default()
+    };
+
+    let size = Size::new(100, 100);
+
+    move_up(&mut text_area_state, size);
+
+    let actual = TestMoveCursorResult {
+        char_result: *text_area_state.cursor_char.to_ref(),
+        prefix_result: &text_area_state.cursor_prefix.to_ref(),
+        x_result: text_area_state.cursor_pos.x,
+        y_result: text_area_state.cursor_pos.y,
+    };
+
+    let expected = TestMoveCursorResult {
+        char_result,
+        prefix_result,
+        x_result,
+        y_result,
+    };
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case(CursorPosition {x: 3, y: 0}, " ", "abc", "abc\ndef", 'd', "abc\n", 0, 1)]
+#[case(CursorPosition {x: 3, y: 0}, " ", "abc", "abc", ' ', "abc", 3, 0)]
+#[case(CursorPosition {x: 3, y: 1}, " ", "abc\ndef", "abc\ndef", ' ', "abc\ndef", 3, 1)]
+fn test_move_right(
+    #[case] cursor_pos: CursorPosition,
+    #[case] cursor_char: char,
+    #[case] cursor_prefix: &str,
+    #[case] input: &str,
+
+    #[case] char_result: char,
+    #[case] prefix_result: &str,
+    #[case] x_result: usize,
+    #[case] y_result: usize,
+) {
+    let mut text_area_state = TextAreaState {
+        cursor_pos,
+        cursor_char: cursor_char.into(),
+        cursor_prefix: cursor_prefix.to_string().into(),
+        display_input: input.to_string().into(),
+        background: "#000000".to_string().into(),
+        foreground: "#ffffff".to_string().into(),
+        ..Default::default()
+    };
+
+    move_right(&mut text_area_state);
+
+    let actual = TestMoveCursorResult {
+        char_result: *text_area_state.cursor_char.to_ref(),
+        prefix_result: &text_area_state.cursor_prefix.to_ref(),
+        x_result: text_area_state.cursor_pos.x,
+        y_result: text_area_state.cursor_pos.y,
+    };
+
+    let expected = TestMoveCursorResult {
+        char_result,
+        prefix_result,
+        x_result,
+        y_result,
+    };
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case(CursorPosition {x: 3, y: 0}, " ", "abc", "abc", 'c', "ab", 2, 0)]
+#[case(CursorPosition {x: 0, y: 1}, "d", "abc\n", "abc\ndef", " ", "abc", 3, 0)]
+fn test_move_left(
+    #[case] cursor_pos: CursorPosition,
+    #[case] cursor_char: char,
+    #[case] cursor_prefix: &str,
+    #[case] input: &str,
+
+    #[case] char_result: char,
+    #[case] prefix_result: &str,
+    #[case] x_result: usize,
+    #[case] y_result: usize,
+) {
+    let mut text_area_state = TextAreaState {
+        cursor_pos,
+        cursor_char: cursor_char.into(),
+        cursor_prefix: cursor_prefix.to_string().into(),
+        display_input: input.to_string().into(),
+        background: "#000000".to_string().into(),
+        foreground: "#ffffff".to_string().into(),
+        ..Default::default()
+    };
+
+    move_left(&mut text_area_state);
+
+    let actual = TestMoveCursorResult {
+        char_result: *text_area_state.cursor_char.to_ref(),
+        prefix_result: &text_area_state.cursor_prefix.to_ref(),
+        x_result: text_area_state.cursor_pos.x,
+        y_result: text_area_state.cursor_pos.y,
+    };
+
+    let expected = TestMoveCursorResult {
+        char_result,
+        prefix_result,
+        x_result,
+        y_result,
+    };
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case("Som string", 3, 'e', "Some string")]
+#[case("Sàm string", 3, 'e', "Sàme string")]
+#[case("Söm string", 3, 'e', "Söme string")]
+fn test_do_insert(
+    #[case] mut input: String,
+    #[case] position: usize,
+    #[case] c: char,
+    #[case] result: String,
+) {
+    do_insert(&mut input, position, c);
+
+    assert_eq!(input, result);
+}
+
+#[rstest]
+#[case("", 0, 0, 0)]
+#[case("Some word\nthing", 0, 1, 10)]
+#[case("Some word\nthing", 4, 1, 14)]
+#[case("Some word\nthing", 1, 1, 11)]
+#[case("Some word\nthing", 3, 0, 3)]
+fn test_get_insert_position(
+    #[case] mut input: String,
+    #[case] x: usize,
+    #[case] y: usize,
+    #[case] result: usize,
+) {
+    let cursor_pos = CursorPosition { x, y };
+
+    let insert_position = get_insert_position(&mut input, &cursor_pos);
+
+    assert_eq!(insert_position, result);
+}
+
+#[rstest]
+#[case(CursorPosition{x: 0, y: 0}, "Some text", false)]
+#[case(CursorPosition{x: 9, y: 0}, "Some text", true)]
+#[case(CursorPosition{x: 5, y: 1}, "Some\n text", true)]
+#[case(CursorPosition{x: 4, y: 1}, "Some\n text", false)]
+#[case(CursorPosition{x: 0, y: 1}, "Some\n text", false)]
+#[case(CursorPosition{x: 2, y: 0}, "ab", true)]
+fn test_is_cursor_at_end(
+    #[case] cursor: CursorPosition,
+    #[case] mut input: String,
+    #[case] result: bool,
+) {
+    let at_end = is_cursor_at_end(&cursor, &mut input);
+
+    assert_eq!(at_end, result);
+}
+
+#[rstest]
+#[case("Some input", TextAreaState::new("Test input".to_string(), "Test input".to_string(), 10, 0, "", ""), " ".to_string())]
+#[case("abc", TextAreaState::new("abc".to_string(), "ab".to_string(), 2, 0, "", ""), "c".to_string())]
+fn test_update_cursor_display(
+    #[case] prefix: String,
+    #[case] mut state: TextAreaState,
+    #[case] result: String,
+) {
+    update_cursor_display(prefix, &mut state);
+
+    assert_eq!(state.cursor_char.to_ref().to_string(), result);
 }

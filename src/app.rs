@@ -5,7 +5,7 @@ use anathema::{
     prelude::{Document, ToSourceKind, TuiBackend},
     runtime::{GlobalEvents, Runtime, RuntimeBuilder},
 };
-use log::{info, LevelFilter};
+use log::{LevelFilter, info};
 use simplelog::{Config, WriteLogger};
 
 use crate::{
@@ -38,8 +38,8 @@ use crate::{
         request_headers_editor::{RequestHeadersEditor, RequestHeadersEditorState},
         response_renderer::ResponseRenderer,
         row::{Row, RowState},
-        textarea::{TextArea, TextAreaInputState},
-        textinput::{InputState, TextInput, TEXTINPUT_TEMPLATE},
+        textarea::{TextArea, TextAreaState},
+        textinput::{InputState, TEXTINPUT_TEMPLATE, TextInput},
     },
     templates::template,
     theme::get_app_theme,
@@ -184,7 +184,7 @@ impl App {
                 let fg = x.as_str();
                 let bg = y.as_str();
 
-                TextAreaInputState::new(fg, bg)
+                TextAreaState::new("".to_string(), "".to_string(), 0, 0, fg, bg)
             },
         )?;
 
