@@ -86,11 +86,13 @@ impl TextArea {
         input_for: Option<String>,
         listeners: Vec<String>,
     ) -> anyhow::Result<()> {
+        let app_theme = get_app_theme();
+
         let name: String = ident.clone();
 
         let state = TextAreaState {
-            foreground: "#ffffff".to_string().into(),
-            background: "#000000".to_string().into(),
+            foreground: app_theme.foreground.to_ref().to_string().into(),
+            background: app_theme.background.to_ref().to_string().into(),
 
             display_input: "".to_string().into(),
             cursor_char: ' '.into(),
@@ -101,8 +103,6 @@ impl TextArea {
             focused: false.into(),
             ident,
         };
-
-        let app_theme = get_app_theme();
 
         let app_id = builder.register_component(
             name.clone(),
