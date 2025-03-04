@@ -1,9 +1,9 @@
-use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc, sync::atomic::AtomicBool};
 
 use anathema::{
-    component::ComponentId,
-    prelude::{Document, ToSourceKind, TuiBackend},
-    runtime::{GlobalEvents, Runtime, RuntimeBuilder},
+    component::{ComponentId, Event},
+    prelude::{Document, GlobalContext, ToSourceKind, TuiBackend},
+    runtime::{GlobalEvents, Runtime, RuntimeBuilder}, widgets::Elements,
 };
 use log::{LevelFilter, info};
 use simplelog::{Config, WriteLogger};
@@ -57,17 +57,21 @@ struct App {
 
 pub struct GlobalEventHandler;
 
+pub static mut TAB_NAV: AtomicBool = AtomicBool::new(true);
+
 impl GlobalEvents for GlobalEventHandler {
     fn enable_tab_navigation(&mut self) -> bool {
-        false
+        // TODO: Try to refactor the unsafe block out
+        #[allow(static_mut_refs)]
+        unsafe { TAB_NAV.load(std::sync::atomic::Ordering::Relaxed) }
     }
 
     fn handle(
         &mut self,
-        event: anathema::component::Event,
-        _elements: &mut anathema::widgets::Elements<'_, '_>,
-        _ctx: &mut anathema::prelude::GlobalContext<'_>,
-    ) -> Option<anathema::component::Event> {
+        event: Event,
+        _elements: &mut Elements<'_, '_>,
+        _ctx: &mut GlobalContext<'_>,
+    ) -> Option<Event> {
         Some(event)
     }
 }

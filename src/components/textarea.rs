@@ -17,8 +17,8 @@ use rstest::rstest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::GlobalEventHandler,
-    theme::{AppTheme, get_app_theme},
+    app::{GlobalEventHandler, TAB_NAV},
+    theme::{get_app_theme, AppTheme},
 };
 
 use super::dashboard::DashboardMessages;
@@ -162,6 +162,11 @@ impl Component for TextArea {
     ) {
         state.focused.set(false);
         context.publish("textarea_focus", |state| &state.focused);
+
+        // TODO: Try to refactor these unsafe blocks out
+        #[allow(static_mut_refs)]
+        let tab_nav = unsafe { TAB_NAV.get_mut() };
+        *tab_nav = true;
     }
 
     fn on_focus(
@@ -171,6 +176,11 @@ impl Component for TextArea {
         mut context: Context<'_, Self::State>,
     ) {
         state.focused.set(true);
+
+        // TODO: Try to refactor these unsafe blocks out
+        #[allow(static_mut_refs)]
+        let tab_nav = unsafe { TAB_NAV.get_mut() };
+        *tab_nav = false;
 
         context.publish("textarea_focus", |state| &state.focused);
 
@@ -188,18 +198,18 @@ impl Component for TextArea {
         key: KeyEvent,
         state: &mut Self::State,
         mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut context: Context<'_, Self::State>,
     ) {
         match key.code {
             KeyCode::Char(c) => {
                 let emitter = context.emitter.clone();
-                handle_typing(c, state, &mut elements, context);
+                handle_typing(c, state, &mut elements, &mut context);
                 self.send_to_listeners(key.code, state, emitter);
             }
 
             KeyCode::Enter => {
                 let emitter = context.emitter.clone();
-                handle_typing('\n', state, &mut elements, context);
+                handle_typing('\n', state, &mut elements, &mut context);
                 self.send_to_listeners(key.code, state, emitter);
             }
 
@@ -209,7 +219,10 @@ impl Component for TextArea {
             // TODO: Get back to handling tab characters after updating to the
             // latest version of Anathema to use runtime_builder.with_global_events_handler()
             // to toggle focus management on/off at runtime
-            KeyCode::Tab => todo!(),
+            KeyCode::Tab => {
+                handle_typing(' ', state, &mut elements, &mut context);
+                handle_typing(' ', state, &mut elements, &mut context);
+            },
             KeyCode::BackTab => todo!(),
 
             // TODO: Get back to handling Ctrl-C copy command after updating to the
@@ -545,7 +558,7 @@ fn handle_typing(
     c: char,
     state: &mut TextAreaState,
     elements: &mut Elements<'_, '_>,
-    mut context: Context<'_, TextAreaState>,
+    context: &mut Context<'_, TextAreaState>,
 ) {
     elements
         .by_attribute("id", "container")
