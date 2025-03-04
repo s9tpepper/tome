@@ -7,4 +7,4 @@ container [height: 3]
     section_text_id: "url_input"
   ]
     $children
-      @url_text_input (textarea_focus -> url_input_focus) [id: "url_input"]
+      @url_text_input (textarea_focus -> focus_change) [id: "url_input"]

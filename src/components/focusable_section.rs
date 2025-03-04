@@ -150,7 +150,7 @@ impl Component for FocusableSection {
 
         #[allow(clippy::single_match)]
         match ident {
-            "url_input_focus" => {
+            "focus_change" => {
                 let focus = value.to_bool();
                 // dbg!(&focus);
 

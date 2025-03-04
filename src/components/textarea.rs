@@ -171,7 +171,16 @@ impl Component for TextArea {
         mut context: Context<'_, Self::State>,
     ) {
         state.focused.set(true);
+
         context.publish("textarea_focus", |state| &state.focused);
+
+        // NOTE: Trying to trigger a redraw here, the focus change is not showing up immediately
+        // until a redraw happens, usually by typing in the textarea
+        // elements.by_attribute("id", "container")
+        //     .first(|element, _| {
+        //         let overflow = element.to::<Overflow>();
+        //         overflow.scroll_down();
+        //     });
     }
 
     fn on_key(

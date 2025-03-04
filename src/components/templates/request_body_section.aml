@@ -1,16 +1,16 @@
 zstack
 
   @app_section [
-    border_color: border_color,
+    border_color: active_border_color,
     top_label: "Request (B)ody",
     show_top_label: true,
     show_bottom_label: false,
     bottom_label: ["Send (R)equest", "Show Request Hea(d)ers"],
-    section_id: "request_body_border",
+    section_id: "request_body_input",
     section_text_id: "textarea"
   ]
     $children
-      @request_body_input (textarea_focus -> input_focus) [id: "textarea"]
+      @request_body_input (textarea_focus -> focus_change) [id: "textarea"]
 
   hstack [id: "body_mode_hstack"]
     spacer [id: "body_mode_spacer", width: 1]

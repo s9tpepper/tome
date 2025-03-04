@@ -78,7 +78,7 @@ impl Component for AppSection {
         mut elements: anathema::widgets::Elements<'_, '_>,
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
-        if ident == "input_focus" {
+        if ident == "focus_change" {
             let focus = value.to_bool();
             if !focus {
                 context.set_focus("id", "app");
