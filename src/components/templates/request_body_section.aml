@@ -1,16 +1,10 @@
 zstack
+  zstack
+    border [id: section_id, foreground: active_border_color, border_style: "╭─╮│╯─╰│"]
+      @request_body_input [id: "textarea"]
 
-  @app_section [
-    border_color: active_border_color,
-    top_label: "Request (B)ody",
-    show_top_label: true,
-    show_bottom_label: false,
-    bottom_label: ["Send (R)equest", "Show Request Hea(d)ers"],
-    section_id: "request_body_input",
-    section_text_id: "textarea"
-  ]
-    $children
-      @request_body_input (textarea_focus -> focus_change) [id: "textarea"]
+    vstack
+      text "╭─Request (B)ody:"
 
   hstack [id: "body_mode_hstack"]
     spacer [id: "body_mode_spacer", width: 1]

@@ -8,8 +8,7 @@ use anathema::{
 };
 
 use crate::{
-    app::GlobalEventHandler,
-    theme::{get_app_theme, AppTheme},
+    app::GlobalEventHandler, messages::focus_messages::FocusChange, theme::{get_app_theme, AppTheme}
 };
 
 #[derive(Default)]
@@ -116,24 +115,50 @@ impl Component for FocusableSection {
         _: anathema::widgets::Elements<'_, '_>,
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
-        match message.as_str() {
-            "unfocus" => {
-                state.active_border_color.set(
-                    state
-                        .app_theme
-                        .to_ref()
-                        .border_unfocused
-                        .to_ref()
-                        .to_string(),
-                );
-            }
+        let focus_message = serde_json::from_str::<FocusChange>(&message);
+        match focus_message {
+            Ok(focus_msg) => {
+                match focus_msg {
+                    FocusChange::Focused => {
+                        state
+                            .active_border_color
+                            .set(state.app_theme.to_ref().border_focused.to_ref().to_string());
+                    },
+                    FocusChange::Unfocused => {
+                        state.active_border_color.set(
+                            state
+                                .app_theme
+                                .to_ref()
+                                .border_unfocused
+                                .to_ref()
+                                .to_string(),
+                        );
+                    },
+                }
+            },
 
-            "theme_update" => {
-                self.update_app_theme(state);
-            }
+            Err(_) => {
+                match message.as_str() {
+                    "unfocus" => {
+                        state.active_border_color.set(
+                            state
+                                .app_theme
+                                .to_ref()
+                                .border_unfocused
+                                .to_ref()
+                                .to_string(),
+                        );
+                    }
 
-            _ => {}
+                    "theme_update" => {
+                        self.update_app_theme(state);
+                    }
+
+                    _ => {}
+                }
+            },
         }
+
     }
 
     fn receive(
@@ -148,6 +173,8 @@ impl Component for FocusableSection {
             return;
         }
 
+        // TODO: Use FocusChange direct component message and refactor this focus_change
+        // associated function out of this component
         #[allow(clippy::single_match)]
         match ident {
             "focus_change" => {

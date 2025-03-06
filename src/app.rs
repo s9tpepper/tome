@@ -253,7 +253,7 @@ impl App {
             "request_body_input".to_string(),
             template("templates/textarea"),
             Some("endpoint_request_body".to_string()),
-            vec!["dashboard".to_string()],
+            vec!["dashboard".to_string(), "request_body_section".to_string()],
         )?;
 
         EditInput::register(
@@ -315,7 +315,7 @@ impl App {
             "url_text_input",
             template("templates/no_border_input"),
             Some(String::from("endpoint_url_input")),
-            vec![String::from("dashboard")],
+            vec![String::from("dashboard"), String::from("url_input")],
         )?;
 
         EditInput::register(

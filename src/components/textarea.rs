@@ -17,8 +17,7 @@ use rstest::rstest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::{GlobalEventHandler, TAB_NAV},
-    theme::{get_app_theme, AppTheme},
+    app::{GlobalEventHandler, TAB_NAV}, messages::focus_messages::FocusChange, theme::{get_app_theme, AppTheme}
 };
 
 use super::dashboard::DashboardMessages;
@@ -122,6 +121,24 @@ impl TextArea {
         Ok(())
     }
 
+    fn send_focus_to_listeners(&self, state: &mut TextAreaState,  emitter: Emitter) {
+        let message = match *state.focused.to_ref() {
+            true => serde_json::to_string(&FocusChange::Focused),
+            false => serde_json::to_string(&FocusChange::Unfocused),
+        };
+
+        if message.is_ok() {
+            let Ok(ids) = self.component_ids.try_borrow() else {
+                return;
+            };
+
+            let message = message.unwrap();
+            for listener in &self.listeners {
+                ids.get(listener).map(|id| emitter.emit(*id, message.clone()));
+            }
+        }
+    }
+
     fn send_to_listeners(&self, code: KeyCode, state: &mut TextAreaState, emitter: Emitter) {
         if let KeyCode::Char(_) = code {
             // TODO: Fix the outgoing message so it is not 100% coupled to only response body
@@ -158,22 +175,23 @@ impl Component for TextArea {
         &mut self,
         state: &mut Self::State,
         _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        context: Context<'_, Self::State>,
     ) {
         state.focused.set(false);
-        context.publish("textarea_focus", |state| &state.focused);
 
         // TODO: Try to refactor these unsafe blocks out
         #[allow(static_mut_refs)]
         let tab_nav = unsafe { TAB_NAV.get_mut() };
         *tab_nav = true;
+
+        self.send_focus_to_listeners(state, context.emitter.clone());
     }
 
     fn on_focus(
         &mut self,
         state: &mut Self::State,
         _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        context: Context<'_, Self::State>,
     ) {
         state.focused.set(true);
 
@@ -182,15 +200,7 @@ impl Component for TextArea {
         let tab_nav = unsafe { TAB_NAV.get_mut() };
         *tab_nav = false;
 
-        context.publish("textarea_focus", |state| &state.focused);
-
-        // NOTE: Trying to trigger a redraw here, the focus change is not showing up immediately
-        // until a redraw happens, usually by typing in the textarea
-        // elements.by_attribute("id", "container")
-        //     .first(|element, _| {
-        //         let overflow = element.to::<Overflow>();
-        //         overflow.scroll_down();
-        //     });
+        self.send_focus_to_listeners(state, context.emitter.clone());
     }
 
     fn on_key(

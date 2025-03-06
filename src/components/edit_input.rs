@@ -9,8 +9,7 @@ use anathema::{
 use log::info;
 
 use crate::{
-    app::GlobalEventHandler,
-    theme::{get_app_theme, get_app_theme_persisted, AppTheme},
+    app::GlobalEventHandler, messages::focus_messages::FocusChange, theme::{get_app_theme, get_app_theme_persisted, AppTheme}
 };
 
 use super::{
@@ -124,6 +123,24 @@ impl EditInput {
             _ => {}
         }
     }
+
+    fn send_focus_to_listeners(&self, state: &mut InputState,  emitter: Emitter) {
+        let message = match *state.focused.to_ref() {
+            true => serde_json::to_string(&FocusChange::Focused),
+            false => serde_json::to_string(&FocusChange::Unfocused),
+        };
+
+        if message.is_ok() {
+            let Ok(ids) = self.component_ids.try_borrow() else {
+                return;
+            };
+
+            let message = message.unwrap();
+            for listener in &self.listeners {
+                ids.get(listener).map(|id| emitter.emit(*id, message.clone()));
+            }
+        }
+    }
 }
 
 impl InputReceiver for EditInput {}
@@ -137,8 +154,10 @@ impl Component for EditInput {
         elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
+        let emitter = context.emitter.clone();
         self._on_focus(state, elements, context);
         update_theme(self, state);
+        self.send_focus_to_listeners(state, emitter);
     }
 
     fn on_blur(
@@ -147,7 +166,9 @@ impl Component for EditInput {
         elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
+        let emitter = context.emitter.clone();
         self._on_blur(state, elements, context);
+        self.send_focus_to_listeners(state, emitter);
     }
 
     fn on_key(
