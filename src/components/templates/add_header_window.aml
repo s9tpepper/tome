@@ -4,7 +4,7 @@ align [alignment: "center"]
       // NOTE: Prevents the glyphs behind the window from showing in the
       // floating dialog window
       zstack
-        border [foreground: app_theme.border_focused, border_style: "╭─╮│╯─╰│"]
+        border [fill: " ", foreground: app_theme.border_focused, border_style: "╭─╮│╯─╰│"]
           padding [padding: 1]
             vstack
               container [height: 3, max_height: 3]
