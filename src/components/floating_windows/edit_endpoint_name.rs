@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId},
+    component::{Component, ComponentId, MouseEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
@@ -139,6 +139,36 @@ impl Component for EditEndpointName {
         true
     }
 
+    fn on_mouse(
+        &mut self,
+        mouse: MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        let mut context_ref = RefCell::new(context);
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "submit_button")
+            .first(|_, _| {
+                // TODO: Remove this state.active after Anathema update
+                if state.active && mouse.lsb_up() {
+                    self.submit(state, &mut context_ref);
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "cancel_button")
+            .first(|_, _| {
+                // TODO: Remove this state.active after Anathema update
+                if state.active && mouse.lsb_up() {
+                    self.cancel(state, &mut context_ref);
+                }
+            });
+    }
+
     fn on_blur(
         &mut self,
         state: &mut Self::State,
@@ -209,6 +239,7 @@ impl Component for EditEndpointName {
                     }
 
                     context.set_focus("id", "endpoint_name_input");
+                    state.active = true;
                 }
 
                 EditEndpointNameMessages::Specifically((
@@ -225,6 +256,7 @@ impl Component for EditEndpointName {
 
                     self.persisted_project_name = Some(project_name);
                     self.persisted_endpoint = Some(persisted_endpoint);
+                    state.active = true;
                 }
             }
         }
@@ -242,7 +274,7 @@ impl Component for EditEndpointName {
         match ident {
             "name_input_escape" => context.set_focus("id", "edit_endpoint_name"),
             "name_input_update" => state.name.set(value.to_string()),
-            "name_input_enter" => self.submit(state, context),
+            "name_input_enter" => self.submit(state, &mut context.into()),
             _ => {}
         }
     }
@@ -257,8 +289,8 @@ impl Component for EditEndpointName {
         match key.code {
             anathema::component::KeyCode::Char(char) => match char {
                 'e' => context.set_focus("id", "endpoint_name_input"),
-                's' => self.submit(state, context),
-                'c' => self.cancel(state, context),
+                's' => self.submit(state, &mut context.into()),
+                'c' => self.cancel(state, &mut context.into()),
 
                 _ => {}
             },
@@ -305,6 +337,7 @@ impl EditEndpointName {
                 cancel_button_color: unfocused_bg.into(),
 
                 specific_name_change: None.into(),
+                active: false,
             },
         )?;
 
@@ -336,7 +369,7 @@ impl EditEndpointName {
         &self,
         endpoint: &PersistedEndpoint,
         state: &mut EditEndpointNameState,
-        mut context: Context<'_, EditEndpointNameState>,
+        context: &mut RefCell<Context<'_, EditEndpointNameState>>,
     ) {
         let specific_name_update = SpecificNameUpdate {
             old_name: endpoint.name.to_string(),
@@ -355,7 +388,7 @@ impl EditEndpointName {
                 return;
             };
 
-            let _ = send_message("dashboard", message, &ids, context.emitter);
+            let _ = send_message("dashboard", message, &ids, context.borrow().emitter);
             return;
         };
 
@@ -372,9 +405,11 @@ impl EditEndpointName {
 
         match rename_endpoint(project_name, endpoint, &state.name.to_ref()) {
             Ok(_) => {
-                context.publish("edit_endpoint_name__specific_endpoint_rename", |state| {
-                    &state.specific_name_change
-                });
+                context
+                    .borrow_mut()
+                    .publish("edit_endpoint_name__specific_endpoint_rename", |state| {
+                        &state.specific_name_change
+                    });
             }
             Err(_) => {
                 let error_message = "There was an error renaming the endpoint".to_string();
@@ -388,7 +423,7 @@ impl EditEndpointName {
                     return;
                 };
 
-                let _ = send_message("dashboard", message, &ids, context.emitter);
+                let _ = send_message("dashboard", message, &ids, context.borrow().emitter);
             }
         }
     }
@@ -396,16 +431,18 @@ impl EditEndpointName {
     fn cancel(
         &self,
         state: &mut EditEndpointNameState,
-        mut context: Context<'_, EditEndpointNameState>,
+        context: &mut RefCell<Context<'_, EditEndpointNameState>>,
     ) {
-        context.publish("edit_endpoint_name__cancel", |state| &state.name);
+        context
+            .borrow_mut()
+            .publish("edit_endpoint_name__cancel", |state| &state.name);
         state.unique_name_error.set("".to_string());
     }
 
     fn submit(
         &self,
         state: &mut EditEndpointNameState,
-        mut context: Context<'_, EditEndpointNameState>,
+        context: &mut RefCell<Context<'_, EditEndpointNameState>>,
     ) {
         let exists = state
             .current_names
@@ -427,7 +464,9 @@ impl EditEndpointName {
                 self.rename_specific_endpoint(persisted_endpoint, state, context);
             }
             None => {
-                context.publish("edit_endpoint_name__submit", |state| &state.name);
+                context
+                    .borrow_mut()
+                    .publish("edit_endpoint_name__submit", |state| &state.name);
             }
         }
     }
@@ -455,4 +494,7 @@ pub struct EditEndpointNameState {
 
     #[state_ignore]
     button_color_unfocused: String,
+
+    #[state_ignore]
+    active: bool,
 }
