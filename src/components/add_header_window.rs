@@ -100,11 +100,27 @@ pub struct AddHeaderWindowState {
     current_name: String,
 
     unique_name_error: Value<String>,
+
+    success_button_color: Value<String>,
+    cancel_button_color: Value<String>,
+
+    #[state_ignore]
+    success_color_focused: String,
+
+    #[state_ignore]
+    cancel_color_focused: String,
+
+    #[state_ignore]
+    button_color_unfocused: String,
 }
 
 impl AddHeaderWindowState {
     pub fn new() -> Self {
         let app_theme = get_app_theme();
+
+        let submit_bg = app_theme.overlay_submit_background.to_ref().to_string();
+        let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
+        let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
 
         AddHeaderWindowState {
             app_theme: app_theme.into(),
@@ -114,6 +130,12 @@ impl AddHeaderWindowState {
 
             header: NewHeader::default().into(),
             unique_name_error: "".to_string().into(),
+
+            success_color_focused: submit_bg,
+            cancel_color_focused: cancel_bg,
+            button_color_unfocused: unfocused_bg.clone(),
+            success_button_color: unfocused_bg.clone().into(),
+            cancel_button_color: unfocused_bg.into(),
         }
     }
 }
@@ -180,6 +202,21 @@ impl Component for AddHeaderWindow {
     type State = AddHeaderWindowState;
     type Message = String;
 
+    fn on_blur(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state
+            .cancel_button_color
+            .set(state.button_color_unfocused.clone());
+
+        state
+            .success_button_color
+            .set(state.button_color_unfocused.clone());
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,
@@ -187,6 +224,14 @@ impl Component for AddHeaderWindow {
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
+
+        state
+            .cancel_button_color
+            .set(state.success_color_focused.clone());
+
+        state
+            .success_button_color
+            .set(state.cancel_color_focused.clone());
     }
 
     fn message(
