@@ -139,6 +139,21 @@ impl Component for EditEndpointName {
         true
     }
 
+    fn on_blur(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state
+            .cancel_button_color
+            .set(state.button_color_unfocused.clone());
+
+        state
+            .success_button_color
+            .set(state.button_color_unfocused.clone());
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,
@@ -146,6 +161,14 @@ impl Component for EditEndpointName {
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
+
+        state
+            .cancel_button_color
+            .set(state.success_color_focused.clone());
+
+        state
+            .success_button_color
+            .set(state.cancel_color_focused.clone());
     }
 
     fn message(
@@ -219,6 +242,7 @@ impl Component for EditEndpointName {
         match ident {
             "name_input_escape" => context.set_focus("id", "edit_endpoint_name"),
             "name_input_update" => state.name.set(value.to_string()),
+            "name_input_enter" => self.submit(state, context),
             _ => {}
         }
     }
@@ -233,37 +257,8 @@ impl Component for EditEndpointName {
         match key.code {
             anathema::component::KeyCode::Char(char) => match char {
                 'e' => context.set_focus("id", "endpoint_name_input"),
-
-                's' => {
-                    let exists = state
-                        .current_names
-                        .iter()
-                        .find(|n| **n == state.name.to_ref().to_string());
-
-                    if exists.is_some() {
-                        let unique_name_error = format!(
-                            "The name '{}' is already in use",
-                            state.name.to_ref().clone()
-                        );
-
-                        state.unique_name_error.set(unique_name_error);
-                        return;
-                    }
-
-                    match &self.persisted_endpoint {
-                        Some(persisted_endpoint) => {
-                            self.rename_specific_endpoint(persisted_endpoint, state, context);
-                        }
-                        None => {
-                            context.publish("edit_endpoint_name__submit", |state| &state.name);
-                        }
-                    }
-                }
-
-                'c' => {
-                    context.publish("edit_endpoint_name__cancel", |state| &state.name);
-                    state.unique_name_error.set("".to_string());
-                }
+                's' => self.submit(state, context),
+                'c' => self.cancel(state, context),
 
                 _ => {}
             },
@@ -284,6 +279,11 @@ impl EditEndpointName {
         builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
     ) -> anyhow::Result<()> {
         let app_theme = get_app_theme();
+
+        let submit_bg = app_theme.overlay_submit_background.to_ref().to_string();
+        let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
+        let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
+
         let id = builder.register_component(
             "edit_endpoint_name",
             template("floating_windows/templates/edit_endpoint_name"),
@@ -297,6 +297,12 @@ impl EditEndpointName {
                 app_theme: app_theme.into(),
                 current_names: vec![],
                 unique_name_error: String::from("").into(),
+
+                success_color_focused: submit_bg,
+                cancel_color_focused: cancel_bg,
+                button_color_unfocused: unfocused_bg.clone(),
+                success_button_color: unfocused_bg.clone().into(),
+                cancel_button_color: unfocused_bg.into(),
 
                 specific_name_change: None.into(),
             },
@@ -386,6 +392,45 @@ impl EditEndpointName {
             }
         }
     }
+
+    fn cancel(
+        &self,
+        state: &mut EditEndpointNameState,
+        mut context: Context<'_, EditEndpointNameState>,
+    ) {
+        context.publish("edit_endpoint_name__cancel", |state| &state.name);
+        state.unique_name_error.set("".to_string());
+    }
+
+    fn submit(
+        &self,
+        state: &mut EditEndpointNameState,
+        mut context: Context<'_, EditEndpointNameState>,
+    ) {
+        let exists = state
+            .current_names
+            .iter()
+            .find(|n| **n == state.name.to_ref().to_string());
+
+        if exists.is_some() {
+            let unique_name_error = format!(
+                "The name '{}' is already in use",
+                state.name.to_ref().clone()
+            );
+
+            state.unique_name_error.set(unique_name_error);
+            return;
+        }
+
+        match &self.persisted_endpoint {
+            Some(persisted_endpoint) => {
+                self.rename_specific_endpoint(persisted_endpoint, state, context);
+            }
+            None => {
+                context.publish("edit_endpoint_name__submit", |state| &state.name);
+            }
+        }
+    }
 }
 
 #[derive(State)]
@@ -398,4 +443,16 @@ pub struct EditEndpointNameState {
     current_names: Vec<String>,
 
     specific_name_change: Value<Option<SpecificNameChange>>,
+
+    success_button_color: Value<String>,
+    cancel_button_color: Value<String>,
+
+    #[state_ignore]
+    success_color_focused: String,
+
+    #[state_ignore]
+    cancel_color_focused: String,
+
+    #[state_ignore]
+    button_color_unfocused: String,
 }

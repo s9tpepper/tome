@@ -11,7 +11,8 @@ align [alignment: "center"]
           padding [padding: 1]
             @edit_endpoint_name_input (
               text_change -> name_input_update,
-              escape -> name_input_escape
+              escape -> name_input_escape,
+              edit_input__enter -> name_input_enter,
             ) [id: "endpoint_name_input", label: "(E)ndpoint Name"]
 
     vstack [height: 5, width: 62]
@@ -20,17 +21,20 @@ align [alignment: "center"]
         text [id: "endpoint_name_errors"] "─"
           span [foreground:  app_theme.menu_color_3] unique_name_error
 
-    vstack [height: 7, width: 62]
-      spacer
-      hstack [width: 60]
+    container [height: 7, width: 62]
+      vstack
         spacer
-        text [min_height: 1] ""
-          span [foreground: border_color] "─"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
-          span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(S)ubmit"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
-        text [min_height: 1] ""
-          span [foreground: border_color] "─"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
-          span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(C)ancel"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+        hstack [width: 60]
+          spacer
+          container [id: "submit_button"]
+            text [min_height: 1] ""
+              span [foreground: border_color] "─"
+              span [bold: true, background: app_theme.overlay_background, foreground: success_button_color] "█"
+              span [background: success_button_color, foreground: app_theme.overlay_submit_foreground] "(S)ubmit"
+              span [bold: true, background: app_theme.overlay_background, foreground: success_button_color] "█"
+          container [id: "cancel_button"]
+            text [min_height: 1] ""
+              span [foreground: border_color] "─"
+              span [bold: true, background: app_theme.overlay_background, foreground: cancel_button_color] "█"
+              span [background: cancel_button_color, foreground: app_theme.overlay_cancel_foreground] "(C)ancel"
+              span [bold: true, background: app_theme.overlay_background, foreground: cancel_button_color] "█"
