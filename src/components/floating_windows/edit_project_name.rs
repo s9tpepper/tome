@@ -238,6 +238,8 @@ impl Component for EditProjectName {
         match ident {
             "name_input_escape" => context.set_focus("id", "edit_project_name"),
             "name_input_update" => state.name.set(value.to_string()),
+            "name_input_enter" => self.submit(state, &mut context.into()),
+
             _ => {}
         }
     }

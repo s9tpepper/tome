@@ -20,7 +20,8 @@ align [alignment: "center"]
           padding [padding: 1]
             @edit_project_name_input (
               text_change -> name_input_update,
-              escape -> name_input_escape
+              escape -> name_input_escape,
+              edit_input__enter -> name_input_enter,
             ) [id: "project_name_input", label: "(P)roject Name"]
 
       container [height: 6]

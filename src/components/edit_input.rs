@@ -87,6 +87,10 @@ impl EditInput {
         }
     }
 
+    fn send_enter(&self, context: &mut Context<'_, InputState>) {
+        context.publish("edit_input__enter", |state| &state.input);
+    }
+
     // TODO: Remove the duplication between send_escape and send_text_update()
     fn send_escape(&self, emitter: Emitter) {
         if let Ok(ids) = self.component_ids.try_borrow() {
@@ -179,6 +183,8 @@ impl Component for EditInput {
         mut context: Context<'_, Self::State>,
     ) {
         self._on_key(&key, state, &elements, &mut context);
+
+        if let KeyCode::Enter = &key.code { self.send_enter(&mut context) }
 
         let emitter = context.emitter.clone();
         self.send_to_listeners(key.code, state, emitter);
