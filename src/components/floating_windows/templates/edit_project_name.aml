@@ -32,12 +32,12 @@ align [alignment: "center"]
             container [id: "submit_button"]
               text [min_height: 1] ""
                 span [foreground: border_color] "─"
-                span [bold: true, background: app_theme.overlay_background, foreground: success_button_color] "█"
+                span [bold: true, background: app_theme.overlay_background, foreground: success_button_color] button_cap_left
                 span [background: success_button_color, foreground: app_theme.overlay_submit_foreground] "(S)ubmit"
-                span [bold: true, background: app_theme.overlay_background, foreground: success_button_color] "█"
+                span [bold: true, background: app_theme.overlay_background, foreground: success_button_color] button_cap_right
             container [id: "cancel_button"]
               text [min_height: 1] ""
                 span [foreground: border_color] "─"
-                span [bold: true, background: app_theme.overlay_background, foreground: cancel_button_color] "█"
+                span [bold: true, background: app_theme.overlay_background, foreground: cancel_button_color] button_cap_left
                 span [background: cancel_button_color, foreground: app_theme.overlay_cancel_foreground] "(C)ancel"
-                span [bold: true, background: app_theme.overlay_background, foreground: cancel_button_color] "█"
+                span [bold: true, background: app_theme.overlay_background, foreground: cancel_button_color] button_cap_right

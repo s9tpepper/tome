@@ -18,10 +18,10 @@ zstack
     spacer
     text [min_height: 1] "╰"
       span [foreground: border_color, background: app_theme.background] "─"
-      span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
+      span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_left
       span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Send (R)equest"
-      span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
+      span [background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_right
       span [foreground: border_color, background: app_theme.background] "─"
-      span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
+      span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_left
       span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Show Request Hea(d)ers"
-      span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
+      span [background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_right

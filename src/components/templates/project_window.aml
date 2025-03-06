@@ -22,16 +22,16 @@ align [alignment: "center"]
           spacer
           text [min_height: 1] ""
             span [foreground: app_theme.border_focused] "─"
-            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] button_cap_left
             span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(A)dd"
-            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] button_cap_right
           text [min_height: 1] ""
             span [foreground: app_theme.border_focused] "─"
-            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] "█"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_left
             span [background: app_theme.menu_color_2, foreground: app_theme.overlay_submit_foreground] "(R)ename"
-            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] "█"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_right
           text [min_height: 1] ""
             span [foreground: app_theme.border_focused] "─"
-            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_left
             span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(D)elete"
-            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_right

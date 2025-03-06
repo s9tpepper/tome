@@ -5,7 +5,6 @@ use anathema::{
     state::{CommonVal, List, Value},
     widgets::Elements,
 };
-use log::info;
 use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
@@ -20,6 +19,7 @@ use crate::{
     app::GlobalEventHandler,
     fs::save_response,
     messages::confirm_actions::ConfirmAction,
+    options::get_button_caps,
     projects::{delete_endpoint, delete_project, Header, PersistedVariable},
     templates::template,
     theme::get_app_theme,
@@ -122,6 +122,8 @@ pub struct DashboardState {
 
     pub app_bg: Value<String>,
     pub app_theme: Value<AppTheme>,
+    pub button_cap_left: Value<String>,
+    pub button_cap_right: Value<String>,
 }
 
 impl DashboardState {
@@ -136,7 +138,12 @@ impl DashboardState {
         let color4: Value<String> = app_theme.menu_color_4.to_ref().to_string().into();
         let color5: Value<String> = app_theme.menu_color_5.to_ref().to_string().into();
 
+        let button_caps = get_button_caps();
+
         DashboardState {
+            button_cap_left: button_caps.0.to_string().into(),
+            button_cap_right: button_caps.1.to_string().into(),
+
             // project_count: 0.into(),
             project: project.into(),
             endpoint_count: 0.into(),

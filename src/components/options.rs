@@ -1,6 +1,6 @@
 use crate::{
     app::GlobalEventHandler,
-    options::{save_options, Options},
+    options::{get_button_caps, save_options, Options},
     templates::template,
     theme::{get_app_theme_by_name, AppTheme},
 };
@@ -32,6 +32,8 @@ pub struct OptionsViewState {
     app_theme: Value<AppTheme>,
     options: Value<OptionsState>,
     options_window: Value<OptionsWindows>,
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 }
 
 #[derive(Default, State)]
@@ -53,11 +55,14 @@ impl OptionsViewState {
     pub fn new(options: Options) -> Self {
         let app_theme = get_app_theme_by_name(&options.app_theme_name);
         let options_state: OptionsState = options.into();
+        let button_caps = get_button_caps();
 
         OptionsViewState {
             app_theme: app_theme.into(),
             options: options_state.into(),
             options_window: OptionsWindows::None.into(),
+            button_cap_left: button_caps.0.to_string().into(),
+            button_cap_right: button_caps.1.to_string().into(),
         }
     }
 }
