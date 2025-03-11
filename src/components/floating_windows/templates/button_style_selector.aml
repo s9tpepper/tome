@@ -1,0 +1,18 @@
+align [alignment: "center"]
+  zstack [fill: " "]
+    vstack [width: 25]
+      container [height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground]
+        expand
+          hstack
+            text [bold: true] " Button Style"
+      border [sides: ["left", "bottom", "right"], background: app_theme.overlay_background, foreground: app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 25]
+        padding [padding: 1]
+          vstack [min_height: 3]
+
+            container [min_height: 5]
+              vstack
+                text " "
+                for button_style in window_list
+                  vstack [width: 25, foreground: button_style.row_color]
+                    text [width: 25, text_align: "center"] "    " button_style.name
+                    text " "

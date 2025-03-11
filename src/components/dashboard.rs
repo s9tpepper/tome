@@ -19,7 +19,7 @@ use crate::{
     app::GlobalEventHandler,
     fs::save_response,
     messages::confirm_actions::ConfirmAction,
-    options::get_button_caps,
+    options::{get_button_caps, get_button_style},
     projects::{delete_endpoint, delete_project, Header, PersistedVariable},
     templates::template,
     theme::get_app_theme,
@@ -851,6 +851,7 @@ pub enum DashboardMessages {
     TextInput(TextInputMessages),
     TextArea(TextAreaMessages),
     ThemeUpdate,
+    ButtonStyleUpdate,
     ShowSucces((String, String)),
     ShowError(String),
     Confirmations(ConfirmAction),
@@ -894,6 +895,13 @@ impl Component for DashboardComponent {
 
                     // let app_theme = get_app_theme_persisted();
                     // state.app_theme.set(app_theme.into());
+                }
+
+                DashboardMessages::ButtonStyleUpdate => {
+                    let button_caps = get_button_caps();
+
+                    state.button_cap_left.set(button_caps.0.to_string());
+                    state.button_cap_right.set(button_caps.1.to_string());
                 }
 
                 DashboardMessages::TextInput(text_input_message) => match text_input_message {

@@ -3,9 +3,10 @@ use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc, sync::atomic::A
 use anathema::{
     component::{ComponentId, Event},
     prelude::{Document, GlobalContext, ToSourceKind, TuiBackend},
-    runtime::{GlobalEvents, Runtime, RuntimeBuilder}, widgets::Elements,
+    runtime::{GlobalEvents, Runtime, RuntimeBuilder},
+    widgets::Elements,
 };
-use log::{LevelFilter, info};
+use log::{info, LevelFilter};
 use simplelog::{Config, WriteLogger};
 
 use crate::{
@@ -21,6 +22,7 @@ use crate::{
             add_project_variable::AddProjectVariable,
             app_theme_selector::AppThemeSelector,
             body_mode_selector::{BodyModeSelector, BodyModeSelectorState},
+            button_style_selector::ButtonStyleSelector,
             code_gen::CodeGen,
             commands::Commands,
             edit_endpoint_name::EditEndpointName,
@@ -39,7 +41,7 @@ use crate::{
         response_renderer::ResponseRenderer,
         row::{Row, RowState},
         textarea::{TextArea, TextAreaState},
-        textinput::{InputState, TEXTINPUT_TEMPLATE, TextInput},
+        textinput::{InputState, TextInput, TEXTINPUT_TEMPLATE},
     },
     templates::template,
     theme::get_app_theme,
@@ -63,7 +65,9 @@ impl GlobalEvents for GlobalEventHandler {
     fn enable_tab_navigation(&mut self) -> bool {
         // TODO: Try to refactor the unsafe block out
         #[allow(static_mut_refs)]
-        unsafe { TAB_NAV.load(std::sync::atomic::Ordering::Relaxed) }
+        unsafe {
+            TAB_NAV.load(std::sync::atomic::Ordering::Relaxed)
+        }
     }
 
     fn handle(
@@ -373,6 +377,7 @@ impl App {
         OptionsView::register(&self.component_ids, builder)?;
         SyntaxThemeSelector::register(&self.component_ids, builder)?;
         AppThemeSelector::register(&self.component_ids, builder)?;
+        ButtonStyleSelector::register(&self.component_ids, builder)?;
         Commands::register(&self.component_ids, builder)?;
         CodeGen::register(&self.component_ids, builder)?;
         AddProjectVariable::register(&self.component_ids, builder)?;

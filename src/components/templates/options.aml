@@ -9,6 +9,9 @@ zstack [background: app_theme.background]
           hstack
             text [foreground: app_theme.border_unfocused] "Synta(x) Highlight Theme: "
             text [bold: true] options.syntax_theme
+          hstack
+            text [foreground: app_theme.border_unfocused] "(B)utton Style: "
+            text [bold: true] options.button_style
 
   vstack
     text "╭─"
@@ -39,3 +42,10 @@ if options_window == "AppThemeSelector"
       app_theme_selector__selection -> app_theme_selector__selection,
       app_theme_selector__cancel -> app_theme_selector__cancel
     ) [id: "app_theme_selector"]
+
+if options_window == "ButtonStyleSelector"
+  align [alignment: "center"]
+    @button_style_selector (
+      button_style_selector__selection -> button_style_selector__selection,
+      button_style_selector__cancel -> button_style_selector__cancel
+    ) [id: "button_style_selector"]

@@ -14,6 +14,10 @@ const BUTTONS_ANGLED: (&str, &str) = ("█", "█");
 const BUTTONS_SQUARED: (&str, &str) = (" █", "█ ");
 const BUTTONS_ROUNDED: (&str, &str) = (" █", "█ ");
 
+pub const BUTTON_STYLE_ANGLED: &str = "Angled ██";
+pub const BUTTON_STYLE_SQUARED: &str = "Squared  ███";
+pub const BUTTON_STYLE_ROUNDED: &str = "Rounded ██";
+
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub enum ButtonStyle {
     Angled,
@@ -58,6 +62,19 @@ pub fn get_default_options() -> Options {
     }
 }
 
+pub fn get_button_style() -> String {
+    match get_options().button_style {
+        Some(style) => match style {
+            ButtonStyle::Angled => BUTTON_STYLE_ANGLED,
+            ButtonStyle::Squared => BUTTON_STYLE_SQUARED,
+            ButtonStyle::Rounded => BUTTON_STYLE_ROUNDED,
+        },
+
+        None => BUTTON_STYLE_ANGLED,
+    }
+    .to_string()
+}
+
 pub fn get_button_caps() -> (&'static str, &'static str) {
     match get_options().button_style {
         Some(style) => match style {
@@ -66,7 +83,7 @@ pub fn get_button_caps() -> (&'static str, &'static str) {
             ButtonStyle::Rounded => BUTTONS_ROUNDED,
         },
 
-        None => BUTTONS_ROUNDED,
+        None => BUTTONS_ANGLED,
     }
 }
 

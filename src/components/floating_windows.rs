@@ -3,6 +3,7 @@ use anathema::state::{CommonVal, State};
 pub mod add_project_variable;
 pub mod app_theme_selector;
 pub mod body_mode_selector;
+pub mod button_style_selector;
 pub mod code_gen;
 pub mod commands;
 pub mod edit_endpoint_name;

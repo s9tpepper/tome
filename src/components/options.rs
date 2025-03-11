@@ -1,6 +1,9 @@
 use crate::{
     app::GlobalEventHandler,
-    options::{get_button_caps, save_options, Options},
+    options::{
+        get_button_caps, get_button_style, save_options, ButtonStyle, Options, BUTTON_STYLE_ANGLED,
+        BUTTON_STYLE_ROUNDED, BUTTON_STYLE_SQUARED,
+    },
     templates::template,
     theme::{get_app_theme_by_name, AppTheme},
 };
@@ -40,6 +43,7 @@ pub struct OptionsViewState {
 struct OptionsState {
     app_theme_name: Value<String>,
     syntax_theme: Value<String>,
+    button_style: Value<String>,
 }
 
 impl From<Options> for OptionsState {
@@ -47,6 +51,7 @@ impl From<Options> for OptionsState {
         OptionsState {
             app_theme_name: val.app_theme_name.into(),
             syntax_theme: val.syntax_theme.into(),
+            button_style: get_button_style().into(),
         }
     }
 }
@@ -73,6 +78,7 @@ enum OptionsWindows {
     None,
     SyntaxThemeSelector,
     AppThemeSelector,
+    ButtonStyleSelector,
 }
 
 impl State for OptionsWindows {
@@ -80,6 +86,7 @@ impl State for OptionsWindows {
         match self {
             OptionsWindows::SyntaxThemeSelector => Some(CommonVal::Str("SyntaxThemeSelector")),
             OptionsWindows::AppThemeSelector => Some(CommonVal::Str("AppThemeSelector")),
+            OptionsWindows::ButtonStyleSelector => Some(CommonVal::Str("ButtonStyleSelector")),
             OptionsWindows::None => Some(CommonVal::Str("None")),
         }
     }
@@ -146,6 +153,35 @@ impl OptionsView {
         state.options_window.set(OptionsWindows::AppThemeSelector);
 
         context.set_focus("id", "app_theme_selector");
+    }
+
+    fn open_button_style_selector(
+        &self,
+        state: &mut OptionsViewState,
+        mut context: anathema::prelude::Context<'_, OptionsViewState>,
+    ) {
+        state
+            .options_window
+            .set(OptionsWindows::ButtonStyleSelector);
+
+        context.set_focus("id", "button_style_selector");
+    }
+
+    fn update_button_style(
+        &self,
+        state: &mut OptionsViewState,
+        context: Context<'_, OptionsViewState>,
+    ) {
+        let _ = self.component_ids.try_borrow().map(|ids| {
+            if let Ok(msg) = serde_json::to_string(&DashboardMessages::ButtonStyleUpdate) {
+                let _ = send_message("dashboard", msg, &ids, context.emitter);
+            }
+        });
+
+        let button_caps = get_button_caps();
+
+        state.button_cap_left.set(button_caps.0.to_string());
+        state.button_cap_right.set(button_caps.1.to_string());
     }
 
     fn update_app_theme(
@@ -221,12 +257,13 @@ impl Component for OptionsView {
         match key.code {
             #[allow(clippy::single_match)]
             anathema::component::KeyCode::Char(char) => match char {
-                'b' => self.go_back(context),
+                'b' => self.open_button_style_selector(state, context),
                 'x' => self.open_theme_selector(state, context),
                 'a' => self.open_app_theme_selector(state, context),
 
                 _ => {}
             },
+
             anathema::component::KeyCode::Esc => self.go_back(context),
 
             _ => {}
@@ -243,6 +280,9 @@ impl Component for OptionsView {
     ) {
         match ident {
             "syntax_theme_selector__selection" => {
+                state.options_window.set(OptionsWindows::None);
+                context.set_focus("id", "options");
+
                 let mut options = get_options();
 
                 let new_theme = value.to_string().replace(".tmTheme", "");
@@ -260,17 +300,46 @@ impl Component for OptionsView {
                     }
                 }
             }
-            "syntax_theme_selector__cancel" => {
+
+            "syntax_theme_selector__cancel"
+            | "button_style_selector__cancel"
+            | "app_theme_selector__cancel" => {
                 state.options_window.set(OptionsWindows::None);
                 context.set_focus("id", "options");
             }
 
-            "app_theme_selector__cancel" => {
+            "button_style_selector__selection" => {
                 state.options_window.set(OptionsWindows::None);
                 context.set_focus("id", "options");
+
+                let mut options = get_options();
+
+                options.button_style = match value.to_string().as_str() {
+                    BUTTON_STYLE_ANGLED => ButtonStyle::Angled,
+                    BUTTON_STYLE_SQUARED => ButtonStyle::Squared,
+                    BUTTON_STYLE_ROUNDED => ButtonStyle::Rounded,
+
+                    _ => ButtonStyle::Angled,
+                }
+                .into();
+
+                match save_options(options) {
+                    Ok(_) => {
+                        state.options.to_mut().button_style.set(value.to_string());
+                        self.update_button_style(state, context);
+                    }
+                    Err(error) => {
+                        let error_message = format!("Error saving selected theme: {}", error);
+
+                        self.send_error_message(&error_message, context);
+                    }
+                }
             }
 
             "app_theme_selector__selection" => {
+                state.options_window.set(OptionsWindows::None);
+                context.set_focus("id", "options");
+
                 let mut options = get_options();
 
                 options.app_theme_name = value.to_string();
