@@ -161,14 +161,18 @@ impl Component for EditProjectName {
         mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
+        // TODO: Remove this state.active after Anathema update
+        if !state.active {
+            return;
+        }
+
         let mut context_ref = RefCell::new(context);
 
         elements
             .at_position(mouse.pos())
             .by_attribute("id", "submit_button")
             .first(|_, _| {
-                // TODO: Remove this state.active after Anathema update
-                if state.active && mouse.lsb_up() {
+                if mouse.lsb_up() {
                     self.submit(state, &mut context_ref);
                 }
             });
@@ -177,8 +181,7 @@ impl Component for EditProjectName {
             .at_position(mouse.pos())
             .by_attribute("id", "cancel_button")
             .first(|_, _| {
-                // TODO: Remove this state.active after Anathema update
-                if state.active && mouse.lsb_up() {
+                if mouse.lsb_up() {
                     self.cancel(state, &mut context_ref);
                 }
             });

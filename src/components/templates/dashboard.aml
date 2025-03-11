@@ -36,7 +36,8 @@ zstack [background: app_theme.background]
         $children
           text [foreground: app_theme.foreground, text_align: "right"] endpoint.method
       expand [axis: "horizontal"]
-        @url_input [id: "url", border_color: app_theme.border_unfocused, target: "url_input"]
+        container [id: "url_component"]
+          @url_input [id: "url", border_color: app_theme.border_unfocused, target: "url_input"]
 
     expand [axis: "vertical"]
       zstack

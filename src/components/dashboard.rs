@@ -19,7 +19,7 @@ use crate::{
     app::GlobalEventHandler,
     fs::save_response,
     messages::confirm_actions::ConfirmAction,
-    options::{get_button_caps, get_button_style},
+    options::get_button_caps,
     projects::{delete_endpoint, delete_project, Header, PersistedVariable},
     templates::template,
     theme::get_app_theme,
@@ -398,6 +398,12 @@ impl DashboardComponent {
         context.set_focus("id", "edit_project_name");
 
         let _ = send_message("edit_project_name", message, &ids, context.emitter);
+    }
+
+    fn focus_url_input(&self, context: &mut RefCell<Context<'_, DashboardState>>, ctrl: bool) {
+        if !ctrl {
+            context.borrow_mut().set_focus("id", "url_input");
+        }
     }
 
     fn new_project(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
@@ -1185,11 +1191,7 @@ impl Component for DashboardComponent {
                     },
 
                     // Set focus to the request url text input
-                    'u' => {
-                        if !event.ctrl {
-                            context.set_focus("id", "url_input");
-                        }
-                    }
+                    'u' => self.focus_url_input(&mut context.into(), event.ctrl),
 
                     // Quit app
                     'q' => quit::with_code(0),
@@ -1392,6 +1394,29 @@ impl Component for DashboardComponent {
 
     fn accept_focus(&self) -> bool {
         true
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: anathema::component::MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        let mut context_ref = RefCell::new(context);
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "url_component")
+            .first(|_, _| {
+                if *state.floating_window.to_ref() != FloatingWindow::None {
+                    return;
+                }
+
+                if mouse.lsb_up() {
+                    self.focus_url_input(&mut context_ref, false);
+                }
+            });
     }
 }
 
