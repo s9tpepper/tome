@@ -43,7 +43,8 @@ zstack [background: app_theme.background]
       zstack
         if main_display == "request_body"
           expand
-            @request_body_section [id: "request", border_color: app_theme.border_unfocused, target: "textarea"]
+            container [id: "request_body_component"]
+              @request_body_section [id: "request", border_color: app_theme.border_unfocused, target: "textarea"]
 
         if main_display == "response_body"
           expand

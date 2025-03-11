@@ -1,10 +1,10 @@
 use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc, sync::atomic::AtomicBool};
 
 use anathema::{
-    component::{ComponentId, Event},
+    component::{ComponentId, Event, KeyCode, KeyEvent},
     prelude::{Document, GlobalContext, ToSourceKind, TuiBackend},
     runtime::{GlobalEvents, Runtime, RuntimeBuilder},
-    widgets::Elements,
+    widgets::{components::events::KeyState, Elements},
 };
 use log::{info, LevelFilter};
 use simplelog::{Config, WriteLogger};
@@ -76,7 +76,14 @@ impl GlobalEvents for GlobalEventHandler {
         _elements: &mut Elements<'_, '_>,
         _ctx: &mut GlobalContext<'_>,
     ) -> Option<Event> {
-        Some(event)
+        match event {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('c'),
+                ctrl: true,
+                state: KeyState::Press,
+            }) => Some(Event::Stop),
+            _ => Some(event),
+        }
     }
 }
 

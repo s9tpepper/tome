@@ -17,7 +17,9 @@ use rstest::rstest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::{GlobalEventHandler, TAB_NAV}, messages::focus_messages::FocusChange, theme::{get_app_theme, AppTheme}
+    app::{GlobalEventHandler, TAB_NAV},
+    messages::focus_messages::FocusChange,
+    theme::{get_app_theme, AppTheme},
 };
 
 use super::dashboard::DashboardMessages;
@@ -121,7 +123,7 @@ impl TextArea {
         Ok(())
     }
 
-    fn send_focus_to_listeners(&self, state: &mut TextAreaState,  emitter: Emitter) {
+    fn send_focus_to_listeners(&self, state: &mut TextAreaState, emitter: Emitter) {
         let message = match *state.focused.to_ref() {
             true => serde_json::to_string(&FocusChange::Focused),
             false => serde_json::to_string(&FocusChange::Unfocused),
@@ -134,7 +136,8 @@ impl TextArea {
 
             let message = message.unwrap();
             for listener in &self.listeners {
-                ids.get(listener).map(|id| emitter.emit(*id, message.clone()));
+                ids.get(listener)
+                    .map(|id| emitter.emit(*id, message.clone()));
             }
         }
     }
@@ -170,6 +173,10 @@ pub enum TextAreaMessages {
 impl Component for TextArea {
     type State = TextAreaState;
     type Message = String;
+
+    fn accept_focus(&self) -> bool {
+        true
+    }
 
     fn on_blur(
         &mut self,
@@ -232,7 +239,7 @@ impl Component for TextArea {
             KeyCode::Tab => {
                 handle_typing(' ', state, &mut elements, &mut context);
                 handle_typing(' ', state, &mut elements, &mut context);
-            },
+            }
             KeyCode::BackTab => todo!(),
 
             // TODO: Get back to handling Ctrl-C copy command after updating to the

@@ -1417,6 +1417,19 @@ impl Component for DashboardComponent {
                     self.focus_url_input(&mut context_ref, false);
                 }
             });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "request_body_component")
+            .first(|_, _| {
+                if *state.floating_window.to_ref() != FloatingWindow::None {
+                    return;
+                }
+
+                if mouse.lsb_up() {
+                    context_ref.borrow_mut().set_focus("id", "textarea");
+                }
+            });
     }
 }
 
