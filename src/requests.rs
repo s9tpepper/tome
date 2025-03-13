@@ -130,8 +130,8 @@ fn test_replace_multiple_incomplete_pairs2() {
 
 pub fn do_request(
     state: &mut DashboardState,
-    context: anathema::prelude::Context<'_, DashboardState>,
-    _: anathema::widgets::Elements<'_, '_>,
+    context: &mut anathema::prelude::Context<'_, DashboardState>,
+    _: &anathema::widgets::Elements<'_, '_>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
     let project: PersistedProject = (&*state.project.to_ref()).into();
@@ -269,7 +269,7 @@ fn get_extension(content_type: &str) -> String {
 fn handle_successful_response(
     response: Response,
     state: &mut DashboardState,
-    mut context: Context<'_, DashboardState>,
+    context: &mut Context<'_, DashboardState>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
     let status = response.status();
@@ -347,7 +347,7 @@ fn handle_successful_response(
 fn handle_error_response(
     error: ureq::Error,
     state: &mut DashboardState,
-    mut context: Context<'_, DashboardState>,
+    context: &mut Context<'_, DashboardState>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
     match error {

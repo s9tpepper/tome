@@ -24,6 +24,7 @@ use crate::{
     messages::confirm_actions::ConfirmAction,
     options::get_button_caps,
     projects::PersistedVariable,
+    requests::do_request,
     templates::template,
     theme::{get_app_theme, update_component_theme},
 };
@@ -398,6 +399,21 @@ impl DashboardComponent {
     fn focus_url_input(&self, context: &mut RefCell<Context<'_, DashboardState>>, ctrl: bool) {
         if !ctrl {
             context.borrow_mut().set_focus("id", "url_input");
+        }
+    }
+
+    fn send_request(
+        &mut self,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+        elements: &Elements<'_, '_>,
+    ) {
+        let response = do_request(state, context, elements, self);
+        match response {
+            Ok(_) => {}
+            Err(err) => {
+                self.show_error(&err.to_string(), state);
+            }
         }
     }
 

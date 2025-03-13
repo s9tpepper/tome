@@ -47,6 +47,7 @@ pub fn associated_functions(
         "new_project_click" => dashboard.new_project(state, &mut context),
         "new_endpoint_click" => dashboard.new_endpoint(state, &mut context),
         "commands_button_click" => dashboard.open_commands_window(state, &mut context),
+        "send_request_click" => dashboard.send_request(state, &mut context, &elements),
 
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);

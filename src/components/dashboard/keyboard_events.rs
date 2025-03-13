@@ -52,15 +52,7 @@ pub fn keyboard_events(
                 'q' => quit::with_code(0),
 
                 // Make the request
-                'r' => {
-                    let response = do_request(state, context, elements, dashboard);
-                    match response {
-                        Ok(_) => {}
-                        Err(err) => {
-                            dashboard.show_error(&err.to_string(), state);
-                        }
-                    }
-                }
+                'r' => dashboard.send_request(state, &mut context, &elements),
 
                 // Show request body editor window
                 'b' => match main_display {
