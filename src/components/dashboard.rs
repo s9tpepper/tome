@@ -1,11 +1,12 @@
 use anathema::{
-    component::{Component, ComponentId, KeyCode, KeyEvent, MouseEvent},
+    component::{Component, ComponentId, KeyEvent, MouseEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, List, State, Value},
     widgets::Elements,
 };
 use associated_functions::associated_functions;
+use keyboard_events::keyboard_events;
 use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
@@ -16,13 +17,11 @@ use std::{
 use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
-use crate::requests::do_request;
 use crate::{
     app::GlobalEventHandler,
-    fs::save_response,
     messages::confirm_actions::ConfirmAction,
     options::get_button_caps,
-    projects::{delete_endpoint, delete_project, Header, PersistedVariable},
+    projects::{delete_endpoint, delete_project, PersistedVariable},
     templates::template,
     theme::{get_app_theme, update_component_theme},
 };
@@ -39,7 +38,6 @@ use super::floating_windows::{
 };
 use super::{
     app_layout::AppLayoutMessages,
-    edit_header_selector::EditHeaderSelectorMessages,
     floating_windows::{
         edit_endpoint_name::EditEndpointNameMessages, edit_project_name::EditProjectNameMessages,
         FloatingWindow,
@@ -51,6 +49,7 @@ use super::{
 };
 
 mod associated_functions;
+mod keyboard_events;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DashboardDisplay {
@@ -972,180 +971,9 @@ impl Component for DashboardComponent {
         event: KeyEvent,
         state: &mut Self::State,
         elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        context: Context<'_, Self::State>,
     ) {
-        match event.code {
-            KeyCode::Char(char) => {
-                let main_display = *state.main_display.to_ref();
-
-                match char {
-                    'c' => self.open_commands_window(state, context),
-                    's' => self.save_project(state, true),
-                    'n' => self.open_edit_endpoint_name_window(state, context),
-                    'j' => self.open_edit_project_name_window(state, context),
-                    'i' => self.save_endpoint(state, &context, true),
-                    // 'f' => context.set_focus("id", "response_body_input"),
-                    'o' => self.send_options_open(state, context),
-                    't' => self.new_endpoint(state, context),
-                    'w' => self.new_project(state, &mut context),
-
-                    'v' => match main_display {
-                        DashboardDisplay::RequestBody => {}
-                        DashboardDisplay::RequestHeadersEditor => {}
-                        DashboardDisplay::ResponseBody => save_response(self, state, context),
-                        DashboardDisplay::ResponseHeaders => {}
-                    },
-
-                    // Set focus to the request url text input
-                    'u' => self.focus_url_input(&mut context.into(), event.ctrl),
-
-                    // Quit app
-                    'q' => quit::with_code(0),
-
-                    // Make the request
-                    'r' => {
-                        let response = do_request(state, context, elements, self);
-                        match response {
-                            Ok(_) => {}
-                            Err(err) => {
-                                self.show_error(&err.to_string(), state);
-                            }
-                        }
-                    }
-
-                    // Show request body editor window
-                    'b' => match main_display {
-                        DashboardDisplay::RequestBody => context.set_focus("id", "textarea"),
-                        DashboardDisplay::RequestHeadersEditor => {
-                            state.main_display.set(DashboardDisplay::RequestBody);
-                        }
-                        DashboardDisplay::ResponseBody => {
-                            state.main_display.set(DashboardDisplay::RequestBody);
-                            context.set_focus("id", "app");
-                        }
-                        DashboardDisplay::ResponseHeaders => {
-                            state.main_display.set(DashboardDisplay::ResponseBody)
-                        }
-                    },
-
-                    // Show request headers editor window
-                    'd' => {
-                        if !event.ctrl {
-                            state
-                                .main_display
-                                .set(DashboardDisplay::RequestHeadersEditor);
-                        }
-                    }
-
-                    // Open Endpoints selector
-                    'e' => {
-                        self.open_endpoints_selector(state, context);
-                    }
-
-                    // Show projects window
-                    'p' => {
-                        if let Ok(component_ids) = self.component_ids.try_borrow() {
-                            state.floating_window.set(FloatingWindow::Project);
-                            context.set_focus("id", "project_selector");
-
-                            let _ = component_ids.get("project_selector").map(|id| {
-                                context.emit(*id, "projects".to_string());
-                            });
-                        }
-                    }
-
-                    // Show response headers display
-                    'h' => match main_display {
-                        DashboardDisplay::RequestBody => {}
-                        DashboardDisplay::RequestHeadersEditor => {
-                            state
-                                .floating_window
-                                .set(FloatingWindow::EditHeaderSelector);
-                            context.set_focus("id", "edit_header_selector");
-
-                            let headers: Vec<Header> = state
-                                .endpoint
-                                .to_ref()
-                                .headers
-                                .to_ref()
-                                .iter()
-                                .map(|header_state| (&*header_state.to_ref()).into())
-                                .collect();
-
-                            let edit_header_selector_messages =
-                                EditHeaderSelectorMessages::HeadersList(headers);
-
-                            let Ok(message) = serde_json::to_string(&edit_header_selector_messages)
-                            else {
-                                return;
-                            };
-
-                            let Ok(ids) = self.component_ids.try_borrow() else {
-                                return;
-                            };
-
-                            let _ = send_message(
-                                "edit_header_selector",
-                                message,
-                                &ids,
-                                context.emitter,
-                            );
-                        }
-                        DashboardDisplay::ResponseBody => {
-                            state.main_display.set(DashboardDisplay::ResponseHeaders)
-                        }
-                        DashboardDisplay::ResponseHeaders => {}
-                    },
-
-                    // Open Request Method selection window
-                    'm' => {
-                        state.floating_window.set(FloatingWindow::Method);
-                        context.set_focus("id", "method_selector");
-                    }
-
-                    'a' => match main_display {
-                        DashboardDisplay::RequestBody => {}
-                        DashboardDisplay::RequestHeadersEditor => {
-                            // Open header window
-                            self.open_add_header_window(state, context);
-                        }
-                        DashboardDisplay::ResponseBody => {}
-                        DashboardDisplay::ResponseHeaders => {}
-                    },
-
-                    'y' => match main_display {
-                        DashboardDisplay::RequestBody => {
-                            self.open_body_mode_selector(state, context)
-                        }
-                        DashboardDisplay::RequestHeadersEditor => {}
-                        DashboardDisplay::ResponseBody => {
-                            // Copy response body to clipboard
-                            self.yank_response(state)
-                        }
-                        DashboardDisplay::ResponseHeaders => {}
-                    },
-
-                    _ => {}
-                }
-            }
-
-            KeyCode::Esc => {
-                context.set_focus("id", "app");
-
-                if *state.floating_window.to_ref() != FloatingWindow::None {
-                    state.floating_window.set(FloatingWindow::None);
-                // NOTE: Test the UX of the focus movement with this Esc binding
-                } else if *state.main_display.to_ref() != DashboardDisplay::RequestBody {
-                    state.main_display.set(DashboardDisplay::RequestBody);
-                }
-            }
-
-            KeyCode::Enter => {
-                // TODO: Do something with the Enter button
-            }
-
-            _ => {}
-        }
+        keyboard_events(self, event, state, elements, context);
     }
 
     fn on_focus(
