@@ -484,7 +484,7 @@ impl DashboardComponent {
     fn open_edit_project_name_window(
         &self,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
+        context: &mut Context<'_, DashboardState>,
     ) {
         state.floating_window.set(FloatingWindow::ChangeProjectName);
 

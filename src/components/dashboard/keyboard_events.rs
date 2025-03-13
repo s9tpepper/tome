@@ -31,7 +31,7 @@ pub fn keyboard_events(
                 'c' => dashboard.open_commands_window(state, context),
                 's' => dashboard.save_project(state, true),
                 'n' => dashboard.open_edit_endpoint_name_window(state, context),
-                'j' => dashboard.open_edit_project_name_window(state, context),
+                'j' => dashboard.open_edit_project_name_window(state, &mut context),
                 'i' => dashboard.save_endpoint(state, &context, true),
                 // 'f' => context.set_focus("id", "response_body_input"),
                 'o' => dashboard.send_options_open(state, context),

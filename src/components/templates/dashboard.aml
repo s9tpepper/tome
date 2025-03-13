@@ -4,11 +4,12 @@ zstack [background: app_theme.background]
       container [height: 1, background: app_theme.top_bar_background, foreground: app_theme.top_bar_foreground]
         expand
           hstack [id: "project_endpoint_details"]
-            @button [
+            @button (click -> project_name_click) [
               button_item: project.name,
               button_label: "Pro(j)ect: ",
               foreground: app_theme.project_name_background,
-              background: app_theme.top_bar_background
+              background: app_theme.top_bar_background,
+              button_id: "project_button"
             ]
 
             @button [
