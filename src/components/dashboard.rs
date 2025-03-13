@@ -1,8 +1,8 @@
 use anathema::{
-    component::{Component, ComponentId, KeyCode, KeyEvent},
+    component::{Component, ComponentId, KeyCode, KeyEvent, MouseEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{CommonVal, List, Value},
+    state::{CommonVal, List, State, Value},
     widgets::Elements,
 };
 use std::ops::Deref;
@@ -70,7 +70,7 @@ pub enum DashboardDisplay {
     ResponseHeaders,
 }
 
-impl anathema::state::State for DashboardDisplay {
+impl State for DashboardDisplay {
     fn to_common(&self) -> Option<CommonVal<'_>> {
         match self {
             DashboardDisplay::RequestBody => Some(CommonVal::Str("request_body")),
@@ -83,13 +83,13 @@ impl anathema::state::State for DashboardDisplay {
     }
 }
 
-#[derive(anathema::state::State)]
+#[derive(State)]
 pub struct MenuItem {
     label: Value<String>,
     color: Value<String>,
 }
 
-#[derive(anathema::state::State)]
+#[derive(State)]
 pub struct DashboardState {
     pub main_display: Value<DashboardDisplay>,
     pub floating_window: Value<FloatingWindow>,
@@ -1165,8 +1165,8 @@ impl Component for DashboardComponent {
         &mut self,
         event: KeyEvent,
         state: &mut Self::State,
-        elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        elements: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
         match event.code {
             KeyCode::Char(char) => {
@@ -1398,7 +1398,7 @@ impl Component for DashboardComponent {
 
     fn on_mouse(
         &mut self,
-        mouse: anathema::component::MouseEvent,
+        mouse: MouseEvent,
         state: &mut Self::State,
         mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
