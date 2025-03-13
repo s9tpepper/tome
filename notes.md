@@ -2,6 +2,11 @@
 
 ## TODO
 
+[ ] Add mouse scroll up/down support in response renderer
+[ ] Add mouse scroll up/down support in textarea component
+[ ] Update layout/styling of syntax highlight selector window
+[ ] (BUG) Fix focus when on Options screen and app loses/regains focus
+
 ### Release Checklist
 [x] Flesh out the README.md
 [x] Add GitHub Action(s) for producing binaries and release
@@ -39,7 +44,7 @@
 [x] Unique endpoint names are broken again (broken when changing names via N, change vs rename)
 [x] Scrolling is not working correctly in endpoint names list
 
-[ ] (POST-LAUNCH) Add Mouse Support
+[IP] (POST-LAUNCH) Add Mouse Support
 [ ] (POST-LAUNCH) Pretty print responses that are minified
 [ ] (POST-LAUNCH) Fix code gen with variables
 [ ] ***CODE GEN: Header Variables should become function arguments once variables are a thing in requests
@@ -100,7 +105,7 @@ Body
 ### Requests
 * [x] (MVP) Code generation (curl, TypeScript/JavaScript, Rust, PHP?, Go?, Python?)
 [ ] Code generation plugin framework, based on OpenAPI code generation plugins/tools, maybe?
-[ ] Import/Export OpenAPI
+[IP] Import/Export OpenAPI
 
 ### Text Input
 [x] (MVP) Possible bug with backspace in text input not removing character
