@@ -14,6 +14,7 @@ use crate::{
         add_header_window::AddHeaderWindow,
         app_layout::AppLayoutComponent,
         app_section::{AppSection, AppSectionState},
+        button::Button,
         confirm_action_window::ConfirmActionWindow,
         dashboard::DashboardComponent,
         edit_header_selector::EditHeaderSelector,
@@ -407,6 +408,8 @@ impl App {
             "request_body_section",
             template("templates/request_body_section"),
         )?;
+
+        Button::register(builder, template("templates/button"))?;
 
         Ok(())
     }

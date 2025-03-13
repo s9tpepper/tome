@@ -1,0 +1,9 @@
+text [
+  id: button_id,
+  bold: false,
+  background: background,
+  foreground: foreground
+] button_cap_left
+  span [bold: true, foreground: background, background: foreground] button_label
+  span [bold: false, foreground: background, background: foreground] button_item
+  span [bold: true, background: background, foreground: foreground] button_cap_right
