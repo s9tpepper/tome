@@ -94,11 +94,12 @@ zstack [background: app_theme.background]
                     button_id: "send_request_from_headers_button"
                   ]
                   text [foreground: border_color, background: app_theme.background] "─"
-                  @button [
+                  @button (click -> add_header_click) [
                     button_label: "",
                     button_item: "(A)dd Header",
                     foreground: app_theme.menu_opt_background,
-                    background: app_theme.background
+                    background: app_theme.background,
+                    button_id: "add_header_button"
                   ]
                   text [foreground: border_color, background: app_theme.background] "─"
                   @button [

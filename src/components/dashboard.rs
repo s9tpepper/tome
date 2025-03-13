@@ -627,7 +627,7 @@ impl DashboardComponent {
     fn open_add_header_window(
         &self,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
+        context: &mut Context<'_, DashboardState>,
     ) {
         state.floating_window.set(FloatingWindow::AddHeader);
         context.set_focus("id", "add_header_window");

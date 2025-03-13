@@ -144,7 +144,7 @@ pub fn keyboard_events(
                     DashboardDisplay::RequestBody => {}
                     DashboardDisplay::RequestHeadersEditor => {
                         // Open header window
-                        dashboard.open_add_header_window(state, context);
+                        dashboard.open_add_header_window(state, &mut context);
                     }
                     DashboardDisplay::ResponseBody => {}
                     DashboardDisplay::ResponseHeaders => {}
