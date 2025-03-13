@@ -45,6 +45,7 @@ pub fn associated_functions(
         "project_name_click" => dashboard.open_edit_project_name_window(state, &mut context),
         "endpoint_name_click" => dashboard.open_edit_endpoint_name_window(state, &mut context),
         "new_project_click" => dashboard.new_project(state, &mut context),
+        "new_endpoint_click" => dashboard.new_endpoint(state, &mut context),
 
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);

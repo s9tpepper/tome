@@ -8,6 +8,7 @@ use anathema::{
 };
 use associated_functions::associated_functions;
 use keyboard_events::keyboard_events;
+use log::info;
 use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
@@ -236,6 +237,8 @@ impl DashboardComponent {
     }
 
     pub fn show_error(&self, message: &str, state: &mut DashboardState) {
+        info!("{message}");
+
         state.error_message.set(message.to_string());
         state.floating_window.set(FloatingWindow::Error);
 
@@ -410,11 +413,11 @@ impl DashboardComponent {
         context.set_focus("id", "app");
     }
 
-    fn new_endpoint(&self, state: &mut DashboardState, context: Context<'_, DashboardState>) {
-        self.save_endpoint(state, &context, false);
+    fn new_endpoint(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
+        self.save_endpoint(state, context, false);
 
         state.endpoint = Endpoint::new().into();
-        self.clear_url_and_request_body(&context);
+        self.clear_url_and_request_body(context);
     }
 
     fn clear_url_and_request_body(&self, context: &Context<'_, DashboardState>) {

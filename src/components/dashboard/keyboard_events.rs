@@ -35,7 +35,7 @@ pub fn keyboard_events(
                 'i' => dashboard.save_endpoint(state, &context, true),
                 // 'f' => context.set_focus("id", "response_body_input"),
                 'o' => dashboard.send_options_open(state, context),
-                't' => dashboard.new_endpoint(state, context),
+                't' => dashboard.new_endpoint(state, &mut context),
                 'w' => dashboard.new_project(state, &mut context),
 
                 'v' => match main_display {

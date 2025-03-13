@@ -778,6 +778,14 @@ impl Component for ResponseRenderer {
         mut elements: anathema::widgets::Elements<'_, '_>,
         context: anathema::prelude::Context<'_, Self::State>,
     ) {
+        // TODO: Fix this later, why is this ending up here?
+        // This is ending up here after pressing T to create a new endpoint.
+        // This messages should be going to request_body_input, but it is ending
+        // up ad response_renderer for an unknown reason.
+        if message.contains("SetInput") {
+            return;
+        }
+
         let response_renderer_message = serde_json::from_str::<ResponseRendererMessages>(&message);
 
         #[allow(clippy::single_match)]
