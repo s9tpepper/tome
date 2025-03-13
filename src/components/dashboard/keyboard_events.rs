@@ -32,9 +32,9 @@ pub fn keyboard_events(
                 's' => dashboard.save_project(state, true),
                 'n' => dashboard.open_edit_endpoint_name_window(state, &mut context),
                 'j' => dashboard.open_edit_project_name_window(state, &mut context),
-                'i' => dashboard.save_endpoint(state, &context, true),
+                'i' => dashboard.save_endpoint(state, true),
                 // 'f' => context.set_focus("id", "response_body_input"),
-                'o' => dashboard.send_options_open(state, context),
+                'o' => dashboard.send_options_open(&mut context),
                 't' => dashboard.new_endpoint(state, &mut context),
                 'w' => dashboard.new_project(state, &mut context),
 
@@ -80,20 +80,11 @@ pub fn keyboard_events(
 
                 // Open Endpoints selector
                 'e' => {
-                    dashboard.open_endpoints_selector(state, context);
+                    dashboard.open_endpoints_selector(state, &mut context);
                 }
 
                 // Show projects window
-                'p' => {
-                    if let Ok(component_ids) = dashboard.component_ids.try_borrow() {
-                        state.floating_window.set(FloatingWindow::Project);
-                        context.set_focus("id", "project_selector");
-
-                        let _ = component_ids.get("project_selector").map(|id| {
-                            context.emit(*id, "projects".to_string());
-                        });
-                    }
-                }
+                'p' => dashboard.open_projects_window(state, &mut context),
 
                 // Show response headers display
                 'h' => match main_display {

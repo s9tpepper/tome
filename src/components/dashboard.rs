@@ -269,7 +269,7 @@ impl DashboardComponent {
         }
     }
 
-    fn send_options_open(&self, _: &mut DashboardState, context: Context<'_, DashboardState>) {
+    fn send_options_open(&self, context: &mut Context<'_, DashboardState>) {
         let component_ids = self.component_ids.try_borrow();
         if component_ids.is_err() {
             return;
@@ -434,7 +434,7 @@ impl DashboardComponent {
     }
 
     fn new_endpoint(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
-        self.save_endpoint(state, context, false);
+        self.save_endpoint(state, false);
 
         state.endpoint = Endpoint::new().into();
         self.clear_url_and_request_body(context);
@@ -458,12 +458,7 @@ impl DashboardComponent {
         };
     }
 
-    fn save_endpoint(
-        &self,
-        state: &mut DashboardState,
-        _: &Context<'_, DashboardState>,
-        show_message: bool,
-    ) {
+    fn save_endpoint(&self, state: &mut DashboardState, show_message: bool) {
         let project_name = state.project.to_ref().name.to_ref().to_string();
         let endpoint_name = state.endpoint.to_ref().name.to_ref().to_string();
 
@@ -558,10 +553,25 @@ impl DashboardComponent {
         let _ = send_message("edit_header_selector", message, &ids, context.emitter);
     }
 
+    fn open_projects_window(
+        &self,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
+        if let Ok(component_ids) = self.component_ids.try_borrow() {
+            state.floating_window.set(FloatingWindow::Project);
+            context.set_focus("id", "project_selector");
+
+            let _ = component_ids.get("project_selector").map(|id| {
+                context.emit(*id, "projects".to_string());
+            });
+        }
+    }
+
     fn open_endpoints_selector(
         &self,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
+        context: &mut Context<'_, DashboardState>,
     ) {
         state.floating_window.set(FloatingWindow::EndpointsSelector);
         context.set_focus("id", "endpoints_selector_window");

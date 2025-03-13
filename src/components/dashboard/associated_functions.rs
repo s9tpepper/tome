@@ -52,6 +52,12 @@ pub fn associated_functions(
         "edit_header_click" => dashboard.open_edit_header_window(state, &mut context),
         "back_to_request_click" => state.main_display.set(DashboardDisplay::RequestBody),
 
+        "save_project_click" => dashboard.save_project(state, true),
+        "save_endpoint_click" => dashboard.save_endpoint(state, true),
+        "swap_project_click" => dashboard.open_projects_window(state, &mut context),
+        "swap_endpoint_click" => dashboard.open_endpoints_selector(state, &mut context),
+        "options_button_click" => dashboard.send_options_open(&mut context),
+
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);
         }

@@ -133,11 +133,15 @@ zstack [background: app_theme.background]
                   @request_headers_editor [ headers: response_headers ]
               vstack
                 spacer
-                text [min_height: 1] "╰"
-                  span [foreground: border_color, background: app_theme.background] "─"
-                  span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_left
-                  span [foreground: app_theme.background, background: app_theme.menu_opt_background] "(B)ack to Request"
-                  span [background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_right
+                hstack
+                  text [min_height: 1] "╰"
+                  @button (click -> back_to_request_click) [
+                    button_label: "",
+                    button_item: "(B)ack to Request",
+                    foreground: app_theme.menu_opt_background,
+                    background: app_theme.background,
+                    button_id: "back_to_request_button"
+                  ]
 
 
     container [height: 1, background: app_theme.bottom_bar_background, foreground: app_theme.bottom_bar_foreground]
@@ -146,35 +150,40 @@ zstack [background: app_theme.background]
           text app_message
           spacer
           hstack
-            @button [
+            @button (click -> save_project_click) [
               button_label: "",
               button_item: "(S)ave Project",
               foreground: app_theme.menu_color_1,
-              background: app_theme.background
+              background: app_theme.background,
+              button_id: "save_project_button"
             ]
-            @button [
+            @button (click -> save_endpoint_click) [
               button_label: "",
               button_item: "Save Endpo(i)nt",
               foreground: app_theme.menu_color_2,
-              background: app_theme.background
+              background: app_theme.background,
+              button_id: "save_endpoint_button"
             ]
-            @button [
+            @button (click -> swap_project_click) [
               button_label: "",
               button_item: "Swap (P)roject",
               foreground: app_theme.menu_color_3,
-              background: app_theme.background
+              background: app_theme.background,
+              button_id: "swap_project_button"
             ]
-            @button [
+            @button (click -> swap_endpoint_click) [
               button_label: "",
               button_item: "Swap (E)ndpoint",
               foreground: app_theme.menu_color_4,
-              background: app_theme.background
+              background: app_theme.background,
+              button_id: "swap_endpoint_button"
             ]
-            @button [
+            @button (click -> options_button_click) [
               button_label: "",
               button_item: "(O)ptions",
               foreground: app_theme.menu_color_5,
-              background: app_theme.background
+              background: app_theme.background,
+              button_id: "options_button"
             ]
 
   if floating_window == "AddHeader"
