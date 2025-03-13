@@ -21,7 +21,7 @@ use crate::components::{
     send_message,
 };
 
-use super::{DashboardComponent, DashboardMessageHandler, DashboardState};
+use super::{DashboardComponent, DashboardDisplay, DashboardMessageHandler, DashboardState};
 
 pub fn associated_functions(
     dashboard: &mut DashboardComponent,
@@ -50,6 +50,7 @@ pub fn associated_functions(
         "send_request_click" => dashboard.send_request(state, &mut context, &elements),
         "add_header_click" => dashboard.open_add_header_window(state, &mut context),
         "edit_header_click" => dashboard.open_edit_header_window(state, &mut context),
+        "back_to_request_click" => state.main_display.set(DashboardDisplay::RequestBody),
 
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);
