@@ -16,6 +16,7 @@ use std::{
 use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
 
+use crate::requests::do_request;
 use crate::{
     app::GlobalEventHandler,
     fs::save_response,
@@ -32,35 +33,21 @@ use crate::{
     },
     theme::AppTheme,
 };
-use crate::{requests::do_request, theme::get_app_theme_persisted};
 
+use super::floating_windows::{
+    add_project_variable::AddProjectVariableMessages, endpoints_selector::EndpointsSelectorMessages,
+};
 use super::{
-    add_header_window::AddHeaderWindow,
     app_layout::AppLayoutMessages,
-    edit_header_selector::{EditHeaderSelector, EditHeaderSelectorMessages},
+    edit_header_selector::EditHeaderSelectorMessages,
     floating_windows::{
-        code_gen::CodeGen,
-        commands::Commands,
-        edit_endpoint_name::{EditEndpointName, EditEndpointNameMessages},
-        edit_project_name::{EditProjectName, EditProjectNameMessages},
+        edit_endpoint_name::EditEndpointNameMessages, edit_project_name::EditProjectNameMessages,
         FloatingWindow,
     },
-    method_selector::MethodSelector,
-    project_window::ProjectWindow,
     send_message,
     syntax_highlighter::get_highlight_theme,
     textarea::TextAreaMessages,
     textinput::TextInputMessages,
-};
-use super::{
-    confirm_action_window::ConfirmActionWindow,
-    floating_windows::{
-        add_project_variable::{AddProjectVariable, AddProjectVariableMessages},
-        body_mode_selector::BodyModeSelector,
-        endpoints_selector::{EndpointsSelector, EndpointsSelectorMessages},
-        file_selector::FileSelector,
-        project_variables::ProjectVariables,
-    },
 };
 
 mod associated_functions;
