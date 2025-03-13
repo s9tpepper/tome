@@ -401,8 +401,8 @@ impl DashboardComponent {
     fn new_project(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
         self.save_project(state, false);
 
-        state.project.set(Project::new());
-        state.endpoint.set(Endpoint::new());
+        state.project.to_mut().reset();
+        state.endpoint.to_mut().reset();
 
         self.clear_url_and_request_body(context);
 

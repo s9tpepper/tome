@@ -96,6 +96,20 @@ impl Project {
             variable: List::empty(),
         }
     }
+
+    pub fn reset(&mut self) {
+        self.name.set(String::from(DEFAULT_PROJECT_NAME));
+        self.row_color.set(DEFAULT_ROW_COLOR.to_string());
+        self.row_fg_color.set(DEFAULT_ROW_COLOR.to_string());
+
+        while self.endpoints.len() > 0 {
+            self.endpoints.remove(0);
+        }
+
+        while self.variable.len() > 0 {
+            self.variable.remove(0);
+        }
+    }
 }
 
 #[derive(anathema::state::State)]
@@ -124,6 +138,25 @@ impl Endpoint {
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.name.set(String::from(DEFAULT_ENDPOINT_NAME));
+        self.url.set(String::from(""));
+        self.method.set(String::from("GET"));
+        self.body.set(String::from(""));
+        self.body_mode.set(String::from("raw"));
+        self.raw_type.set(String::from("text"));
+        self.row_color.set(DEFAULT_ROW_COLOR.to_string());
+        self.row_fg_color.set(DEFAULT_ROW_COLOR.to_string());
+
+        while self.headers.len() > 0 {
+            self.headers.remove(0);
+        }
+
+        get_default_headers().iter().for_each(|header| {
+            self.headers.push(header.clone());
+        });
     }
 
     pub fn clone(&self) -> Self {
