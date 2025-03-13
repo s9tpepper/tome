@@ -5,6 +5,7 @@ use anathema::{
     state::{CommonVal, List, State, Value},
     widgets::Elements,
 };
+use associated_functions::associated_functions;
 use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
@@ -22,7 +23,7 @@ use crate::{
     options::get_button_caps,
     projects::{delete_endpoint, delete_project, Header, PersistedVariable},
     templates::template,
-    theme::get_app_theme,
+    theme::{get_app_theme, update_component_theme},
 };
 use crate::{
     projects::{
@@ -61,6 +62,8 @@ use super::{
         project_variables::ProjectVariables,
     },
 };
+
+mod associated_functions;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DashboardDisplay {
@@ -972,193 +975,9 @@ impl Component for DashboardComponent {
         value: CommonVal<'_>,
         state: &mut Self::State,
         elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        context: Context<'_, Self::State>,
     ) {
-        #[allow(clippy::single_match)]
-        match ident {
-            // Unfocus the url input and set back to dashboard
-            "url_input_focus" => {
-                context.set_focus("id", "app");
-            }
-
-            "add_new_project" => {
-                self.new_project(state, &mut context);
-            }
-
-            "rename_project" => {
-                self.rename_project(&value.to_string(), state, &mut context);
-            }
-
-            "rename_endpoint" => {
-                self.rename_endpoint(&value.to_string(), state, &mut context);
-            }
-
-            "rename_variable" => {
-                self.rename_variable(&value.to_string(), state, &mut context);
-            }
-
-            "open_add_variable_window" => {
-                state
-                    .floating_window
-                    .set(FloatingWindow::AddProjectVariable);
-                context.set_focus("id", "add_project_variable");
-
-                let Ok(message) = serde_json::to_string(&AddProjectVariableMessages::InitialFocus)
-                else {
-                    return;
-                };
-
-                let Ok(ids) = self.component_ids.try_borrow() else {
-                    return;
-                };
-
-                let _ = send_message("add_project_variable", message, &ids, context.emitter);
-            }
-
-            _ => {}
-        }
-
-        let (component, _event) = ident.split_once("__").unwrap_or(("", ""));
-
-        if let Ok(component_ids) = self.component_ids.try_borrow() {
-            match component {
-                "confirm_action" => ConfirmActionWindow::handle_message(
-                    value,
-                    ident,
-                    state,
-                    context,
-                    elements,
-                    component_ids,
-                ),
-
-                "project_variables" => ProjectVariables::handle_message(
-                    value,
-                    ident,
-                    state,
-                    context,
-                    elements,
-                    component_ids,
-                ),
-
-                "add_project_variable" => AddProjectVariable::handle_message(
-                    value,
-                    ident,
-                    state,
-                    context,
-                    elements,
-                    component_ids,
-                ),
-
-                "body_mode_selector" => BodyModeSelector::handle_message(
-                    value,
-                    ident,
-                    state,
-                    context,
-                    elements,
-                    component_ids,
-                ),
-
-                "file_selector" => {
-                    FileSelector::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "commands" => {
-                    Commands::handle_message(value, ident, state, context, elements, component_ids);
-                }
-
-                "codegen" => {
-                    CodeGen::handle_message(value, ident, state, context, elements, component_ids);
-                }
-
-                "add_header" => {
-                    AddHeaderWindow::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "edit_header_selector" => {
-                    EditHeaderSelector::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "method_selector" => {
-                    MethodSelector::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "project_window" => {
-                    ProjectWindow::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "edit_endpoint_name" => {
-                    EditEndpointName::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "edit_project_name" => {
-                    EditProjectName::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                "endpoints_selector" => {
-                    EndpointsSelector::handle_message(
-                        value,
-                        ident,
-                        state,
-                        context,
-                        elements,
-                        component_ids,
-                    );
-                }
-
-                _ => {}
-            }
-        } else {
-            println!("Could not find id for {ident}");
-        }
+        associated_functions(self, ident, value, context, state, elements);
     }
 
     fn on_key(
@@ -1434,52 +1253,8 @@ impl Component for DashboardComponent {
 }
 
 fn update_theme(state: &mut DashboardState) {
-    let app_theme = get_app_theme_persisted();
-
     // TODO: Figure out why this breaks the styling and messaging of the dashboard components
-    // println!("{app_theme:?}");
-    // state.app_theme.set(app_theme.into());
     // state.app_theme.set(app_theme.into());
 
-    let mut at = state.app_theme.to_mut();
-    at.background.set(app_theme.background);
-    at.foreground.set(app_theme.foreground);
-    at.project_name_background
-        .set(app_theme.project_name_background);
-    at.project_name_foreground
-        .set(app_theme.project_name_foreground);
-    at.border_focused.set(app_theme.border_focused);
-    at.border_unfocused.set(app_theme.border_unfocused);
-    at.overlay_heading.set(app_theme.overlay_heading);
-    at.overlay_background.set(app_theme.overlay_background);
-    at.overlay_foreground.set(app_theme.overlay_foreground);
-    at.overlay_submit_background
-        .set(app_theme.overlay_submit_background);
-    at.overlay_submit_foreground
-        .set(app_theme.overlay_submit_foreground);
-
-    at.overlay_cancel_background
-        .set(app_theme.overlay_cancel_background);
-    at.overlay_cancel_foreground
-        .set(app_theme.overlay_cancel_foreground);
-    at.menu_color_1.set(app_theme.menu_color_1);
-    at.menu_color_2.set(app_theme.menu_color_2);
-    at.menu_color_3.set(app_theme.menu_color_3);
-    at.menu_color_4.set(app_theme.menu_color_4);
-    at.menu_color_5.set(app_theme.menu_color_5);
-
-    at.endpoint_name_background
-        .set(app_theme.endpoint_name_background);
-    at.endpoint_name_foreground
-        .set(app_theme.endpoint_name_foreground);
-    at.menu_opt_background.set(app_theme.menu_opt_background);
-    at.menu_opt_foreground.set(app_theme.menu_opt_foreground);
-    at.top_bar_background.set(app_theme.top_bar_background);
-    at.top_bar_foreground.set(app_theme.top_bar_foreground);
-    at.bottom_bar_background
-        .set(app_theme.bottom_bar_background);
-    at.bottom_bar_foreground
-        .set(app_theme.bottom_bar_foreground);
-
-    // *state.app_theme.to_mut() = app_theme.into();
+    update_component_theme(&mut state.app_theme);
 }

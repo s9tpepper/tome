@@ -247,6 +247,50 @@ fn get_default_app_theme() -> AppTheme {
         .into()
 }
 
+pub fn update_component_theme(state_theme: &mut Value<AppTheme>) {
+    let app_theme = get_app_theme_persisted();
+
+    let mut at = state_theme.to_mut();
+    at.background.set(app_theme.background);
+    at.foreground.set(app_theme.foreground);
+    at.project_name_background
+        .set(app_theme.project_name_background);
+    at.project_name_foreground
+        .set(app_theme.project_name_foreground);
+    at.border_focused.set(app_theme.border_focused);
+    at.border_unfocused.set(app_theme.border_unfocused);
+    at.overlay_heading.set(app_theme.overlay_heading);
+    at.overlay_background.set(app_theme.overlay_background);
+    at.overlay_foreground.set(app_theme.overlay_foreground);
+    at.overlay_submit_background
+        .set(app_theme.overlay_submit_background);
+    at.overlay_submit_foreground
+        .set(app_theme.overlay_submit_foreground);
+
+    at.overlay_cancel_background
+        .set(app_theme.overlay_cancel_background);
+    at.overlay_cancel_foreground
+        .set(app_theme.overlay_cancel_foreground);
+    at.menu_color_1.set(app_theme.menu_color_1);
+    at.menu_color_2.set(app_theme.menu_color_2);
+    at.menu_color_3.set(app_theme.menu_color_3);
+    at.menu_color_4.set(app_theme.menu_color_4);
+    at.menu_color_5.set(app_theme.menu_color_5);
+
+    at.endpoint_name_background
+        .set(app_theme.endpoint_name_background);
+    at.endpoint_name_foreground
+        .set(app_theme.endpoint_name_foreground);
+    at.menu_opt_background.set(app_theme.menu_opt_background);
+    at.menu_opt_foreground.set(app_theme.menu_opt_foreground);
+    at.top_bar_background.set(app_theme.top_bar_background);
+    at.top_bar_foreground.set(app_theme.top_bar_foreground);
+    at.bottom_bar_background
+        .set(app_theme.bottom_bar_background);
+    at.bottom_bar_foreground
+        .set(app_theme.bottom_bar_foreground);
+}
+
 // impl Serialize for AppTheme {
 //     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 //     where
