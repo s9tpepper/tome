@@ -208,6 +208,20 @@ impl Component for DashboardComponent {
 
         elements
             .at_position(mouse.pos())
+            .by_attribute("id", "method_box")
+            .first(|_, _| {
+                if *state.floating_window.to_ref() != FloatingWindow::None {
+                    return;
+                }
+
+                if mouse.lsb_up() {
+                    state.floating_window.set(FloatingWindow::Method);
+                    context_ref.borrow_mut().set_focus("id", "method_selector");
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
             .by_attribute("id", "url_component")
             .first(|_, _| {
                 if *state.floating_window.to_ref() != FloatingWindow::None {

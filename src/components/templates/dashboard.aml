@@ -52,7 +52,8 @@ zstack [background: app_theme.background]
     hstack
       @row [border_color: app_theme.border_unfocused, top_label: "(M)ethod", expanding: false, minwidth: 13]
         $children
-          text [foreground: app_theme.foreground, text_align: "right"] endpoint.method
+          container [id: "method_box", width: 13]
+            text [foreground: app_theme.foreground, text_align: "right"] endpoint.method
       expand [axis: "horizontal"]
         container [id: "url_component"]
           @url_input [id: "url", border_color: app_theme.border_unfocused, target: "url_input"]
