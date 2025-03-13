@@ -543,7 +543,7 @@ impl DashboardComponent {
     fn open_edit_endpoint_name_window(
         &self,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
+        context: &mut Context<'_, DashboardState>,
     ) {
         state
             .floating_window

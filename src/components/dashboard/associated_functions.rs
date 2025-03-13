@@ -43,6 +43,7 @@ pub fn associated_functions(
         }
 
         "project_name_click" => dashboard.open_edit_project_name_window(state, &mut context),
+        "endpoint_name_click" => dashboard.open_edit_endpoint_name_window(state, &mut context),
 
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);

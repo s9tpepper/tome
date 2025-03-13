@@ -12,11 +12,12 @@ zstack [background: app_theme.background]
               button_id: "project_button"
             ]
 
-            @button [
+            @button (click -> endpoint_name_click) [
               button_item: endpoint.name,
               button_label: "Endpoint (N)ame: ",
               foreground: app_theme.endpoint_name_background,
-              background: app_theme.top_bar_background
+              background: app_theme.top_bar_background,
+              button_id: "endpoint_name_button"
             ]
             spacer
 
