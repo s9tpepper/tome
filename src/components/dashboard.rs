@@ -23,7 +23,7 @@ use crate::{
     app::GlobalEventHandler,
     messages::confirm_actions::ConfirmAction,
     options::get_button_caps,
-    projects::PersistedVariable,
+    projects::{Header, PersistedVariable},
     requests::do_request,
     templates::template,
     theme::{get_app_theme, update_component_theme},
@@ -36,9 +36,6 @@ use crate::{
     theme::AppTheme,
 };
 
-use super::floating_windows::{
-    add_project_variable::AddProjectVariableMessages, endpoints_selector::EndpointsSelectorMessages,
-};
 use super::{
     app_layout::AppLayoutMessages,
     floating_windows::{
@@ -49,6 +46,13 @@ use super::{
     syntax_highlighter::get_highlight_theme,
     textarea::TextAreaMessages,
     textinput::TextInputMessages,
+};
+use super::{
+    edit_header_selector::EditHeaderSelectorMessages,
+    floating_windows::{
+        add_project_variable::AddProjectVariableMessages,
+        endpoints_selector::EndpointsSelectorMessages,
+    },
 };
 
 mod action_confirmations;
@@ -520,6 +524,38 @@ impl DashboardComponent {
                 let _ = send_message("edit_project_name", msg, &ids, context.emitter);
             });
         }
+    }
+
+    fn open_edit_header_window(
+        &self,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
+        state
+            .floating_window
+            .set(FloatingWindow::EditHeaderSelector);
+        context.set_focus("id", "edit_header_selector");
+
+        let headers: Vec<Header> = state
+            .endpoint
+            .to_ref()
+            .headers
+            .to_ref()
+            .iter()
+            .map(|header_state| (&*header_state.to_ref()).into())
+            .collect();
+
+        let edit_header_selector_messages = EditHeaderSelectorMessages::HeadersList(headers);
+
+        let Ok(message) = serde_json::to_string(&edit_header_selector_messages) else {
+            return;
+        };
+
+        let Ok(ids) = self.component_ids.try_borrow() else {
+            return;
+        };
+
+        let _ = send_message("edit_header_selector", message, &ids, context.emitter);
     }
 
     fn open_endpoints_selector(

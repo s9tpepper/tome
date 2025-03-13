@@ -49,6 +49,7 @@ pub fn associated_functions(
         "commands_button_click" => dashboard.open_commands_window(state, &mut context),
         "send_request_click" => dashboard.send_request(state, &mut context, &elements),
         "add_header_click" => dashboard.open_add_header_window(state, &mut context),
+        "edit_header_click" => dashboard.open_edit_header_window(state, &mut context),
 
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);

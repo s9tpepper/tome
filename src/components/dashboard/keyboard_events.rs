@@ -99,34 +99,7 @@ pub fn keyboard_events(
                 'h' => match main_display {
                     DashboardDisplay::RequestBody => {}
                     DashboardDisplay::RequestHeadersEditor => {
-                        state
-                            .floating_window
-                            .set(FloatingWindow::EditHeaderSelector);
-                        context.set_focus("id", "edit_header_selector");
-
-                        let headers: Vec<Header> = state
-                            .endpoint
-                            .to_ref()
-                            .headers
-                            .to_ref()
-                            .iter()
-                            .map(|header_state| (&*header_state.to_ref()).into())
-                            .collect();
-
-                        let edit_header_selector_messages =
-                            EditHeaderSelectorMessages::HeadersList(headers);
-
-                        let Ok(message) = serde_json::to_string(&edit_header_selector_messages)
-                        else {
-                            return;
-                        };
-
-                        let Ok(ids) = dashboard.component_ids.try_borrow() else {
-                            return;
-                        };
-
-                        let _ =
-                            send_message("edit_header_selector", message, &ids, context.emitter);
+                        dashboard.open_edit_header_window(state, &mut context)
                     }
                     DashboardDisplay::ResponseBody => {
                         state.main_display.set(DashboardDisplay::ResponseHeaders)
