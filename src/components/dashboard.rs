@@ -593,7 +593,7 @@ impl DashboardComponent {
     fn open_commands_window(
         &self,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
+        context: &mut Context<'_, DashboardState>,
     ) {
         state.floating_window.set(FloatingWindow::Commands);
         context.set_focus("id", "commands_window");

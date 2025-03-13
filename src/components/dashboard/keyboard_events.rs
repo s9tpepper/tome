@@ -28,7 +28,7 @@ pub fn keyboard_events(
             let main_display = *state.main_display.to_ref();
 
             match char {
-                'c' => dashboard.open_commands_window(state, context),
+                'c' => dashboard.open_commands_window(state, &mut context),
                 's' => dashboard.save_project(state, true),
                 'n' => dashboard.open_edit_endpoint_name_window(state, &mut context),
                 'j' => dashboard.open_edit_project_name_window(state, &mut context),
