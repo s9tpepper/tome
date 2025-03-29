@@ -6,7 +6,7 @@
 [ ] Add mouse scroll up/down support in textarea component
 [ ] Update layout/styling of syntax highlight selector window
 [ ] (BUG) Fix focus when on Options screen and app loses/regains focus
-[ ] Mouse support for confirm action window
+[x] Mouse support for confirm action window
 [ ] Mouse support for Swap Project window
 [ ] Mouse support for Swap Endpoint window
 [x] Mouse support for Body Mode area
@@ -15,6 +15,7 @@
 [x] Mouse support for request body text area input
 [ ] Mouse support for Commands Window options
 [ ] Mouse scroll support for response renderer
+[ ] Saving project after saving endpoint clears the project name and breaks the Project Name Edit window
 
 ### Release Checklist
 [x] Flesh out the README.md

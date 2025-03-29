@@ -19,11 +19,15 @@ align [alignment: "center"]
             spacer
             text [min_height: 1] ""
               span [foreground: app_theme.border_focused] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
-              span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(Y)es"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+            container [id: "yes_button"]
+              text [min_height: 1] ""
+                span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+                span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(Y)es"
+                span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
             text [min_height: 1] ""
               span [foreground: app_theme.border_focused] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
-              span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(N)o"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+            container [id: "no_button"]
+              text [min_height: 1] ""
+                span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+                span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(N)o"
+                span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"

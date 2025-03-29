@@ -1,10 +1,11 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::TuiBackend,
+    component::{Component, ComponentId, KeyCode, KeyEvent},
+    prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{State, Value},
+    widgets::{components::events::KeyState, Elements},
 };
 
 use crate::{
@@ -56,6 +57,9 @@ impl ConfirmActionWindow {
 
 #[derive(Default, State)]
 pub struct ConfirmActionWindowState {
+    #[state_ignore]
+    active: bool,
+
     title: Value<String>,
     message: Value<String>,
     app_theme: Value<AppTheme>,
@@ -66,6 +70,7 @@ impl ConfirmActionWindowState {
         let app_theme = get_app_theme();
 
         ConfirmActionWindowState {
+            active: false,
             title: "".to_string().into(),
             message: "".to_string().into(),
             app_theme: app_theme.into(),
@@ -78,8 +83,8 @@ impl DashboardMessageHandler for ConfirmActionWindow {
         _: anathema::state::CommonVal<'_>,
         ident: impl Into<String>,
         state: &mut super::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
-        _: anathema::widgets::Elements<'_, '_>,
+        mut context: Context<'_, super::dashboard::DashboardState>,
+        _: Elements<'_, '_>,
         _: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
         let event: String = ident.into();
@@ -105,15 +110,89 @@ impl Component for ConfirmActionWindow {
         true
     }
 
+    fn on_focus(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state.active = true;
+    }
+
+    fn on_blur(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state.active = false;
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: anathema::component::MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        if !state.active || !mouse.lsb_up() {
+            return;
+        }
+
+        let is_yes_click = RefCell::new(false);
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "yes_button")
+            .first(|_, _| {
+                *is_yes_click.borrow_mut() = true;
+            });
+
+        if *is_yes_click.borrow() {
+            self.on_key(
+                KeyEvent {
+                    code: KeyCode::Char('y'),
+                    ctrl: false,
+                    state: KeyState::Release,
+                },
+                state,
+                elements,
+                context,
+            );
+
+            return;
+        }
+
+        let is_no_click = RefCell::new(false);
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "no_button")
+            .first(|_, _| {
+                *is_no_click.borrow_mut() = true;
+            });
+
+        if *is_no_click.borrow() {
+            self.on_key(
+                KeyEvent {
+                    code: KeyCode::Char('n'),
+                    ctrl: false,
+                    state: KeyState::Release,
+                },
+                state,
+                elements,
+                context,
+            );
+        }
+    }
+
     fn on_key(
         &mut self,
-        key: anathema::component::KeyEvent,
+        key: KeyEvent,
         _: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
         match key.code {
-            anathema::component::KeyCode::Char(char) => match char {
+            KeyCode::Char(char) => match char {
                 'y' | 'n' => match &self.confirm_action {
                     Some(confirm_action) => {
                         let answer = match char {
@@ -188,7 +267,7 @@ impl Component for ConfirmActionWindow {
                 _ => {}
             },
 
-            anathema::component::KeyCode::Esc => {
+            KeyCode::Esc => {
                 context.publish("confirm_action__cancel", |state| &state.title);
             }
 
@@ -200,8 +279,8 @@ impl Component for ConfirmActionWindow {
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
     ) {
         let Ok(confirm_action) = serde_json::from_str::<ConfirmAction>(message.as_str()) else {
             // TODO: Close this and send an error message
