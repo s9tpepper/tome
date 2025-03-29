@@ -39,6 +39,7 @@ impl Component for RequestBodySection {
             };
 
             // NOTE: Is this right?
+            // TODO: Fix this call to .leak()
             let color = border_color.to_string().leak();
             elements
                 .by_attribute("id", "request_body_border")

@@ -468,7 +468,7 @@ impl DashboardComponent {
     fn handle_y_press(
         &self,
         state: &mut DashboardState,
-        context: &mut Context<'_, DashboardState>,
+        context: &mut RefCell<Context<'_, DashboardState>>,
     ) {
         let main_display = *state.main_display.to_ref();
         info!("handle_y_press():: main_display: {main_display:?}");
@@ -758,10 +758,10 @@ impl DashboardComponent {
     fn open_body_mode_selector(
         &self,
         state: &mut DashboardState,
-        context: &mut Context<'_, DashboardState>,
+        context: &mut RefCell<Context<'_, DashboardState>>,
     ) {
         state.floating_window.set(FloatingWindow::BodyModeSelector);
-        context.set_focus("id", "body_mode_selector");
+        context.borrow_mut().set_focus("id", "body_mode_selector");
     }
 
     fn open_add_header_window(

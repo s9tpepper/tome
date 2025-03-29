@@ -9,11 +9,12 @@
 [ ] Mouse support for confirm action window
 [ ] Mouse support for Swap Project window
 [ ] Mouse support for Swap Endpoint window
-[ ] Mouse support for Body Mode area
-[ ] Mouse support for Method area
-[ ] Mouse support for clicking into URL input
-[ ] Mouse support for request body text area input
+[x] Mouse support for Body Mode area
+[x] Mouse support for Method area
+[x] Mouse support for clicking into URL input
+[x] Mouse support for request body text area input
 [ ] Mouse support for Commands Window options
+[ ] Mouse scroll support for response renderer
 
 ### Release Checklist
 [x] Flesh out the README.md

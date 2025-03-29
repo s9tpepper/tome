@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use anathema::{prelude::Context, state::CommonVal, widgets::Elements};
 use log::info;
 
@@ -70,7 +72,8 @@ pub fn associated_functions(
         }
 
         "send_copy_response_click" if is_response_body => {
-            dashboard.handle_y_press(state, &mut context);
+            dashboard.handle_y_press(state, &mut RefCell::new(context));
+            return;
         }
 
         "send_save_response_click" if is_response_body => {

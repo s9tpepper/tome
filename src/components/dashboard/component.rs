@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 
 use anathema::{
-    backend::tui::events::KeyEventState,
     component::{Component, KeyCode, KeyEvent, MouseEvent},
     prelude::Context,
     state::CommonVal,
@@ -258,6 +257,19 @@ impl Component for DashboardComponent {
 
                 if mouse.lsb_up() {
                     context_ref.borrow_mut().set_focus("id", "textarea");
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "body_mode_hstack")
+            .first(|_, _| {
+                if *state.floating_window.to_ref() != FloatingWindow::None {
+                    return;
+                }
+
+                if mouse.lsb_up() {
+                    self.handle_y_press(state, &mut context_ref);
                 }
             });
     }

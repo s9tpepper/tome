@@ -82,7 +82,7 @@ pub fn keyboard_events(
                     DashboardDisplay::ResponseHeaders => {}
                 },
 
-                'y' => dashboard.handle_y_press(state, &mut context),
+                'y' => dashboard.handle_y_press(state, &mut context.into()),
 
                 _ => {}
             }
