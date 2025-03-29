@@ -6,7 +6,7 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
+    component::{Component, ComponentId, MouseEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
@@ -34,6 +34,9 @@ pub enum EditHeaderSelectorMessages {
 
 #[derive(Default, State)]
 pub struct EditHeaderSelectorState {
+    #[state_ignore]
+    active: bool,
+
     cursor: Value<u8>,
     current_first_index: Value<u8>,
     current_last_index: Value<u8>,
@@ -49,6 +52,7 @@ impl EditHeaderSelectorState {
         let app_theme = get_app_theme();
 
         EditHeaderSelectorState {
+            active: false,
             cursor: 0.into(),
             count: 0.into(),
             current_first_index: 0.into(),
@@ -231,7 +235,7 @@ impl EditHeaderSelector {
     fn delete_header(
         &self,
         state: &mut EditHeaderSelectorState,
-        mut context: Context<'_, EditHeaderSelectorState>,
+        context: &mut RefCell<Context<'_, EditHeaderSelectorState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let persisted_header = self.items_list.get(selected_index);
@@ -240,19 +244,25 @@ impl EditHeaderSelector {
             Some(persisted_header) => match serde_json::to_string(persisted_header) {
                 Ok(project_json) => {
                     state.selected_item.set(project_json);
-                    context.publish("edit_header_selector__delete", |state| &state.selected_item)
+                    context
+                        .borrow_mut()
+                        .publish("edit_header_selector__delete", |state| &state.selected_item)
                 }
 
-                Err(_) => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("edit_header_selector__cancel", |state| &state.cursor),
             },
-            None => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+            None => context
+                .borrow_mut()
+                .publish("edit_header_selector__cancel", |state| &state.cursor),
         }
     }
 
     fn edit_header(
         &self,
         state: &mut EditHeaderSelectorState,
-        mut context: Context<'_, EditHeaderSelectorState>,
+        context: &mut RefCell<Context<'_, EditHeaderSelectorState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let header = self.items_list.get(selected_index);
@@ -261,17 +271,25 @@ impl EditHeaderSelector {
             Some(header) => match serde_json::to_string(header) {
                 Ok(header_json) => {
                     state.selected_item.set(header_json);
-                    context.publish("edit_header_selector__edit", |state| &state.selected_item)
+                    context
+                        .borrow_mut()
+                        .publish("edit_header_selector__edit", |state| &state.selected_item)
                 }
 
-                Err(_) => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("edit_header_selector__cancel", |state| &state.cursor),
             },
-            None => context.publish("edit_header_selector__cancel", |state| &state.cursor),
+            None => context
+                .borrow_mut()
+                .publish("edit_header_selector__cancel", |state| &state.cursor),
         }
     }
 
-    fn add_header(&self, mut context: Context<'_, EditHeaderSelectorState>) {
-        context.publish("edit_header_selector__add", |state| &state.cursor);
+    fn add_header(&self, context: &mut RefCell<Context<'_, EditHeaderSelectorState>>) {
+        context
+            .borrow_mut()
+            .publish("edit_header_selector__add", |state| &state.cursor);
     }
 }
 
@@ -388,6 +406,58 @@ impl Component for EditHeaderSelector {
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
+        state.active = true;
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        // TODO: Remove this state.active after Anathema update
+        if !state.active {
+            return;
+        }
+
+        let mut context_ref = RefCell::new(context);
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "add_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.add_header(&mut context_ref);
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "edit_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.edit_header(state, &mut context_ref);
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "delete_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.delete_header(state, &mut context_ref);
+                }
+            });
+    }
+
+    fn on_blur(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state.active = false;
     }
 
     fn on_key(
@@ -401,9 +471,9 @@ impl Component for EditHeaderSelector {
             anathema::component::KeyCode::Char(char) => match char {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
-                'd' => self.delete_header(state, context),
-                'e' => self.edit_header(state, context),
-                'a' => self.add_header(context),
+                'd' => self.delete_header(state, &mut context.into()),
+                'e' => self.edit_header(state, &mut context.into()),
+                'a' => self.add_header(&mut context.into()),
                 _ => {}
             },
 
