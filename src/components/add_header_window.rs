@@ -4,13 +4,15 @@ use std::{
     rc::Rc,
 };
 
+use ::anathema::state::State;
 use anathema::{
-    component::{self, Component, ComponentId, KeyCode},
+    component::{self, Component, ComponentId, KeyCode, KeyEvent, MouseEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{CommonVal, State, Value},
+    state::{CommonVal, Value},
     widgets::Elements,
 };
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -85,10 +87,37 @@ impl AddHeaderWindow {
             context.emitter,
         );
     }
+
+    pub fn submit(
+        &self,
+        state: &mut AddHeaderWindowState,
+        context: &mut RefCell<Context<'_, AddHeaderWindowState>>,
+    ) {
+        context
+            .borrow_mut()
+            .publish("add_header__submit", |state| &state.header);
+
+        state.active = false;
+    }
+
+    pub fn cancel(
+        &self,
+        state: &mut AddHeaderWindowState,
+        context: &mut RefCell<Context<'_, AddHeaderWindowState>>,
+    ) {
+        context
+            .borrow_mut()
+            .publish("add_header__cancel", |state| &state.header);
+
+        state.active = false;
+    }
 }
 
 #[derive(Default, State)]
 pub struct AddHeaderWindowState {
+    #[state_ignore]
+    active: bool,
+
     header: Value<NewHeader>,
 
     app_theme: Value<AppTheme>,
@@ -123,6 +152,7 @@ impl AddHeaderWindowState {
         let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
 
         AddHeaderWindowState {
+            active: false,
             app_theme: app_theme.into(),
 
             current_name: "".to_string(),
@@ -145,7 +175,7 @@ impl DashboardMessageHandler for AddHeaderWindow {
         value: component::CommonVal<'_>,
         ident: impl Into<String>,
         state: &mut super::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
+        mut context: Context<'_, super::dashboard::DashboardState>,
         _: Elements<'_, '_>,
         _component_ids: Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
@@ -221,7 +251,7 @@ impl Component for AddHeaderWindow {
         &mut self,
         state: &mut Self::State,
         _: Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Context<'_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -239,12 +269,14 @@ impl Component for AddHeaderWindow {
         message: Self::Message,
         state: &mut Self::State,
         _: Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        mut context: Context<'_, Self::State>,
     ) {
         #[allow(clippy::single_match)]
         match message.as_str() {
             "open" => {
                 context.set_focus("id", "header_name_input");
+
+                state.active = true;
             }
 
             component_messages => {
@@ -282,8 +314,8 @@ impl Component for AddHeaderWindow {
         ident: &str,
         value: anathema::state::CommonVal<'_>,
         state: &mut Self::State,
-        _elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _elements: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
         match ident {
             "header_name_update" => {
@@ -310,10 +342,10 @@ impl Component for AddHeaderWindow {
 
     fn on_key(
         &mut self,
-        key: component::KeyEvent,
-        _state: &mut Self::State,
-        _elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        key: KeyEvent,
+        state: &mut Self::State,
+        _elements: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
         match key.code {
             KeyCode::Esc => {
@@ -321,16 +353,18 @@ impl Component for AddHeaderWindow {
             }
 
             KeyCode::Char(char) => {
-                match char {
-                    's' => context.publish("add_header__submit", |state| &state.header),
+                let mut context = RefCell::new(context);
 
-                    'c' => context.publish("add_header__cancel", |state| &state.header),
+                match char {
+                    's' => self.submit(state, &mut context),
+
+                    'c' => self.cancel(state, &mut context),
 
                     // Sets focus to header name text input
-                    'n' => context.set_focus("id", "header_name_input"),
+                    'n' => context.borrow_mut().set_focus("id", "header_name_input"),
 
                     // Sets focus to header value text input
-                    'v' => context.set_focus("id", "header_value_input"),
+                    'v' => context.borrow_mut().set_focus("id", "header_value_input"),
 
                     _ => {}
                 }
@@ -342,6 +376,41 @@ impl Component for AddHeaderWindow {
 
     fn accept_focus(&self) -> bool {
         true
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        info!("add_header_window:: on_mouse() active: {}", state.active);
+
+        // TODO: Remove this state.active after Anathema update
+        if !state.active {
+            return;
+        }
+
+        let mut context_ref = RefCell::new(context);
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "submit_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.submit(state, &mut context_ref);
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "cancel_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.cancel(state, &mut context_ref);
+                }
+            });
     }
 }
 
@@ -368,7 +437,7 @@ impl NewHeader {
     }
 }
 
-impl ::anathema::state::State for NewHeader {
+impl State for NewHeader {
     fn state_get(
         &self,
         path: ::anathema::state::Path<'_>,
