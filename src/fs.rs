@@ -42,11 +42,7 @@ pub fn get_documents_dir() -> anyhow::Result<PathBuf> {
     }
 }
 
-pub fn save_response(
-    dashboard: &DashboardComponent,
-    state: &mut DashboardState,
-    _: Context<'_, DashboardState>,
-) {
+pub fn save_response(dashboard: &DashboardComponent, state: &mut DashboardState) {
     let dir = get_documents_dir();
 
     match dir {

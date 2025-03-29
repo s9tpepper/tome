@@ -69,8 +69,8 @@ pub fn associated_functions(
             dashboard.handle_y_press(state, &mut context);
         }
 
-        "send_request_from_headers_button_click" if is_response_body => {
-            dashboard.send_request(state, &mut context, &elements);
+        "send_save_response_click" if is_response_body => {
+            dashboard.send_save_response(state);
         }
 
         "send_request_click" if is_request_body => {

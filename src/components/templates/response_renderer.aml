@@ -59,12 +59,12 @@ zstack
         button_id: "send_copy_response"
       ]
       text [foreground: border_color, background: app_theme.background] "─"
-      @button (click -> send_request_from_headers_button_click) [
+      @button (click -> send_save_response_click) [
         button_label: "",
         button_item: "Sa(v)e Response",
         foreground: app_theme.menu_opt_background,
         background: app_theme.background,
-        button_id: "send_request_from_headers_button"
+        button_id: "send_save_response"
       ]
 
       spacer

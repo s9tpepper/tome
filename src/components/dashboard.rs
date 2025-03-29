@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app::GlobalEventHandler,
+    fs::save_response,
     messages::confirm_actions::ConfirmAction,
     options::get_button_caps,
     projects::{Header, PersistedVariable},
@@ -444,6 +445,18 @@ impl DashboardComponent {
             Err(err) => {
                 self.show_error(&err.to_string(), state);
             }
+        }
+    }
+
+    fn send_save_response(&self, state: &mut DashboardState) {
+        info!("send_save_response()");
+
+        let main_display = *state.main_display.to_ref();
+        match main_display {
+            DashboardDisplay::RequestBody => {}
+            DashboardDisplay::RequestHeadersEditor => {}
+            DashboardDisplay::ResponseBody => save_response(self, state),
+            DashboardDisplay::ResponseHeaders => {}
         }
     }
 

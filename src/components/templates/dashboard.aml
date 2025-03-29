@@ -75,7 +75,7 @@ zstack [background: app_theme.background]
                 send_back_to_request_from_response_renderer_click -> send_back_to_request_from_response_renderer_click,
                 send_show_response_headers_click -> send_show_response_headers_click,
                 send_copy_response_click -> send_copy_response_click,
-                send_request_from_headers_button_click -> send_request_from_headers_button_click
+                send_save_response_click -> send_save_response_click
               ) [id: "response_renderer"]
 
         if main_display == "request_headers_editor"

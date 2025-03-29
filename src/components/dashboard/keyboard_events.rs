@@ -38,12 +38,7 @@ pub fn keyboard_events(
                 't' => dashboard.new_endpoint(state, &mut context),
                 'w' => dashboard.new_project(state, &mut context),
 
-                'v' => match main_display {
-                    DashboardDisplay::RequestBody => {}
-                    DashboardDisplay::RequestHeadersEditor => {}
-                    DashboardDisplay::ResponseBody => save_response(dashboard, state, context),
-                    DashboardDisplay::ResponseHeaders => {}
-                },
+                'v' => dashboard.send_save_response(state),
 
                 // Set focus to the request url text input
                 'u' => dashboard.focus_url_input(&mut context.into(), event.ctrl),
