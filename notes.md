@@ -7,8 +7,8 @@
 [ ] Update layout/styling of syntax highlight selector window
 [ ] (BUG) Fix focus when on Options screen and app loses/regains focus
 [x] Mouse support for confirm action window
-[ ] Mouse support for Swap Project window
-[ ] Mouse support for Swap Endpoint window
+[x] Mouse support for Swap Project window
+[x] Mouse support for Swap Endpoint window
 [x] Mouse support for Body Mode area
 [x] Mouse support for Method area
 [x] Mouse support for clicking into URL input

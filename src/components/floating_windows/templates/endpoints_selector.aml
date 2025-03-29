@@ -19,13 +19,15 @@ align [alignment: "center"]
       spacer
       hstack [width: 78]
         spacer
-        text [min_height: 1] ""
-          span [foreground: app_theme.border_focused] "─"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_left
-          span [background: app_theme.menu_color_2, foreground: app_theme.overlay_submit_foreground] "(R)ename"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_right
-        text [min_height: 1] ""
-          span [foreground: app_theme.border_focused] "─"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_left
-          span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(D)elete"
-          span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_right
+        container [id: "rename_button"]
+          text [min_height: 1] ""
+            span [foreground: app_theme.border_focused] "─"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_left
+            span [background: app_theme.menu_color_2, foreground: app_theme.overlay_submit_foreground] "(R)ename"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_right
+        container [id: "delete_button"]
+          text [min_height: 1] ""
+            span [foreground: app_theme.border_focused] "─"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_left
+            span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(D)elete"
+            span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_right

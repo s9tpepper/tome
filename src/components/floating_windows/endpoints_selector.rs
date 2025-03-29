@@ -6,7 +6,11 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
+    component::{
+        Component, ComponentId,
+        KeyCode::{Char, Down, Enter, Esc, Up},
+        MouseEvent,
+    },
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{List, State, Value},
@@ -32,6 +36,9 @@ pub enum EndpointsSelectorMessages {
 
 #[derive(Default, State)]
 pub struct EndpointsSelectorState {
+    #[state_ignore]
+    active: bool,
+
     cursor: Value<u8>,
     current_first_index: Value<u8>,
     current_last_index: Value<u8>,
@@ -47,6 +54,7 @@ impl EndpointsSelectorState {
         let app_theme = get_app_theme();
 
         EndpointsSelectorState {
+            active: false,
             cursor: 0.into(),
             count: 0.into(),
             current_first_index: 0.into(),
@@ -229,7 +237,7 @@ impl EndpointsSelector {
     fn delete_endpoint(
         &self,
         state: &mut EndpointsSelectorState,
-        mut context: Context<'_, EndpointsSelectorState>,
+        context: &mut RefCell<Context<'_, EndpointsSelectorState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let persisted_endpoint = self.items_list.get(selected_index);
@@ -238,19 +246,25 @@ impl EndpointsSelector {
             Some(persisted_endpoint) => match serde_json::to_string(persisted_endpoint) {
                 Ok(project_json) => {
                     state.selected_item.set(project_json);
-                    context.publish("endpoints_selector__delete", |state| &state.selected_item)
+                    context
+                        .borrow_mut()
+                        .publish("endpoints_selector__delete", |state| &state.selected_item)
                 }
 
-                Err(_) => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("endpoints_selector__cancel", |state| &state.cursor),
             },
-            None => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+            None => context
+                .borrow_mut()
+                .publish("endpoints_selector__cancel", |state| &state.cursor),
         }
     }
 
     fn rename_endpoint(
         &self,
         state: &mut EndpointsSelectorState,
-        mut context: Context<'_, EndpointsSelectorState>,
+        context: &mut RefCell<Context<'_, EndpointsSelectorState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let project = self.items_list.get(selected_index);
@@ -259,12 +273,18 @@ impl EndpointsSelector {
             Some(project) => match serde_json::to_string(project) {
                 Ok(project_json) => {
                     state.selected_item.set(project_json);
-                    context.publish("rename_endpoint", |state| &state.selected_item)
+                    context
+                        .borrow_mut()
+                        .publish("rename_endpoint", |state| &state.selected_item)
                 }
 
-                Err(_) => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("endpoints_selector__cancel", |state| &state.cursor),
             },
-            None => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+            None => context
+                .borrow_mut()
+                .publish("endpoints_selector__cancel", |state| &state.cursor),
         }
     }
 }
@@ -355,6 +375,48 @@ impl Component for EndpointsSelector {
         self.update_app_theme(state);
     }
 
+    fn on_blur(
+        &mut self,
+        state: &mut Self::State,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        state.active = false;
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        // TODO: Remove this state.active after Anathema update
+        if !state.active {
+            return;
+        }
+
+        let mut context_ref = RefCell::new(context);
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "rename_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.rename_endpoint(state, &mut context_ref);
+                }
+            });
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "delete_button")
+            .first(|_, _| {
+                if mouse.lsb_up() {
+                    self.delete_endpoint(state, &mut context_ref);
+                }
+            });
+    }
+
     fn on_key(
         &mut self,
         event: anathema::component::KeyEvent,
@@ -363,23 +425,23 @@ impl Component for EndpointsSelector {
         mut context: anathema::prelude::Context<'_, Self::State>,
     ) {
         match event.code {
-            anathema::component::KeyCode::Char(char) => match char {
+            Char(char) => match char {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
-                'd' => self.delete_endpoint(state, context),
-                'r' => self.rename_endpoint(state, context),
+                'd' => self.delete_endpoint(state, &mut context.into()),
+                'r' => self.rename_endpoint(state, &mut context.into()),
                 _ => {}
             },
 
-            anathema::component::KeyCode::Up => self.move_cursor_up(state),
-            anathema::component::KeyCode::Down => self.move_cursor_down(state),
+            Up => self.move_cursor_up(state),
+            Down => self.move_cursor_down(state),
 
-            anathema::component::KeyCode::Esc => {
+            Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
                 context.publish("endpoints_selector__cancel", |state| &state.cursor)
             }
 
-            anathema::component::KeyCode::Enter => {
+            Enter => {
                 let selected_index = *state.cursor.to_ref() as usize;
                 let endpoint = self.items_list.get(selected_index);
 
@@ -430,6 +492,8 @@ impl Component for EndpointsSelector {
                     let selected_index = 0;
 
                     self.update_list(first_index, last_index, selected_index, state);
+
+                    state.active = true;
                 }
             },
 
