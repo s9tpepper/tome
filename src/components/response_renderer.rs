@@ -8,17 +8,16 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
+    component::{Component, ComponentId, KeyCode, KeyEvent},
     geometry::Size,
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, Hex, List, State, Value},
-    widgets::Elements,
+    widgets::{components::events::KeyState, Elements},
 };
 use log::info;
 use serde::{Deserialize, Serialize};
 use syntect::highlighting::Theme;
-use ureq::json;
 
 use crate::{
     app::GlobalEventHandler,
@@ -27,7 +26,11 @@ use crate::{
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
 };
 
-use super::{dashboard::DashboardMessages, send_message, syntax_highlighter::highlight};
+use super::{
+    dashboard::{DashboardMessages, KeebEvent, KeebState},
+    send_message,
+    syntax_highlighter::highlight,
+};
 
 pub const CODE_SAMPLE: &str = include_str!("../../themes/code_sample.rs");
 
@@ -736,16 +739,16 @@ impl Component for ResponseRenderer {
 
     fn on_key(
         &mut self,
-        event: anathema::component::KeyEvent,
+        event: KeyEvent,
         state: &mut Self::State,
-        elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        elements: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
         #[allow(clippy::single_match)]
         match event.code {
-            anathema::component::KeyCode::Esc => self.back_to_request(context),
+            KeyCode::Esc => self.back_to_request(context),
 
-            anathema::component::KeyCode::Char(char) => match event.ctrl {
+            KeyCode::Char(char) => match event.ctrl {
                 true => match char {
                     'd' => self.scroll(state, elements, context, ScrollDirection::Down),
                     'u' => self.scroll(state, elements, context, ScrollDirection::Up),
@@ -767,6 +770,28 @@ impl Component for ResponseRenderer {
                         }
                     }
 
+                    'h' | 'y' | 'v' => {
+                        let dashboard_message = DashboardMessages::KeyboardEvent(KeebEvent {
+                            character: char,
+                            ctrl: false,
+                            state: match event.state {
+                                KeyState::Press => KeebState::Press,
+                                KeyState::Repeat => KeebState::Repeat,
+                                KeyState::Release => KeebState::Release,
+                            },
+                        });
+
+                        let Ok(ids) = self.component_ids.try_borrow() else {
+                            return;
+                        };
+
+                        let Ok(message) = serde_json::to_string(&dashboard_message) else {
+                            return;
+                        };
+
+                        let _ = send_message("dashboard", message, &ids, &context.emitter.clone());
+                    }
+
                     _ => {}
                 },
             },
@@ -779,8 +804,8 @@ impl Component for ResponseRenderer {
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
     ) {
         // TODO: Fix this later, why is this ending up here?
         // This is ending up here after pressing T to create a new endpoint.

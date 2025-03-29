@@ -1,10 +1,11 @@
 use std::cell::RefCell;
 
 use anathema::{
-    component::{Component, KeyEvent, MouseEvent},
+    backend::tui::events::KeyEventState,
+    component::{Component, KeyCode, KeyEvent, MouseEvent},
     prelude::Context,
     state::CommonVal,
-    widgets::Elements,
+    widgets::{components::events::KeyState, Elements},
 };
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
 
 use super::{
     associated_functions, keyboard_events, update_theme, DashboardComponent, DashboardDisplay,
-    DashboardMessages, DashboardState,
+    DashboardMessages, DashboardState, KeebState,
 };
 
 impl Component for DashboardComponent {
@@ -28,11 +29,25 @@ impl Component for DashboardComponent {
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
+        elements: Elements<'_, '_>,
         mut context: Context<'_, Self::State>,
     ) {
         if let Ok(dashboard_message) = serde_json::from_str::<DashboardMessages>(&message) {
             match dashboard_message {
+                DashboardMessages::KeyboardEvent(keeb_event) => {
+                    let key_event = KeyEvent {
+                        code: KeyCode::Char(keeb_event.character),
+                        ctrl: keeb_event.ctrl,
+                        state: match keeb_event.state {
+                            KeebState::Press => KeyState::Press,
+                            KeebState::Repeat => KeyState::Repeat,
+                            KeebState::Release => KeyState::Release,
+                        },
+                    };
+
+                    self.on_key(key_event, state, elements, context);
+                }
+
                 DashboardMessages::BackToRequest => {
                     state.main_display.set(DashboardDisplay::RequestBody);
                     context.set_focus("id", "app");

@@ -9,12 +9,12 @@ use anathema::{
 use associated_functions::associated_functions;
 use keyboard_events::keyboard_events;
 use log::info;
-use std::ops::Deref;
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
     rc::Rc,
 };
+use std::{ops::Deref, sync::Arc};
 
 use arboard::Clipboard;
 use serde::{Deserialize, Serialize};
@@ -218,13 +218,15 @@ impl DashboardComponent {
             .app_bg
             .set(format!("#{:02X}{:02X}{:02X}", color.r, color.g, color.b));
 
+        let dashboard = DashboardComponent {
+            component_ids: ids.clone(),
+            test: false,
+        };
+
         let id = builder.register_component(
             "dashboard",
             template("templates/dashboard"),
-            DashboardComponent {
-                component_ids: ids.clone(),
-                test: false,
-            },
+            dashboard,
             state,
         )?;
 
@@ -446,6 +448,9 @@ impl DashboardComponent {
                 self.show_error(&err.to_string(), state);
             }
         }
+
+        let main_display = *state.main_display.to_ref();
+        info!("send_request(): main_display: {main_display:?}");
     }
 
     fn send_save_response(&self, state: &mut DashboardState) {
@@ -466,6 +471,8 @@ impl DashboardComponent {
         context: &mut Context<'_, DashboardState>,
     ) {
         let main_display = *state.main_display.to_ref();
+        info!("handle_y_press():: main_display: {main_display:?}");
+
         match main_display {
             DashboardDisplay::RequestBody => self.open_body_mode_selector(state, context),
             DashboardDisplay::RequestHeadersEditor => {}
@@ -479,6 +486,8 @@ impl DashboardComponent {
 
     fn go_to_headers(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
         let main_display = *state.main_display.to_ref();
+
+        info!("go_to_headers() :: main_display {main_display:?}");
         match main_display {
             DashboardDisplay::RequestBody => {}
             DashboardDisplay::RequestHeadersEditor => self.open_edit_header_window(state, context),
@@ -809,6 +818,20 @@ pub trait DashboardMessageHandler {
     );
 }
 
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum KeebState {
+    Press,
+    Repeat,
+    Release,
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct KeebEvent {
+    pub character: char,
+    pub ctrl: bool,
+    pub state: KeebState,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DashboardMessages {
     TextInput(TextInputMessages),
@@ -819,6 +842,7 @@ pub enum DashboardMessages {
     ShowError(String),
     Confirmations(ConfirmAction),
     BackToRequest,
+    KeyboardEvent(KeebEvent),
 }
 
 fn update_theme(state: &mut DashboardState) {
