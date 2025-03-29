@@ -33,23 +33,40 @@ zstack
         container [width: 2]
     spacer
     hstack
+
       text [min_height: 1] "╰"
-        span [foreground: border_color, background: app_theme.background] "─"
-        span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: app_theme.background, background: app_theme.menu_opt_background] "(B)ack to Request"
-        span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: border_color, background: app_theme.background] "─"
-        span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Show Response (H)eaders"
-        span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: border_color, background: app_theme.background] "─"
-        span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Cop(y) Response"
-        span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: border_color, background: app_theme.background] "─"
-        span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-        span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Sa(v)e Response"
-        span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
+      @button (click -> send_back_to_request_from_response_renderer_click) [
+        button_label: "",
+        button_item: "(B)ack to Request",
+        foreground: app_theme.menu_opt_background,
+        background: app_theme.background,
+        button_id: "send_back_to_request_from_response_renderer"
+      ]
+      text [foreground: border_color, background: app_theme.background] "─"
+      @button (click -> send_show_response_headers_click) [
+        button_label: "",
+        button_item: "Show Response (H)eaders",
+        foreground: app_theme.menu_opt_background,
+        background: app_theme.background,
+        button_id: "send_show_response_headers"
+      ]
+      text [foreground: border_color, background: app_theme.background] "─"
+      @button (click -> send_copy_response_click) [
+        button_label: "",
+        button_item: "Cop(y) Response",
+        foreground: app_theme.menu_opt_background,
+        background: app_theme.background,
+        button_id: "send_copy_response"
+      ]
+      text [foreground: border_color, background: app_theme.background] "─"
+      @button (click -> send_request_from_headers_button_click) [
+        button_label: "",
+        button_item: "Sa(v)e Response",
+        foreground: app_theme.menu_opt_background,
+        background: app_theme.background,
+        button_id: "send_request_from_headers_button"
+      ]
+
       spacer
       hstack
         text "["

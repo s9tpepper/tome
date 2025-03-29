@@ -57,6 +57,22 @@ pub fn associated_functions(
         "new_endpoint_click" => dashboard.new_endpoint(state, &mut context),
         "commands_button_click" => dashboard.open_commands_window(state, &mut context),
 
+        "send_back_to_request_from_response_renderer_click" if is_response_body => {
+            dashboard.go_back(state, &mut context);
+        }
+
+        "send_show_response_headers_click" if is_response_body => {
+            dashboard.go_to_headers(state, &mut context);
+        }
+
+        "send_copy_response_click" if is_response_body => {
+            dashboard.handle_y_press(state, &mut context);
+        }
+
+        "send_request_from_headers_button_click" if is_response_body => {
+            dashboard.send_request(state, &mut context, &elements);
+        }
+
         "send_request_click" if is_request_body => {
             dashboard.send_request(state, &mut context, &elements)
         }

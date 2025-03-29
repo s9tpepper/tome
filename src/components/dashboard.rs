@@ -447,6 +447,52 @@ impl DashboardComponent {
         }
     }
 
+    fn handle_y_press(
+        &self,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
+        let main_display = *state.main_display.to_ref();
+        match main_display {
+            DashboardDisplay::RequestBody => self.open_body_mode_selector(state, context),
+            DashboardDisplay::RequestHeadersEditor => {}
+            DashboardDisplay::ResponseBody => {
+                // Copy response body to clipboard
+                self.yank_response(state)
+            }
+            DashboardDisplay::ResponseHeaders => {}
+        }
+    }
+
+    fn go_to_headers(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
+        let main_display = *state.main_display.to_ref();
+        match main_display {
+            DashboardDisplay::RequestBody => {}
+            DashboardDisplay::RequestHeadersEditor => self.open_edit_header_window(state, context),
+            DashboardDisplay::ResponseBody => {
+                state.main_display.set(DashboardDisplay::ResponseHeaders)
+            }
+            DashboardDisplay::ResponseHeaders => {}
+        }
+    }
+
+    fn go_back(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
+        let main_display = *state.main_display.to_ref();
+        match main_display {
+            DashboardDisplay::RequestBody => context.set_focus("id", "textarea"),
+            DashboardDisplay::RequestHeadersEditor => {
+                state.main_display.set(DashboardDisplay::RequestBody);
+            }
+            DashboardDisplay::ResponseBody => {
+                state.main_display.set(DashboardDisplay::RequestBody);
+                context.set_focus("id", "app");
+            }
+            DashboardDisplay::ResponseHeaders => {
+                state.main_display.set(DashboardDisplay::ResponseBody)
+            }
+        }
+    }
+
     fn new_project(&self, state: &mut DashboardState, context: &mut Context<'_, DashboardState>) {
         self.save_project(state, false);
 
@@ -690,7 +736,7 @@ impl DashboardComponent {
     fn open_body_mode_selector(
         &self,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
+        context: &mut Context<'_, DashboardState>,
     ) {
         state.floating_window.set(FloatingWindow::BodyModeSelector);
         context.set_focus("id", "body_mode_selector");

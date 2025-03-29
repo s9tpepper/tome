@@ -55,19 +55,7 @@ pub fn keyboard_events(
                 'r' => dashboard.send_request(state, &mut context, &elements),
 
                 // Show request body editor window
-                'b' => match main_display {
-                    DashboardDisplay::RequestBody => context.set_focus("id", "textarea"),
-                    DashboardDisplay::RequestHeadersEditor => {
-                        state.main_display.set(DashboardDisplay::RequestBody);
-                    }
-                    DashboardDisplay::ResponseBody => {
-                        state.main_display.set(DashboardDisplay::RequestBody);
-                        context.set_focus("id", "app");
-                    }
-                    DashboardDisplay::ResponseHeaders => {
-                        state.main_display.set(DashboardDisplay::ResponseBody)
-                    }
-                },
+                'b' => dashboard.go_back(state, &mut context),
 
                 // Show request headers editor window
                 'd' => dashboard.show_request_headers(Some(event), state, &mut context),
@@ -81,16 +69,7 @@ pub fn keyboard_events(
                 'p' => dashboard.open_projects_window(state, &mut context),
 
                 // Show response headers display
-                'h' => match main_display {
-                    DashboardDisplay::RequestBody => {}
-                    DashboardDisplay::RequestHeadersEditor => {
-                        dashboard.open_edit_header_window(state, &mut context)
-                    }
-                    DashboardDisplay::ResponseBody => {
-                        state.main_display.set(DashboardDisplay::ResponseHeaders)
-                    }
-                    DashboardDisplay::ResponseHeaders => {}
-                },
+                'h' => dashboard.go_to_headers(state, &mut context),
 
                 // Open Request Method selection window
                 'm' => {
@@ -108,17 +87,7 @@ pub fn keyboard_events(
                     DashboardDisplay::ResponseHeaders => {}
                 },
 
-                'y' => match main_display {
-                    DashboardDisplay::RequestBody => {
-                        dashboard.open_body_mode_selector(state, context)
-                    }
-                    DashboardDisplay::RequestHeadersEditor => {}
-                    DashboardDisplay::ResponseBody => {
-                        // Copy response body to clipboard
-                        dashboard.yank_response(state)
-                    }
-                    DashboardDisplay::ResponseHeaders => {}
-                },
+                'y' => dashboard.handle_y_press(state, &mut context),
 
                 _ => {}
             }

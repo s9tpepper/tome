@@ -12,7 +12,7 @@ use anathema::{
     geometry::Size,
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{Hex, List, State, Value},
+    state::{CommonVal, Hex, List, State, Value},
     widgets::Elements,
 };
 use log::info;
@@ -626,6 +626,7 @@ pub struct ResponseRendererState {
     pub filter_total: Value<usize>,
     pub filter_nav_index: Value<usize>,
     pub has_search_matches: Value<bool>,
+    pub transient_event_value: Value<String>,
 
     #[state_ignore]
     pub filter_input_focused: bool,
@@ -636,6 +637,7 @@ impl ResponseRendererState {
         let app_theme = get_app_theme();
 
         ResponseRendererState {
+            transient_event_value: "".to_string().into(),
             filter_input_focused: false,
             has_search_matches: false.into(),
 
@@ -673,7 +675,7 @@ impl Component for ResponseRenderer {
     fn receive(
         &mut self,
         ident: &str,
-        value: anathema::state::CommonVal<'_>,
+        value: CommonVal<'_>,
         state: &mut Self::State,
         elements: Elements<'_, '_>,
         mut context: Context<'_, Self::State>,
@@ -697,7 +699,9 @@ impl Component for ResponseRenderer {
                 info!("Set focus back to response_renderer");
             }
 
-            _ => {}
+            _ => {
+                context.publish(ident, |state| &state.transient_event_value);
+            }
         }
     }
 
