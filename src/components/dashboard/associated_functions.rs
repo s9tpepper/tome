@@ -57,6 +57,10 @@ pub fn associated_functions(
         "new_endpoint_click" => dashboard.new_endpoint(state, &mut context),
         "commands_button_click" => dashboard.open_commands_window(state, &mut context),
 
+        "back_to_request_from_response_click" if is_response_headers => {
+            dashboard.go_back(state, &mut context);
+        }
+
         "send_back_to_request_from_response_renderer_click" if is_response_body => {
             dashboard.go_back(state, &mut context);
         }
