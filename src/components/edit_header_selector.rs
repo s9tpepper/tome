@@ -308,6 +308,13 @@ impl DashboardMessageHandler for EditHeaderSelector {
             "edit_header_selector__add" => {
                 state.floating_window.set(FloatingWindow::AddHeader);
                 context.set_focus("id", "add_header_window");
+
+                let _ = send_message(
+                    "add_header_window",
+                    "open".to_string(),
+                    &component_ids,
+                    context.emitter,
+                );
             }
 
             "edit_header_selector__edit" => {
