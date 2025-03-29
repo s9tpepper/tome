@@ -6,6 +6,13 @@
 [ ] Add mouse scroll up/down support in textarea component
 [ ] Update layout/styling of syntax highlight selector window
 [ ] (BUG) Fix focus when on Options screen and app loses/regains focus
+[ ] Mouse support for confirm action window
+[ ] Mouse support for Swap Project window
+[ ] Mouse support for Swap Endpoint window
+[ ] Mouse support for Body Mode area
+[ ] Mouse support for Method area
+[ ] Mouse support for clicking into URL input
+[ ] Mouse support for request body text area input
 
 ### Release Checklist
 [x] Flesh out the README.md
