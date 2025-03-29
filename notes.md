@@ -13,6 +13,7 @@
 [ ] Mouse support for Method area
 [ ] Mouse support for clicking into URL input
 [ ] Mouse support for request body text area input
+[ ] Mouse support for Commands Window options
 
 ### Release Checklist
 [x] Flesh out the README.md
