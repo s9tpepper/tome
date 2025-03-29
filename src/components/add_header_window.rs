@@ -385,8 +385,6 @@ impl Component for AddHeaderWindow {
         mut elements: Elements<'_, '_>,
         context: Context<'_, Self::State>,
     ) {
-        info!("add_header_window:: on_mouse() active: {}", state.active);
-
         // TODO: Remove this state.active after Anathema update
         if !state.active {
             return;
