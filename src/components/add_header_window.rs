@@ -303,6 +303,8 @@ impl Component for AddHeaderWindow {
                         });
 
                         self.set_values_for_inputs(state, context);
+
+                        state.active = true;
                     }
                 }
             }
