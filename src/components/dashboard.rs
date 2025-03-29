@@ -60,7 +60,7 @@ mod associated_functions;
 mod component;
 mod keyboard_events;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DashboardDisplay {
     RequestBody,
     RequestHeadersEditor,
@@ -406,8 +406,16 @@ impl DashboardComponent {
         }
     }
 
-    fn show_request_headers(&self, event: Option<KeyEvent>, state: &mut DashboardState) {
+    fn show_request_headers(
+        &self,
+        event: Option<KeyEvent>,
+        state: &mut DashboardState,
+        context: &mut Context<'_, DashboardState>,
+    ) {
         let ctrl_pressed = event.map_or_else(|| false, |event| event.ctrl);
+
+        info!("show_request_headers():: ctrl_pressed: {ctrl_pressed}");
+
         if ctrl_pressed {
             return;
         }
@@ -415,6 +423,13 @@ impl DashboardComponent {
         state
             .main_display
             .set(DashboardDisplay::RequestHeadersEditor);
+
+        context.set_focus("id", "request_headers_editor");
+
+        info!(
+            "Updated state.main_display to {:?}",
+            *state.main_display.to_ref()
+        );
     }
 
     fn send_request(

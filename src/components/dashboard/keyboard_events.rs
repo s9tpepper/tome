@@ -70,7 +70,7 @@ pub fn keyboard_events(
                 },
 
                 // Show request headers editor window
-                'd' => dashboard.show_request_headers(Some(event), state),
+                'd' => dashboard.show_request_headers(Some(event), state, &mut context),
 
                 // Open Endpoints selector
                 'e' => {

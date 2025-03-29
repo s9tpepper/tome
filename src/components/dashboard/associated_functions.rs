@@ -1,4 +1,5 @@
 use anathema::{prelude::Context, state::CommonVal, widgets::Elements};
+use log::info;
 
 use crate::components::{
     add_header_window::AddHeaderWindow,
@@ -31,6 +32,14 @@ pub fn associated_functions(
     state: &mut DashboardState,
     elements: Elements<'_, '_>,
 ) {
+    let current_display = *state.main_display.to_ref();
+    let is_request_body = current_display == DashboardDisplay::RequestBody;
+    let is_headers_editor = current_display == DashboardDisplay::RequestHeadersEditor;
+    let is_response_body = current_display == DashboardDisplay::ResponseBody;
+    let is_response_headers = current_display == DashboardDisplay::ResponseHeaders;
+
+    info!("associated_functions(): current_display: {current_display:?}, is_request_body: {is_request_body}, is_headers_editor: {is_headers_editor}");
+
     #[allow(clippy::single_match)]
     match ident {
         // Unfocus the url input and set back to dashboard
@@ -47,29 +56,36 @@ pub fn associated_functions(
         "new_project_click" => dashboard.new_project(state, &mut context),
         "new_endpoint_click" => dashboard.new_endpoint(state, &mut context),
         "commands_button_click" => dashboard.open_commands_window(state, &mut context),
-        "send_request_click" => dashboard.send_request(state, &mut context, &elements),
-        "send_request_click_request_body" => {
-            // NOTE: This is to prevent overlapping buttons from firing the same event,
-            // TODO: Remove this when new Anathema update fixes elements which are not
-            // supposed to be viewable/clickable/interactive
-            if *state.main_display.to_ref() != DashboardDisplay::RequestBody {
-                return;
-            }
 
-            dashboard.send_request(state, &mut context, &elements);
+        "send_request_click" if is_request_body => {
+            dashboard.send_request(state, &mut context, &elements)
         }
 
-        "add_header_click" => dashboard.open_add_header_window(state, &mut context),
-        "edit_header_click" => dashboard.open_edit_header_window(state, &mut context),
-        "back_to_request_click" => state.main_display.set(DashboardDisplay::RequestBody),
+        "show_request_headers" if is_request_body => {
+            dashboard.show_request_headers(None, state, &mut context)
+        }
+
+        "send_request_click_request_body" if is_headers_editor => {
+            dashboard.send_request(state, &mut context, &elements)
+        }
+
+        "add_header_click" if is_headers_editor => {
+            dashboard.open_add_header_window(state, &mut context)
+        }
+
+        "edit_header_click" if is_headers_editor => {
+            dashboard.open_edit_header_window(state, &mut context)
+        }
+
+        "back_to_request_click" if is_headers_editor => {
+            state.main_display.set(DashboardDisplay::RequestBody)
+        }
 
         "save_project_click" => dashboard.save_project(state, true),
         "save_endpoint_click" => dashboard.save_endpoint(state, true),
         "swap_project_click" => dashboard.open_projects_window(state, &mut context),
         "swap_endpoint_click" => dashboard.open_endpoints_selector(state, &mut context),
         "options_button_click" => dashboard.send_options_open(&mut context),
-
-        "show_request_headers" => dashboard.show_request_headers(None, state),
 
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);
