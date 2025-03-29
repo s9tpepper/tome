@@ -58,6 +58,8 @@ pub fn associated_functions(
         "swap_endpoint_click" => dashboard.open_endpoints_selector(state, &mut context),
         "options_button_click" => dashboard.send_options_open(&mut context),
 
+        "show_request_headers" => dashboard.show_request_headers(None, state),
+
         "rename_project" => {
             dashboard.rename_project(&value.to_string(), state, &mut context);
         }

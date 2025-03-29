@@ -1,6 +1,6 @@
 use action_confirmations::handle_confirmations;
 use anathema::{
-    component::ComponentId,
+    component::{ComponentId, KeyEvent},
     prelude::{Context, TuiBackend},
     runtime::RuntimeBuilder,
     state::{CommonVal, List, State, Value},
@@ -404,6 +404,17 @@ impl DashboardComponent {
         if !ctrl {
             context.borrow_mut().set_focus("id", "url_input");
         }
+    }
+
+    fn show_request_headers(&self, event: Option<KeyEvent>, state: &mut DashboardState) {
+        let ctrl_pressed = event.map_or_else(|| false, |event| event.ctrl);
+        if ctrl_pressed {
+            return;
+        }
+
+        state
+            .main_display
+            .set(DashboardDisplay::RequestHeadersEditor);
     }
 
     fn send_request(

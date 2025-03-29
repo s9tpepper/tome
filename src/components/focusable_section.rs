@@ -2,13 +2,17 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
     component::{Component, ComponentId},
-    prelude::{ToSourceKind, TuiBackend},
+    prelude::{Context, ToSourceKind, TuiBackend},
     runtime::RuntimeBuilder,
-    state::{State, Value},
+    state::{CommonVal, State, Value},
+    widgets::Elements,
 };
+use log::info;
 
 use crate::{
-    app::GlobalEventHandler, messages::focus_messages::FocusChange, theme::{get_app_theme, AppTheme}
+    app::GlobalEventHandler,
+    messages::focus_messages::FocusChange,
+    theme::{get_app_theme, AppTheme},
 };
 
 #[derive(Default)]
@@ -66,6 +70,7 @@ pub struct FocusableSectionState {
     target: Value<Option<String>>,
     active_border_color: Value<String>,
     app_theme: Value<AppTheme>,
+    transient_event_value: Value<String>,
 }
 
 impl FocusableSectionState {
@@ -76,6 +81,7 @@ impl FocusableSectionState {
             target: None.into(),
             active_border_color: unfocused_border_color.into(),
             app_theme: app_theme.into(),
+            transient_event_value: "".to_string().into(),
         }
     }
 }
@@ -91,8 +97,8 @@ impl Component for FocusableSection {
     fn tick(
         &mut self,
         state: &mut Self::State,
-        _elements: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        _elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
         _dt: std::time::Duration,
     ) {
         if state.target.to_ref().is_some() {
@@ -112,62 +118,57 @@ impl Component for FocusableSection {
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
     ) {
         let focus_message = serde_json::from_str::<FocusChange>(&message);
         match focus_message {
-            Ok(focus_msg) => {
-                match focus_msg {
-                    FocusChange::Focused => {
+            Ok(focus_msg) => match focus_msg {
+                FocusChange::Focused => {
+                    state
+                        .active_border_color
+                        .set(state.app_theme.to_ref().border_focused.to_ref().to_string());
+                }
+                FocusChange::Unfocused => {
+                    state.active_border_color.set(
                         state
-                            .active_border_color
-                            .set(state.app_theme.to_ref().border_focused.to_ref().to_string());
-                    },
-                    FocusChange::Unfocused => {
-                        state.active_border_color.set(
-                            state
-                                .app_theme
-                                .to_ref()
-                                .border_unfocused
-                                .to_ref()
-                                .to_string(),
-                        );
-                    },
+                            .app_theme
+                            .to_ref()
+                            .border_unfocused
+                            .to_ref()
+                            .to_string(),
+                    );
                 }
             },
 
-            Err(_) => {
-                match message.as_str() {
-                    "unfocus" => {
-                        state.active_border_color.set(
-                            state
-                                .app_theme
-                                .to_ref()
-                                .border_unfocused
-                                .to_ref()
-                                .to_string(),
-                        );
-                    }
-
-                    "theme_update" => {
-                        self.update_app_theme(state);
-                    }
-
-                    _ => {}
+            Err(_) => match message.as_str() {
+                "unfocus" => {
+                    state.active_border_color.set(
+                        state
+                            .app_theme
+                            .to_ref()
+                            .border_unfocused
+                            .to_ref()
+                            .to_string(),
+                    );
                 }
+
+                "theme_update" => {
+                    self.update_app_theme(state);
+                }
+
+                _ => {}
             },
         }
-
     }
 
     fn receive(
         &mut self,
         ident: &str,
-        value: anathema::state::CommonVal<'_>,
+        value: CommonVal<'_>,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Elements<'_, '_>,
+        mut context: Context<'_, Self::State>,
     ) {
         if state.target.to_ref().is_none() {
             return;
@@ -200,7 +201,11 @@ impl Component for FocusableSection {
                 }
             }
 
-            _ => {}
+            _ => {
+                info!("Re-publishing event from focusable_section: {ident}");
+                state.transient_event_value.set(value.to_string());
+                context.publish(ident, |state| &state.transient_event_value);
+            }
         }
     }
 }

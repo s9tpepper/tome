@@ -16,12 +16,21 @@ zstack
 
   vstack
     spacer
-    text [min_height: 1] "╰"
-      span [foreground: border_color, background: app_theme.background] "─"
-      span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_left
-      span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Send (R)equest"
-      span [background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_right
-      span [foreground: border_color, background: app_theme.background] "─"
-      span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_left
-      span [foreground: app_theme.background, background: app_theme.menu_opt_background] "Show Request Hea(d)ers"
-      span [background: app_theme.background, foreground: app_theme.menu_opt_background] button_cap_right
+    hstack
+      text [min_height: 1] "╰"
+      text [foreground: border_color, background: app_theme.background] "─"
+      @button (click -> send_request_click) [
+        button_label: "",
+        button_item: "Send (R)equest",
+        foreground: app_theme.menu_opt_background,
+        background: app_theme.background,
+        button_id: "send_request_from_headers_button"
+      ]
+      text [min_height: 1] "─"
+      @button (click -> show_request_headers) [
+        button_label: "",
+        button_item: "Show Request Hea(d)ers",
+        foreground: app_theme.menu_opt_background,
+        background: app_theme.background,
+        button_id: "send_request_from_headers_button"
+      ]
