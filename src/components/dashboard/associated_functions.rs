@@ -48,6 +48,17 @@ pub fn associated_functions(
         "new_endpoint_click" => dashboard.new_endpoint(state, &mut context),
         "commands_button_click" => dashboard.open_commands_window(state, &mut context),
         "send_request_click" => dashboard.send_request(state, &mut context, &elements),
+        "send_request_click_request_body" => {
+            // NOTE: This is to prevent overlapping buttons from firing the same event,
+            // TODO: Remove this when new Anathema update fixes elements which are not
+            // supposed to be viewable/clickable/interactive
+            if *state.main_display.to_ref() != DashboardDisplay::RequestBody {
+                return;
+            }
+
+            dashboard.send_request(state, &mut context, &elements);
+        }
+
         "add_header_click" => dashboard.open_add_header_window(state, &mut context),
         "edit_header_click" => dashboard.open_edit_header_window(state, &mut context),
         "back_to_request_click" => state.main_display.set(DashboardDisplay::RequestBody),

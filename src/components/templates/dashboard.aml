@@ -64,7 +64,7 @@ zstack [background: app_theme.background]
           expand
             container [id: "request_body_component"]
               @request_body_section (
-                send_request_click -> send_request_click,
+                send_request_click -> send_request_click_request_body,
                 show_request_headers -> show_request_headers,
               ) [id: "request", border_color: app_theme.border_unfocused, target: "textarea"]
 
