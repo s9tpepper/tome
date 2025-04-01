@@ -22,6 +22,16 @@ pub static TEMPLATE_MAP: LazyLock<HashMap<&str, &str>> =
         let mut theme_map: HashMap<&str, &str> = HashMap::new();
 
         theme_map.insert(
+            "templates/button",
+            include_str!("components/templates/button.aml"),
+        );
+
+        theme_map.insert(
+            "floating_windows/templates/button_style_selector",
+            include_str!("components/floating_windows/templates/button_style_selector.aml"),
+        );
+
+        theme_map.insert(
             "templates/request_body_section",
             include_str!("components/templates/request_body_section.aml"),
         );
