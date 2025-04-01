@@ -315,16 +315,11 @@ impl DashboardMessageHandler for ProjectWindow {
                         state.endpoint_count.set(project.endpoints.len() as u8);
 
                         let mut state_project = state.project.to_mut();
-                        state_project.clear_endpoints();
-                        state_project.clear_variables();
-
-                        state_project.name.set(project.name);
-                        state_project.update_endpoints(&project.endpoints);
-                        state_project.update_variables(&project.variable);
-
-                        let mut state_endpoint = state.endpoint.to_mut();
+                        state_project.update_from_persisted(&project);
 
                         let endpoints = state_project.endpoints.to_ref();
+
+                        let mut state_endpoint = state.endpoint.to_mut();
                         let Some(new_endpoint) = endpoints.get(0) else {
                             state_endpoint.reset();
                             return;

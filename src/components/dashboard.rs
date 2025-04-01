@@ -590,7 +590,8 @@ impl DashboardComponent {
 
                 info!("save_endpoint():: saved project data: {project:?}");
 
-                state.project.set((&project).into());
+                let mut state_project = state.project.to_mut();
+                state_project.update_from_persisted(&project);
             }
             Err(error) => self.show_error(&error.to_string(), state),
         }

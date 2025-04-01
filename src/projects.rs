@@ -106,6 +106,14 @@ impl Project {
         self.clear_variables();
     }
 
+    pub fn update_from_persisted(&mut self, project: &PersistedProject) {
+        self.clear_endpoints();
+        self.clear_variables();
+        self.name.set(project.name.clone());
+        self.update_endpoints(&project.endpoints);
+        self.update_variables(&project.variable);
+    }
+
     pub fn update_variables(&mut self, variables: &[PersistedVariable]) {
         variables.iter().for_each(|persisted_variable| {
             // TODO: Fix this clone I shouldn't have to do this
