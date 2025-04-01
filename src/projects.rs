@@ -102,17 +102,39 @@ impl Project {
         self.row_color.set(DEFAULT_ROW_COLOR.to_string());
         self.row_fg_color.set(DEFAULT_ROW_COLOR.to_string());
 
-        while self.endpoints.len() > 0 {
-            self.endpoints.remove(0);
-        }
+        self.clear_endpoints();
+        self.clear_variables();
+    }
 
+    pub fn update_variables(&mut self, variables: &[PersistedVariable]) {
+        variables.iter().for_each(|persisted_variable| {
+            // TODO: Fix this clone I shouldn't have to do this
+            let e: ProjectVariable = (persisted_variable.clone()).into();
+            self.variable.insert(0, e);
+        });
+    }
+
+    pub fn update_endpoints(&mut self, endpoints: &[PersistedEndpoint]) {
+        endpoints.iter().for_each(|ep| {
+            let e: Endpoint = ep.into();
+            self.endpoints.insert(0, e);
+        });
+    }
+
+    pub fn clear_variables(&mut self) {
         while self.variable.len() > 0 {
             self.variable.remove(0);
         }
     }
+
+    pub fn clear_endpoints(&mut self) {
+        while self.endpoints.len() > 0 {
+            self.endpoints.remove(0);
+        }
+    }
 }
 
-#[derive(anathema::state::State)]
+#[derive(Debug, State)]
 pub struct Endpoint {
     pub name: Value<String>,
     pub url: Value<String>,
@@ -137,6 +159,33 @@ impl Endpoint {
             headers: List::from_iter(get_default_headers()),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
+        }
+    }
+
+    pub fn update(&mut self, endpoint: &Endpoint) {
+        self.clear_headers();
+        self.add_headers(&endpoint.headers);
+
+        self.name.set(endpoint.name.to_ref().to_string());
+        self.url.set(endpoint.url.to_ref().to_string());
+        self.body.set(endpoint.body.to_ref().to_string());
+        self.method.set(endpoint.method.to_ref().to_string());
+        self.body_mode.set(endpoint.body_mode.to_ref().to_string());
+        self.raw_type.set(endpoint.raw_type.to_ref().to_string());
+    }
+
+    fn add_headers(&mut self, headers: &Value<List<HeaderState>>) {
+        headers.to_ref().iter().for_each(|h| {
+            let header = h.to_ref();
+
+            // TODO: Figure out removing this clone() call
+            self.headers.insert(0, header.clone());
+        });
+    }
+
+    fn clear_headers(&mut self) {
+        while self.headers.len() > 0 {
+            self.headers.remove(0);
         }
     }
 

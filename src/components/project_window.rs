@@ -16,11 +16,12 @@ use anathema::{
     state::{List, State, Value},
     widgets::Elements,
 };
+use log::info;
 
 use crate::{
     app::GlobalEventHandler,
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
-    projects::{get_projects, Endpoint, PersistedProject, Project},
+    projects::{get_projects, PersistedProject, Project},
     templates::template,
     theme::{get_app_theme, AppTheme},
 };
@@ -309,32 +310,49 @@ impl DashboardMessageHandler for ProjectWindow {
 
                 match project {
                     Ok(project) => {
-                        state.project.set((&project).into());
+                        info!("Loaded selected project: {project:?}");
+
                         state.endpoint_count.set(project.endpoints.len() as u8);
 
-                        let default_endpoint: &Value<Endpoint> = &(Endpoint::new().into());
+                        let mut state_project = state.project.to_mut();
+                        state_project.clear_endpoints();
+                        state_project.clear_variables();
 
-                        let project = state.project.to_ref();
-                        let endpoints = project.endpoints.to_ref();
-                        let endpoint = endpoints.get(0).unwrap_or(default_endpoint);
+                        state_project.name.set(project.name);
+                        state_project.update_endpoints(&project.endpoints);
+                        state_project.update_variables(&project.variable);
 
-                        *state.endpoint.to_mut() = endpoint.to_ref().clone();
+                        let mut state_endpoint = state.endpoint.to_mut();
 
-                        // Update url input in dashboard
-                        let url = endpoint.to_ref().url.to_ref().to_string();
-                        let _ =
-                            send_message("url_text_input", url, &component_ids, context.emitter);
+                        let endpoints = state_project.endpoints.to_ref();
+                        let Some(new_endpoint) = endpoints.get(0) else {
+                            state_endpoint.reset();
+                            return;
+                        };
 
-                        let body = endpoint.to_ref().body.to_ref().to_string();
-                        let textarea_msg = TextAreaMessages::SetInput(body);
-                        if let Ok(message) = serde_json::to_string(&textarea_msg) {
-                            let _ = send_message(
-                                "request_body_input",
-                                message,
-                                &component_ids,
-                                context.emitter,
-                            );
-                        }
+                        let new_endpoint = new_endpoint.to_ref();
+                        state_endpoint.update(&new_endpoint);
+
+                        let _ = send_message(
+                            "url_text_input",
+                            state_endpoint.url.to_ref().to_string(),
+                            &component_ids,
+                            context.emitter,
+                        );
+
+                        let textarea_msg =
+                            TextAreaMessages::SetInput(state_endpoint.body.to_ref().to_string());
+
+                        let Ok(message) = serde_json::to_string(&textarea_msg) else {
+                            return;
+                        };
+
+                        let _ = send_message(
+                            "request_body_input",
+                            message,
+                            &component_ids,
+                            context.emitter,
+                        );
                     }
                     Err(_) => todo!(),
                 }
