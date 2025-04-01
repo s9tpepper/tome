@@ -1,5 +1,5 @@
 align [alignment: "center"]
-  zstack [background: app_theme.overlay_background]
+  zstack [background: app_theme.overlay_background, fill: " "]
     vstack [width: 62]
       container [height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground]
         expand
