@@ -3,7 +3,7 @@
 use std::{cell::RefCell, cmp::min, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId, Emitter, KeyCode, KeyEvent},
+    component::{Component, ComponentId, Emitter, KeyCode, KeyEvent, MouseEvent},
     default_widgets::Overflow,
     geometry::{Pos, Size},
     prelude::{Context, ToSourceKind, TuiBackend},
@@ -208,6 +208,34 @@ impl Component for TextArea {
         *tab_nav = false;
 
         self.send_focus_to_listeners(state, context.emitter.clone());
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        _: Context<'_, Self::State>,
+    ) {
+        // NOTE: This on_mouse doesn't work when the text area is focused because
+        // the GlobalEvent handler is disabling the mouse events
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "container")
+            .first(|element, _| {
+                info!("doing a scroll check");
+
+                let size = element.size();
+                match mouse.state {
+                    anathema::component::MouseState::ScrollUp => {
+                        info!("detected a scroll up");
+                        move_up(state, size);
+                    }
+                    anathema::component::MouseState::ScrollDown => move_down(state, size),
+
+                    _ => {}
+                }
+            });
     }
 
     fn on_key(
@@ -460,10 +488,12 @@ fn move_up(state: &mut TextAreaState, size: Size) {
 
     if is_wider_than_width && is_cursor_on_subline {
         state.cursor_pos.x -= size.width;
+        info!("textarea.rs :: move_up() - returning from is_cursor_on_subline check");
         return;
     }
 
     if y == 0 {
+        info!("textarea.rs :: move_up() - returning from y == 0 check");
         return;
     }
 

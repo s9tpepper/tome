@@ -152,7 +152,6 @@ impl ResponseRenderer {
     fn render_response(
         &mut self,
         extension: String,
-        elements: &mut Elements<'_, '_>,
         state: &mut ResponseRendererState,
         offset: usize,
         context: Context<'_, ResponseRendererState>,
@@ -188,7 +187,7 @@ impl ResponseRenderer {
             }
         }
 
-        self.scroll_response(elements, state, offset);
+        self.scroll_response(state, offset);
     }
 
     fn send_error_message(&self, error_message: &str, context: Context<'_, ResponseRendererState>) {
@@ -202,12 +201,7 @@ impl ResponseRenderer {
         let _ = send_message("dashboard", msg, &ids, context.emitter);
     }
 
-    fn scroll_response(
-        &mut self,
-        _elements: &mut Elements<'_, '_>,
-        state: &mut ResponseRendererState,
-        offset: usize,
-    ) {
+    fn scroll_response(&mut self, state: &mut ResponseRendererState, offset: usize) {
         if self.response_reader.is_none() {
             return;
         }
@@ -425,7 +419,7 @@ impl ResponseRenderer {
     fn scroll(
         &mut self,
         state: &mut ResponseRendererState,
-        mut elements: Elements<'_, '_>,
+        elements: Elements<'_, '_>,
         context: Context<'_, ResponseRendererState>,
         direction: ScrollDirection,
     ) {
@@ -438,7 +432,7 @@ impl ResponseRenderer {
 
         info!("new_offset: {new_offset}");
 
-        self.scroll_response(&mut elements, state, new_offset);
+        self.scroll_response(state, new_offset);
 
         if !state.filter.to_ref().is_empty() {
             let filter = state.filter.to_ref().to_string();
@@ -550,11 +544,11 @@ impl ResponseRenderer {
     fn scroll_to_line(
         &mut self,
         state: &mut ResponseRendererState,
-        mut elements: Elements<'_, '_>,
+        _elements: Elements<'_, '_>,
         _context: Context<'_, ResponseRendererState>,
         line: usize,
     ) {
-        self.scroll_response(&mut elements, state, line);
+        self.scroll_response(state, line);
 
         self.apply_filter_highlights(state);
     }
@@ -737,6 +731,38 @@ impl Component for ResponseRenderer {
         // self.scroll_response(&mut elements, state, self.response_offset);
     }
 
+    fn on_mouse(
+        &mut self,
+        mouse: anathema::component::MouseEvent,
+        state: &mut Self::State,
+        mut elements: Elements<'_, '_>,
+        context: Context<'_, Self::State>,
+    ) {
+        let mut direction: Option<ScrollDirection> = None;
+
+        elements
+            .at_position(mouse.pos())
+            .by_attribute("id", "container")
+            .first(|_, _| match mouse.state {
+                anathema::component::MouseState::ScrollUp => {
+                    direction = Some(ScrollDirection::Up);
+                }
+                anathema::component::MouseState::ScrollDown => {
+                    direction = Some(ScrollDirection::Down);
+                }
+                _ => {}
+            });
+
+        let Some(dir) = direction else {
+            return;
+        };
+
+        match dir {
+            ScrollDirection::Up => self.scroll(state, elements, context, ScrollDirection::Up),
+            ScrollDirection::Down => self.scroll(state, elements, context, ScrollDirection::Down),
+        }
+    }
+
     fn on_key(
         &mut self,
         event: KeyEvent,
@@ -834,7 +860,7 @@ impl Component for ResponseRenderer {
 
                     let response_reader = reader_result.unwrap();
                     self.response_reader = Some(response_reader);
-                    self.render_response(extension, &mut elements, state, 0, context);
+                    self.render_response(extension, state, 0, context);
                 }
 
                 ResponseRendererMessages::SyntaxPreview(theme) => {
