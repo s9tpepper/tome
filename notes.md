@@ -2,8 +2,8 @@
 
 ## TODO
 
-[ ] Add mouse scroll up/down support in response renderer
-[ ] Add mouse scroll up/down support in textarea component
+[x] Add mouse scroll up/down support in response renderer
+[x] Add mouse scroll up/down support in textarea component
 [ ] Update layout/styling of syntax highlight selector window
 [x] (BUG) Fix focus when on Options screen and app loses/regains focus
 [x] Mouse support for confirm action window
