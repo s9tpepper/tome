@@ -262,7 +262,7 @@ impl Component for DashboardComponent {
 
         elements
             .at_position(mouse.pos())
-            .by_attribute("id", "body_mode_hstack")
+            .by_attribute("id", "body_mode_display")
             .first(|_, _| {
                 if *state.floating_window.to_ref() != FloatingWindow::None {
                     return;

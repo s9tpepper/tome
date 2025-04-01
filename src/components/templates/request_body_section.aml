@@ -6,10 +6,10 @@ zstack
     vstack
       text "╭─Request (B)ody:"
 
-  hstack [id: "body_mode_hstack"]
+  hstack [id: "body_mode_hstack", height: 1]
     spacer [id: "body_mode_spacer", width: 1]
     text " Bod(y) Mode: ["
-    container [width: 17, height: 1, fill: " "]
+    container [id: "body_mode_display", width: 17, height: 1, fill: " "]
       align [width: 17, alignment: "center", height: 1]
         text [text_align: "center", width: 11] endpoint.body_mode ":" endpoint.raw_type
     text "]─╮"
