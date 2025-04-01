@@ -1,5 +1,5 @@
 align [alignment: "center"]
-  vstack [width: 62]
+  vstack [width: 62, fill: " "]
     container [height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground, max_width: 62]
       expand
         hstack
