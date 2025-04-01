@@ -1,13 +1,6 @@
 zstack
-  @app_section [
-    top_label: response_body_window_label,
-    show_top_label: false,
-    show_bottom_label: false,
-    section_id: "response_border"
-  ]
-    $children
-      overflow [id: "container", background: response_background]
-        for line in lines
-          text [background: response_background]
-            for span in line.spans
-              span [foreground: span.foreground, background: span.background, bold: span.bold] span.text
+  overflow [id: "container", background: response_background]
+    for line in lines
+      text [background: response_background]
+        for span in line.spans
+          span [foreground: span.foreground, background: span.background, bold: span.bold] span.text

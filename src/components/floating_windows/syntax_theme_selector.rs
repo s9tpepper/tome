@@ -73,8 +73,8 @@ impl From<String> for SyntaxTheme {
 
         SyntaxTheme {
             name: value.replace(".tmTheme", "").into(),
-            row_color: app_theme.overlay_background,
-            row_fg_color: app_theme.overlay_foreground,
+            row_color: app_theme.row_color,
+            row_fg_color: app_theme.menu_color_3,
         }
     }
 }
@@ -215,20 +215,10 @@ impl SyntaxThemeSelector {
 
                     theme_name = syntax_theme.name.to_ref().to_string();
                 } else {
-                    syntax_theme.row_fg_color = state
-                        .app_theme
-                        .to_ref()
-                        .overlay_foreground
-                        .to_ref()
-                        .clone()
-                        .into();
-                    syntax_theme.row_color = state
-                        .app_theme
-                        .to_ref()
-                        .overlay_background
-                        .to_ref()
-                        .clone()
-                        .into();
+                    syntax_theme.row_fg_color =
+                        state.app_theme.to_ref().foreground.to_ref().clone().into();
+                    syntax_theme.row_color =
+                        state.app_theme.to_ref().background.to_ref().clone().into();
                 }
 
                 new_list_state.push(syntax_theme);

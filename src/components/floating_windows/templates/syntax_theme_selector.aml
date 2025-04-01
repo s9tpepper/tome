@@ -1,25 +1,24 @@
 align [alignment: "center"]
   border [foreground: border_color, border_style: "╭─╮│╯─╰│", max_width: width]
-    hstack
-      container [max_width: 30]
+    vstack [fill: " "]
+      container [height: 1, background: app_theme.menu_opt_background, foreground: app_theme.menu_opt_foreground]
+        expand
+          hstack
+            text " Current Theme: " selected_item
+      hstack
+        container [max_width: 30]
+          vstack
+
+            for theme in window_list
+              hstack [width: 30, foreground: theme.row_fg_color, background: theme.row_color]
+                text theme.name
+
+            container [height: 1, background: app_theme.overlay_background, foreground: app_theme.overlay_foreground]
+              expand
+                hstack
+                  text "Browse: ↑/↓ j/k"
         vstack
-          container [height: 1, background: "yellow", foreground: #131313]
-            expand
-              hstack
-                text " Current Theme: " selected_item
-
-          for theme in window_list
-            hstack [width: 30, foreground: theme.row_fg_color, background: theme.row_color]
-              text theme.name
-
-          container [height: 1, background: "red", foreground: #131313]
-            expand
-              hstack
-                text " hjkl"
-                spacer
-                text "Enter [choose] Esc [cancel]"
-      vstack
-        border [sides: "left"]
-          container [height: height]
-            vstack
-              @code_sample_renderer
+          border [sides: "left"]
+            container [height: height]
+              vstack
+                @code_sample_renderer
