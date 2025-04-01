@@ -87,7 +87,11 @@ impl DashboardMessageHandler for EditProjectName {
             }
 
             "edit_project_name__submit" => {
+                info!("Handling edit_project_name__submit");
+
                 let new_name = value.to_string();
+                info!("new_name: {new_name}");
+
                 state.project.to_mut().name.set(new_name);
 
                 state.floating_window.set(FloatingWindow::None);
@@ -95,6 +99,7 @@ impl DashboardMessageHandler for EditProjectName {
                 context.set_focus("id", "app");
 
                 if let Ok(message) = serde_json::to_string(&EditProjectNameMessages::ClearInput) {
+                    info!("Clearing dialog input for edit_name");
                     let _ = send_message(
                         "edit_project_name",
                         message,
@@ -395,10 +400,12 @@ impl EditProjectName {
     ) {
         match &self.persisted_project {
             Some(persisted_project) => {
+                info!("Renaming a specific project: {}", persisted_project.name);
                 self.rename_specific_project(persisted_project, state, context);
             }
 
             None => {
+                info!("Publishing edit_project_name__submit event");
                 context
                     .borrow_mut()
                     .publish("edit_project_name__submit", |state| &state.name);

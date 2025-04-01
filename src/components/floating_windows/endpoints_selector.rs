@@ -16,6 +16,7 @@ use anathema::{
     state::{List, State, Value},
     widgets::Elements,
 };
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -85,6 +86,8 @@ impl EndpointsSelector {
             EndpointsSelector::new(ids.clone()),
             EndpointsSelectorState::new(),
         )?;
+
+        info!(">> EndpointsSelector ComponentId: {id:?}");
 
         let mut ids_ref = ids.borrow_mut();
         ids_ref.insert(String::from("endpoints_selector_window"), id);
@@ -472,12 +475,17 @@ impl Component for EndpointsSelector {
         _: anathema::widgets::Elements<'_, '_>,
         _: anathema::prelude::Context<'_, Self::State>,
     ) {
+        info!("endpoints_selector.rs :: message()");
         let endpoints_selector_message =
             serde_json::from_str::<EndpointsSelectorMessages>(&message);
+
+        info!("endpoints_selector_message: {endpoints_selector_message:?}");
 
         match endpoints_selector_message {
             Ok(deserialized_message) => match deserialized_message {
                 EndpointsSelectorMessages::EndpointsList(endpoints) => {
+                    info!("endpoints: {endpoints:?}");
+
                     self.items_list = endpoints;
 
                     let current_last_index =
@@ -498,7 +506,9 @@ impl Component for EndpointsSelector {
             },
 
             // TODO: Figure out what to do with deserialization errors
-            Err(_error) => {
+            Err(error) => {
+                info!("Error deserializing message: {}", error);
+
                 // eprintln!("{error}");
                 // dbg!(error);
             }

@@ -7,6 +7,7 @@ use anathema::{
     state::{State, Value},
     widgets::Elements,
 };
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -104,7 +105,13 @@ impl DashboardMessageHandler for EditEndpointName {
             }
 
             "edit_endpoint_name__submit" => {
+                info!("edit_endpoint_name.rs::edit_endpoint_name__submit");
+
+                info!("Handling edit_endpoint_name__submit event");
+
                 let new_name = value.to_string();
+                info!("new_name: {new_name}");
+
                 state.endpoint.to_mut().name.set(new_name);
 
                 state.floating_window.set(FloatingWindow::None);
@@ -112,6 +119,7 @@ impl DashboardMessageHandler for EditEndpointName {
                 context.set_focus("id", "app");
 
                 if let Ok(message) = serde_json::to_string(&EditEndpointNameMessages::ClearInput) {
+                    info!("Clearing input for endpoint name edits");
                     let _ = send_message(
                         "edit_endpoint_name",
                         message,
@@ -444,16 +452,19 @@ impl EditEndpointName {
         state: &mut EditEndpointNameState,
         context: &mut RefCell<Context<'_, EditEndpointNameState>>,
     ) {
+        info!("edit_endpoint_name.rs::submit()");
         let exists = state
             .current_names
             .iter()
             .find(|n| **n == state.name.to_ref().to_string());
+        info!("exists: {exists:?}");
 
         if exists.is_some() {
             let unique_name_error = format!(
                 "The name '{}' is already in use",
                 state.name.to_ref().clone()
             );
+            info!("unique_name_error: {unique_name_error}");
 
             state.unique_name_error.set(unique_name_error);
             return;
@@ -461,9 +472,14 @@ impl EditEndpointName {
 
         match &self.persisted_endpoint {
             Some(persisted_endpoint) => {
+                info!("Found a persisted endpoint, editing existing endpoint");
+
                 self.rename_specific_endpoint(persisted_endpoint, state, context);
             }
             None => {
+                info!("Did not find a persisted endpoint, editing new endpoint");
+                info!("Publishing edit_endpoint_name__submit");
+
                 context
                     .borrow_mut()
                     .publish("edit_endpoint_name__submit", |state| &state.name);

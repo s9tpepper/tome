@@ -553,6 +553,7 @@ impl DashboardComponent {
     }
 
     fn save_endpoint(&self, state: &mut DashboardState, show_message: bool) {
+        info!("dashboard.rs::save_endpoint()");
         let project_name = state.project.to_ref().name.to_ref().to_string();
         let endpoint_name = state.endpoint.to_ref().name.to_ref().to_string();
 
@@ -586,6 +587,8 @@ impl DashboardComponent {
                 if show_message {
                     self.show_message("Endpoint Save", "Saved endpoint successfully", state);
                 }
+
+                info!("save_endpoint():: saved project data: {project:?}");
 
                 state.project.set((&project).into());
             }
@@ -667,6 +670,8 @@ impl DashboardComponent {
         state: &mut DashboardState,
         context: &mut Context<'_, DashboardState>,
     ) {
+        info!("dashboard.rs :: open_endpoints_selector()");
+
         state.floating_window.set(FloatingWindow::EndpointsSelector);
         context.set_focus("id", "endpoints_selector_window");
 
@@ -683,15 +688,24 @@ impl DashboardComponent {
             })
             .collect();
 
+        info!("persisted_endpoints: {persisted_endpoints:?}");
+
         let msg = EndpointsSelectorMessages::EndpointsList(persisted_endpoints);
+        info!("msg: {msg:?}");
+
         #[allow(clippy::single_match)]
         match self.component_ids.try_borrow() {
             #[allow(clippy::single_match)]
             Ok(ids) => match ids.get("endpoints_selector_window") {
                 Some(id) => {
-                    let _ = serde_json::to_string(&msg).map(|payload| {
+                    info!("Sending message to id: {id:?}");
+
+                    let message_result = serde_json::to_string(&msg).map(|payload| {
+                        info!("Sent endpoints_selector_window a message: {payload:?}");
                         context.emit(*id, payload);
                     });
+
+                    info!("send endoints_selector_window message result: {message_result:?}");
                 }
                 None => self.show_error("Unable to find endpoints window id", state),
             },
