@@ -1,10 +1,8 @@
 use std::cell::RefCell;
 
 use anathema::{
-    component::{Component, KeyCode, KeyEvent, MouseEvent},
-    prelude::Context,
-    state::CommonVal,
-    widgets::{components::events::KeyState, Elements},
+    component::{Children, Component, Context, KeyCode, KeyEvent, MouseEvent},
+    widgets::components::events::KeyState,
 };
 
 use crate::{
@@ -24,12 +22,12 @@ impl Component for DashboardComponent {
     type State = DashboardState;
     type Message = String;
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         if let Ok(dashboard_message) = serde_json::from_str::<DashboardMessages>(&message) {
             match dashboard_message {
@@ -49,7 +47,7 @@ impl Component for DashboardComponent {
 
                 DashboardMessages::BackToRequest => {
                     state.main_display.set(DashboardDisplay::RequestBody);
-                    context.set_focus("id", "app");
+                    context.components.by_attribute("id", "app").focus();
                 }
 
                 DashboardMessages::Confirmations(confirm_action) => {
@@ -106,7 +104,7 @@ impl Component for DashboardComponent {
                     #[allow(clippy::single_match)]
                     TextInputMessages::Escape(text_update) => match text_update.id.as_str() {
                         "endpoint_url_input" => {
-                            context.set_focus("id", "app");
+                            context.components.by_attribute("id", "app").focus();
 
                             if let Ok(ids) = self.component_ids.try_borrow() {
                                 let _ = send_message(
@@ -136,23 +134,22 @@ impl Component for DashboardComponent {
         }
     }
 
-    fn receive(
+    fn on_event(
         &mut self,
-        ident: &str,
-        value: CommonVal<'_>,
+        event: &mut anathema::component::UserEvent<'_>,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        children: anathema::component::Children<'_, '_>,
+        context: anathema::component::Context<'_, '_, Self::State>,
     ) {
-        associated_functions(self, ident, value, context, state, elements);
+        associated_functions(self, event, context, state, children);
     }
 
     fn on_key(
         &mut self,
         event: KeyEvent,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         keyboard_events(self, event, state, elements, context);
     }
@@ -160,43 +157,92 @@ impl Component for DashboardComponent {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         update_theme(state);
 
         match *state.main_display.to_ref() {
-            DashboardDisplay::RequestBody => context.set_focus("id", "request"),
-
-            DashboardDisplay::RequestHeadersEditor => {
-                context.set_focus("id", "request_headers_editor")
+            DashboardDisplay::RequestBody => {
+                context.components.by_attribute("id", "request").focus()
             }
-            DashboardDisplay::ResponseBody => context.set_focus("id", "response_renderer"),
-            DashboardDisplay::ResponseHeaders => context.set_focus("id", "response_headers"),
+
+            DashboardDisplay::RequestHeadersEditor => context
+                .components
+                .by_attribute("id", "request_headers_editor")
+                .focus(),
+            DashboardDisplay::ResponseBody => context
+                .components
+                .by_attribute("id", "response_renderer")
+                .focus(),
+            DashboardDisplay::ResponseHeaders => context
+                .components
+                .by_attribute("id", "response_headers")
+                .focus(),
         }
 
         match *state.floating_window.to_ref() {
             FloatingWindow::None => {}
             FloatingWindow::Method => {
-                context.set_focus("id", "method_selector");
+                context
+                    .components
+                    .by_attribute("id", "method_selector")
+                    .focus();
             }
-            FloatingWindow::AddHeader => context.set_focus("id", "add_header_window"),
+            FloatingWindow::AddHeader => context
+                .components
+                .by_attribute("id", "add_header_window")
+                .focus(),
             FloatingWindow::Error => {}
             FloatingWindow::Message => {}
-            FloatingWindow::EditHeaderSelector => context.set_focus("id", "edit_header_selector"),
-            FloatingWindow::Project => context.set_focus("id", "project_selector"),
-            FloatingWindow::ConfirmAction => context.set_focus("id", "confirm_action_window"),
-            FloatingWindow::ChangeEndpointName => context.set_focus("id", "edit_endpoint_name"),
-            FloatingWindow::ChangeProjectName => context.set_focus("id", "edit_project_name"),
-            FloatingWindow::EndpointsSelector => {
-                context.set_focus("id", "endpoints_selector_window")
-            }
-            FloatingWindow::Commands => context.set_focus("id", "commands_window"),
-            FloatingWindow::CodeGen => context.set_focus("id", "codegen_window"),
-            FloatingWindow::PostmanFileSelector => context.set_focus("id", "postman_file_selector"),
-            FloatingWindow::BodyModeSelector => context.set_focus("id", "body_mode_selector"),
-            FloatingWindow::AddProjectVariable => context.set_focus("id", "add_project_variable"),
-            FloatingWindow::ViewProjectVariables => context.set_focus("id", "project_variables"),
+            FloatingWindow::EditHeaderSelector => context
+                .components
+                .by_attribute("id", "edit_header_selector")
+                .focus(),
+            FloatingWindow::Project => context
+                .components
+                .by_attribute("id", "project_selector")
+                .focus(),
+            FloatingWindow::ConfirmAction => context
+                .components
+                .by_attribute("id", "confirm_action_window")
+                .focus(),
+            FloatingWindow::ChangeEndpointName => context
+                .components
+                .by_attribute("id", "edit_endpoint_name")
+                .focus(),
+            FloatingWindow::ChangeProjectName => context
+                .components
+                .by_attribute("id", "edit_project_name")
+                .focus(),
+            FloatingWindow::EndpointsSelector => context
+                .components
+                .by_attribute("id", "endpoints_selector_window")
+                .focus(),
+            FloatingWindow::Commands => context
+                .components
+                .by_attribute("id", "commands_window")
+                .focus(),
+            FloatingWindow::CodeGen => context
+                .components
+                .by_attribute("id", "codegen_window")
+                .focus(),
+            FloatingWindow::PostmanFileSelector => context
+                .components
+                .by_attribute("id", "postman_file_selector")
+                .focus(),
+            FloatingWindow::BodyModeSelector => context
+                .components
+                .by_attribute("id", "body_mode_selector")
+                .focus(),
+            FloatingWindow::AddProjectVariable => context
+                .components
+                .by_attribute("id", "add_project_variable")
+                .focus(),
+            FloatingWindow::ViewProjectVariables => context
+                .components
+                .by_attribute("id", "project_variables")
+                .focus(),
         }
 
         if self.test {
@@ -215,12 +261,13 @@ impl Component for DashboardComponent {
         &mut self,
         mouse: MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let mut context_ref = RefCell::new(context);
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "method_box")
             .first(|_, _| {
@@ -228,13 +275,18 @@ impl Component for DashboardComponent {
                     return;
                 }
 
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     state.floating_window.set(FloatingWindow::Method);
-                    context_ref.borrow_mut().set_focus("id", "method_selector");
+                    context_ref
+                        .borrow_mut()
+                        .components
+                        .by_attribute("id", "method_selector")
+                        .focus();
                 }
             });
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "url_component")
             .first(|_, _| {
@@ -242,12 +294,13 @@ impl Component for DashboardComponent {
                     return;
                 }
 
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.focus_url_input(&mut context_ref, false);
                 }
             });
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "request_body_component")
             .first(|_, _| {
@@ -255,12 +308,17 @@ impl Component for DashboardComponent {
                     return;
                 }
 
-                if mouse.lsb_up() {
-                    context_ref.borrow_mut().set_focus("id", "textarea");
+                if mouse.left_up() {
+                    context_ref
+                        .borrow_mut()
+                        .components
+                        .by_attribute("id", "textarea")
+                        .focus();
                 }
             });
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "body_mode_display")
             .first(|_, _| {
@@ -268,7 +326,7 @@ impl Component for DashboardComponent {
                     return;
                 }
 
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.handle_y_press(state, &mut context_ref);
                 }
             });

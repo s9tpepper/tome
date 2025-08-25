@@ -6,14 +6,12 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::TuiBackend,
-    runtime::RuntimeBuilder,
+    component::{Children, Component, ComponentId, Context},
+    runtime::Builder,
     state::{List, State, Value},
 };
 
 use crate::{
-    app::GlobalEventHandler,
     templates::template,
     theme::{
         get_app_theme, get_app_theme_by_name, get_app_themes_list, AppTheme, AppThemePersisted,
@@ -46,7 +44,7 @@ impl AppThemeSelectorState {
             current_first_index: 0.into(),
             current_last_index: 4.into(),
             visible_items: 5.into(),
-            window_list: List::empty(),
+            window_list: List::empty().into(),
             selected_app_theme: "".to_string().into(),
             app_theme: app_theme.into(),
         }
@@ -63,9 +61,9 @@ pub struct AppThemeSelector {
 impl AppThemeSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "app_theme_selector",
             template("floating_windows/templates/app_theme_selector"),
             AppThemeSelector::new(ids.clone()),
@@ -160,7 +158,7 @@ impl AppThemeSelector {
         });
 
         loop {
-            if state.window_list.len() > 0 {
+            if state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
@@ -195,8 +193,8 @@ impl Component for AppThemeSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             anathema::component::KeyCode::Char(char) => match char {
@@ -210,7 +208,9 @@ impl Component for AppThemeSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("app_theme_selector__cancel", |state| &state.cursor)
+                context.publish("app_theme_selector__cancel", |state: Self::State| {
+                    state.cursor
+                })
             }
 
             anathema::component::KeyCode::Enter => {
@@ -223,14 +223,16 @@ impl Component for AppThemeSelector {
                             .selected_app_theme
                             .set(app_theme_persisted.name.clone());
 
-                        context.publish("app_theme_selector__selection", |state| {
-                            &state.selected_app_theme
+                        context.publish("app_theme_selector__selection", |state: Self::State| {
+                            state.selected_app_theme
                         });
 
                         let app_theme = get_app_theme_by_name(&state.selected_app_theme.to_ref());
                         state.app_theme.set(app_theme);
                     }
-                    None => context.publish("app_theme_selector__cancel", |state| &state.cursor),
+                    None => context.publish("app_theme_selector__cancel", |state: Self::State| {
+                        state.cursor
+                    }),
                 }
             }
 
@@ -241,8 +243,8 @@ impl Component for AppThemeSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -270,12 +272,12 @@ impl Component for AppThemeSelector {
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
-        _: Self::Message,
-        _: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _message: Self::Message,
+        _state: &mut Self::State,
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>,
     ) {
         // println!("Received message in project window: {message}");
 

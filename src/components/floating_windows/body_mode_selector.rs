@@ -1,9 +1,8 @@
 use std::{fmt::Display, str::FromStr};
 
 use anathema::{
-    component::{Component, KeyCode},
+    component::{Children, Component, Context, KeyCode},
     state::{State, Value},
-    widgets::Elements,
 };
 
 use crate::{
@@ -42,27 +41,27 @@ impl BodyModeSelectorState {
 
 impl DashboardMessageHandler for BodyModeSelector {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
-        ident: impl Into<String>,
+        event: &mut anathema::component::UserEvent<'_>,
+        _ident: impl Into<String>,
         state: &mut DashboardState,
-        mut context: anathema::prelude::Context<'_, DashboardState>,
-        _elements: Elements<'_, '_>,
+        mut context: anathema::component::Context<'_, '_, DashboardState>,
+        _children: anathema::component::Children<'_, '_>,
         _component_ids: std::cell::Ref<
             '_,
             std::collections::HashMap<String, anathema::component::ComponentId<String>>,
         >,
     ) {
-        let event: String = ident.into();
+        let event_name: String = event.name().to_string();
 
-        match event.as_str() {
+        match event_name.as_str() {
             "body_mode_selector__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
             }
 
             "body_mode_selector__selection" => {
-                let value = &*value.to_common_str();
+                let value = event.data::<String>();
 
-                match value {
+                match value.as_str() {
                     "Text" | "JavaScript" | "Json" | "Html" | "Xml" => {
                         state.endpoint.to_mut().body_mode.set("raw".to_string());
                         state.endpoint.to_mut().raw_type.set(value.to_string());
@@ -74,7 +73,7 @@ impl DashboardMessageHandler for BodyModeSelector {
                     }
                 }
 
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             _ => {}
@@ -93,8 +92,8 @@ impl Component for BodyModeSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
+        mut _children: Children<'_, '_>,
+        mut _context: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -105,8 +104,8 @@ impl Component for BodyModeSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _children: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             KeyCode::Char(char) => {
@@ -128,14 +127,20 @@ impl Component for BodyModeSelector {
                     }
                 };
 
-                context.publish("body_mode_selector__selection", |state| &state.selection);
-                context.publish("body_mode_selector__cancel", |state| &state.selection);
-                context.set_focus("id", "app")
+                context.publish("body_mode_selector__selection", |state: Self::State| {
+                    state.selection
+                });
+                context.publish("body_mode_selector__cancel", |state: Self::State| {
+                    state.selection
+                });
+                context.components.by_attribute("id", "app").focus()
             }
 
             KeyCode::Esc => {
-                context.publish("body_mode_selector__cancel", |state| &state.selection);
-                context.set_focus("id", "app")
+                context.publish("body_mode_selector__cancel", |state: Self::State| {
+                    state.selection
+                });
+                context.components.by_attribute("id", "app").focus()
             }
 
             _ => (),
@@ -143,6 +148,7 @@ impl Component for BodyModeSelector {
     }
 }
 
+#[allow(unused)]
 #[derive(Default)]
 pub enum BodyMode {
     #[default]

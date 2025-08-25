@@ -1,10 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc, sync::atomic::AtomicBool};
 
 use anathema::{
-    component::{ComponentId, Event, KeyCode, KeyEvent},
-    prelude::{Document, GlobalContext, ToSourceKind, TuiBackend},
-    runtime::{GlobalEvents, Runtime, RuntimeBuilder},
-    widgets::{components::events::KeyState, Elements},
+    component::ComponentId,
+    prelude::{Backend, Document, ToSourceKind, TuiBackend},
+    runtime::{Builder, Runtime},
 };
 use log::{info, LevelFilter};
 use simplelog::{Config, WriteLogger};
@@ -58,35 +57,36 @@ struct App {
     component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
 }
 
-pub struct GlobalEventHandler;
+// pub struct GlobalEventHandler;
 
 pub static mut TAB_NAV: AtomicBool = AtomicBool::new(true);
 
-impl GlobalEvents for GlobalEventHandler {
-    fn enable_tab_navigation(&mut self) -> bool {
-        // TODO: Try to refactor the unsafe block out
-        #[allow(static_mut_refs)]
-        unsafe {
-            TAB_NAV.load(std::sync::atomic::Ordering::Relaxed)
-        }
-    }
-
-    fn handle(
-        &mut self,
-        event: Event,
-        _elements: &mut Elements<'_, '_>,
-        _ctx: &mut GlobalContext<'_>,
-    ) -> Option<Event> {
-        match event {
-            Event::Key(KeyEvent {
-                code: KeyCode::Char('c'),
-                ctrl: true,
-                state: KeyState::Press,
-            }) => Some(Event::Stop),
-            _ => Some(event),
-        }
-    }
-}
+// FIXME: figure out how to customize tab navigation in latest Anathema
+// impl GlobalEvents for GlobalEventHandler {
+//     fn enable_tab_navigation(&mut self) -> bool {
+//         // TODO: Try to refactor the unsafe block out
+//         #[allow(static_mut_refs)]
+//         unsafe {
+//             TAB_NAV.load(std::sync::atomic::Ordering::Relaxed)
+//         }
+//     }
+//
+//     fn handle(
+//         &mut self,
+//         event: Event,
+//         _elements: &mut Elements<'_, '_>,
+//         _ctx: &mut GlobalContext<'_>,
+//     ) -> Option<Event> {
+//         match event {
+//             Event::Key(KeyEvent {
+//                 code: KeyCode::Char('c'),
+//                 ctrl: true,
+//                 state: KeyState::Press,
+//             }) => Some(Event::Stop),
+//             _ => Some(event),
+//         }
+//     }
+// }
 
 impl App {
     fn logger(&self) {
@@ -131,45 +131,46 @@ impl App {
             .hide_cursor()
             .finish();
 
-        info!("Made tui");
-
         if let Err(ref error) = tui {
             info!("Error making tui");
             eprintln!("[ERROR] Could not start terminal interface");
             eprintln!("{error:?}");
         }
 
-        let backend = tui.unwrap();
-        let runtime_builder = Runtime::builder(doc, backend);
-        let global_event_handler = GlobalEventHandler {};
-        let mut runtime_builder =
-            runtime_builder.set_global_event_handler::<GlobalEventHandler>(global_event_handler);
+        let mut backend = tui.unwrap();
+        backend.finalize();
+
+        let mut runtime_builder = Runtime::builder(doc, &backend);
+        // runtime_builder
+        //     .default::<()>("app", "src/components/templates/app_layout.aml")
+        //     .unwrap();
+
+        // FIXME: tab navigation customization
+        // let global_event_handler = GlobalEventHandler {};
+        // let mut runtime_builder =
+        //     runtime_builder.set_global_event_handler::<GlobalEventHandler>(global_event_handler);
 
         info!("Registering components...");
         self.register_components(&mut runtime_builder)?;
 
-        let runtime = runtime_builder.finish();
-        info!("Started runtime...");
+        info!("finishing runtime build");
+        let finish_result =
+            runtime_builder.finish(&mut backend, |runtime, backend| runtime.run(backend));
 
-        if let Ok(mut runtime) = runtime {
-            let _emitter = runtime.emitter();
-
-            info!("Running runtime...");
-            runtime.run();
-        } else if let Err(error) = runtime {
-            eprintln!("{:?}", error);
+        if let Err(error) = finish_result {
+            println!("{error}");
+            info!("[runtime_builder] finish() error: {error}");
         }
+
+        info!("Started runtime...");
 
         Ok(())
     }
 
-    fn register_prototypes(
-        &self,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
-    ) -> anyhow::Result<()> {
+    fn register_prototypes(&self, builder: &mut Builder<()>) -> anyhow::Result<()> {
         let mut component_ids = self.component_ids.clone();
 
-        builder.register_prototype(
+        builder.prototype(
             "textinput",
             TEXTINPUT_TEMPLATE.to_template(),
             move || TextInput {
@@ -181,7 +182,7 @@ impl App {
 
         component_ids = self.component_ids.clone();
 
-        builder.register_prototype(
+        builder.prototype(
             "response_body_area",
             template("templates/textarea"),
             move || {
@@ -204,50 +205,47 @@ impl App {
             },
         )?;
 
-        builder.register_prototype(
+        builder.prototype(
             "method_selector",
             template("templates/method_selector"),
             || MethodSelector,
             MethodSelectorState::new,
         )?;
 
-        builder.register_prototype(
+        builder.prototype(
             "body_mode_selector",
             template("floating_windows/templates/body_mode_selector"),
             || BodyModeSelector,
             BodyModeSelectorState::new,
         )?;
 
-        builder.register_prototype(
+        builder.prototype(
             "menu_item",
             template("templates/menu_item"),
             || MenuItem,
             MenuItemState::new,
         )?;
 
-        builder.register_prototype(
+        builder.prototype(
             "request_headers_editor",
             template("templates/request_headers_editor"),
             || RequestHeadersEditor,
             RequestHeadersEditorState::new,
         )?;
 
-        builder.register_prototype(
+        builder.prototype(
             "app_section",
             template("templates/app_section"),
             || AppSection,
             AppSectionState::new,
         )?;
 
-        builder.register_prototype("row", template("templates/row"), || Row, RowState::new)?;
+        builder.prototype("row", template("templates/row"), || Row, RowState::new)?;
 
         Ok(())
     }
 
-    fn register_components(
-        &mut self,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
-    ) -> anyhow::Result<()> {
+    fn register_components(&mut self, builder: &mut Builder<()>) -> anyhow::Result<()> {
         self.register_prototypes(builder)?;
 
         AddHeaderWindow::register(&self.component_ids, builder)?;
@@ -410,6 +408,8 @@ impl App {
         )?;
 
         Button::register(builder, template("templates/button"))?;
+
+        info!("registered all components");
 
         Ok(())
     }

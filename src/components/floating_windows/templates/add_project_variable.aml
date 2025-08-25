@@ -1,23 +1,23 @@
 align [alignment: "center"]
   vstack [width: 62]
-    container [height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground, max_width: 62]
+    container [height: 1, background: state.app_theme.overlay_heading, foreground: state.app_theme.overlay_foreground, max_width: 62]
       expand
         hstack
           text [bold: true] "  Add Project Variable"
 
     zstack
       border [
-        background: app_theme.overlay_background,
-        foreground: app_theme.border_focused,
+        background: state.app_theme.overlay_background,
+        foreground: state.app_theme.border_focused,
         border_style: "╭─╮│╯─╰│",
         sides: ["left", "right", "bottom"],
-        min_width: minwidth,
+        min_width: attributes.minwidth,
         max_width: 80,
         fill: " "
       ]
 
         padding [padding: 1]
-          vstack [background: app_theme.overlay_background]
+          vstack [background: state.app_theme.overlay_background]
             @add_project_variable_name (
               text_change -> add_project_variable_name_update,
               escape -> add_project_variable_name_escape
@@ -33,7 +33,7 @@ align [alignment: "center"]
               escape -> add_project_variable_private_value_escape
             ) [id: "add_project_variable_private_value", label: "(P)rivate Value"]
 
-            //text variable.name
+            //text state.variable.name
 
       container [height: 12]
         vstack
@@ -41,12 +41,12 @@ align [alignment: "center"]
           hstack [width: 60]
             spacer
             text [min_height: 1] ""
-              span [foreground: border_color] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
-              span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(S)ubmit"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] "█"
+              span [foreground: state.border_color] "─"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_submit_background] "█"
+              span [background: state.app_theme.overlay_submit_background, foreground: state.app_theme.overlay_submit_foreground] "(S)ubmit"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_submit_background] "█"
             text [min_height: 1] ""
-              span [foreground: border_color] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
-              span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(C)ancel"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] "█"
+              span [foreground: state.border_color] "─"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_cancel_background] "█"
+              span [background: state.app_theme.overlay_cancel_background, foreground: state.app_theme.overlay_cancel_foreground] "(C)ancel"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_cancel_background] "█"

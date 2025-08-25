@@ -1,4 +1,4 @@
 hstack
-  text [bold: true, background: app_theme.top_bar_background, foreground: item.color] "█"
-  text [bold: false, foreground: app_theme.top_bar_background, background: item.color] item.label
-  text [bold: true, background: app_theme.top_bar_background, foreground: item.color] "█"
+  text [bold: true, background: state.app_theme.top_bar_background, foreground: state.item.color] "█"
+  text [bold: false, foreground: state.app_theme.top_bar_background, background: state.item.color] state.item.label
+  text [bold: true, background: state.app_theme.top_bar_background, foreground: state.item.color] "█"

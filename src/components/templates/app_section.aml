@@ -1,18 +1,18 @@
 zstack
-  border [id: section_id, foreground: border_color, border_style: "╭─╮│╯─╰│"]
+  border [id: state.section_id, foreground: state.border_color, border_style: "╭─╮│╯─╰│"]
     $children
 
   vstack
-    if show_top_label
+    if attributes.show_top_label
       text "╭─" top_label ":"
 
-    if show_bottom_label
+    if attributes.show_bottom_label
       //spacer
       vstack
         spacer
         text [min_height: 1] "╰"
-          for val in bottom_label
-            span [foreground: border_color, background: app_theme.background] "─"
-            span [bold: true, background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
-            span [foreground: app_theme.background, background: app_theme.menu_opt_background] val
-            span [background: app_theme.background, foreground: app_theme.menu_opt_background] "█"
+          for val in attributes.bottom_label
+            span [foreground: state.border_color, background: state.app_theme.background] "─"
+            span [bold: true, background: state.app_theme.background, foreground: state.app_theme.menu_opt_background] "█"
+            span [foreground: state.app_theme.background, background: state.app_theme.menu_opt_background] val
+            span [background: state.app_theme.background, foreground: state.app_theme.menu_opt_background] "█"

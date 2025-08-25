@@ -10,16 +10,13 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
+    component::{Children, Component, ComponentId, Context},
+    runtime::Builder,
     state::{List, State, Value},
-    widgets::Elements,
 };
 use log::info;
 
 use crate::{
-    app::GlobalEventHandler,
     compatibility::postman::PostmanJson,
     components::{
         dashboard::{DashboardMessageHandler, DashboardMessages, DashboardState},
@@ -93,7 +90,7 @@ impl FileSelectorState {
             current_first_index: 0.into(),
             current_last_index: 4.into(),
             visible_rows: 5.into(),
-            window_list: List::empty(),
+            window_list: List::empty().into(),
             selected_item: "".to_string().into(),
             app_theme: app_theme.into(),
         }
@@ -111,9 +108,9 @@ impl FileSelector {
     pub fn register(
         ident: &str,
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             ident,
             template("floating_windows/templates/file_selector"),
             FileSelector::new(ids.clone()),
@@ -135,7 +132,7 @@ impl FileSelector {
         &mut self,
         path_buf: PathBuf,
         state: &mut FileSelectorState,
-        context: Context<'_, FileSelectorState>,
+        context: Context<'_, '_, FileSelectorState>,
     ) {
         let mut parent_path_buf = path_buf.clone();
         parent_path_buf.pop();
@@ -268,14 +265,16 @@ impl FileSelector {
         });
 
         loop {
-            if state.window_list.len() > 0 {
+            if state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
             }
         }
 
-        let mut new_list_state = List::<Entry>::empty();
+        let new_list_state = List::<Entry>::empty();
+        state.window_list = new_list_state.into();
+
         new_items_list
             .into_iter()
             .enumerate()
@@ -313,13 +312,11 @@ impl FileSelector {
                         .into();
                 }
 
-                new_list_state.push(entry);
+                state.window_list.push(entry);
             });
-
-        state.window_list = new_list_state;
     }
 
-    fn handle_file(&self, entry: &Entry, context: Context<'_, FileSelectorState>) {
+    fn handle_file(&self, entry: &Entry, context: Context<'_, '_, FileSelectorState>) {
         let error_message = "Invalid Postman file type to import, choose a .json file".to_string();
 
         match entry.path_buf.extension() {
@@ -332,7 +329,7 @@ impl FileSelector {
         }
     }
 
-    fn import_postman_file(&self, entry: &Entry, context: Context<'_, FileSelectorState>) {
+    fn import_postman_file(&self, entry: &Entry, context: Context<'_, '_, FileSelectorState>) {
         let error_message = format!(
             "Could not read the file at {}",
             entry.path_buf.to_string_lossy()
@@ -379,7 +376,7 @@ impl FileSelector {
         &self,
         title: String,
         message: String,
-        mut context: Context<'_, FileSelectorState>,
+        mut context: Context<'_, '_, FileSelectorState>,
     ) {
         let dashboard_message = DashboardMessages::ShowSucces((title, message));
 
@@ -390,11 +387,11 @@ impl FileSelector {
 
             let _ = send_message("dashboard", json, &component_ids, context.emitter);
 
-            context.set_focus("id", "app");
+            context.components.by_attribute("id", "app").focus();
         });
     }
 
-    fn send_error_message(&self, message: String, mut context: Context<'_, FileSelectorState>) {
+    fn send_error_message(&self, message: String, mut context: Context<'_, '_, FileSelectorState>) {
         let dashboard_message = DashboardMessages::ShowError(message);
 
         let _ = serde_json::to_string(&dashboard_message).map(|json| {
@@ -404,7 +401,7 @@ impl FileSelector {
 
             let _ = send_message("dashboard", json, &component_ids, context.emitter);
 
-            context.set_focus("id", "app");
+            context.components.by_attribute("id", "app").focus();
         });
     }
 
@@ -412,7 +409,7 @@ impl FileSelector {
         &mut self,
         entry: &Entry,
         state: &mut FileSelectorState,
-        context: Context<'_, FileSelectorState>,
+        context: Context<'_, '_, FileSelectorState>,
     ) {
         self.read_directory(entry.path_buf.clone(), state, context);
     }
@@ -420,11 +417,11 @@ impl FileSelector {
 
 impl DashboardMessageHandler for FileSelector {
     fn handle_message(
-        _: anathema::state::CommonVal<'_>,
+        _: &mut anathema::component::UserEvent<'_>,
         ident: impl Into<String>,
         state: &mut DashboardState,
-        mut context: anathema::prelude::Context<'_, DashboardState>,
-        _: Elements<'_, '_>,
+        mut context: Context<'_, '_, DashboardState>,
+        _: anathema::component::Children<'_, '_>,
         _: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
         let event: String = ident.into();
@@ -433,7 +430,7 @@ impl DashboardMessageHandler for FileSelector {
         match event.as_str() {
             "file_selector__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             _ => {}
@@ -452,8 +449,8 @@ impl Component for FileSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -468,8 +465,8 @@ impl Component for FileSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             anathema::component::KeyCode::Char(char) => match char {
@@ -483,7 +480,7 @@ impl Component for FileSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("file_selector__cancel", |state| &state.cursor)
+                context.publish("file_selector__cancel", |state: Self::State| state.cursor)
             }
 
             anathema::component::KeyCode::Enter => {

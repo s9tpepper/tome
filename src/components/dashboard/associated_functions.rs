@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use anathema::{prelude::Context, state::CommonVal, widgets::Elements};
+use anathema::component::{Children, Context, UserEvent};
 use log::info;
 
 use crate::components::{
@@ -28,11 +28,10 @@ use super::{DashboardComponent, DashboardDisplay, DashboardMessageHandler, Dashb
 
 pub fn associated_functions(
     dashboard: &mut DashboardComponent,
-    ident: &str,
-    value: CommonVal<'_>,
-    mut context: Context<'_, DashboardState>,
+    event: &mut UserEvent<'_>,
+    mut context: Context<'_, '_, DashboardState>,
     state: &mut DashboardState,
-    elements: Elements<'_, '_>,
+    children: Children<'_, '_>,
 ) {
     let current_display = *state.main_display.to_ref();
     let is_request_body = current_display == DashboardDisplay::RequestBody;
@@ -42,11 +41,11 @@ pub fn associated_functions(
 
     info!("associated_functions(): current_display: {current_display:?}, is_request_body: {is_request_body}, is_headers_editor: {is_headers_editor}");
 
-    #[allow(clippy::single_match)]
-    match ident {
+    let name = event.name().to_string();
+    match name.as_str() {
         // Unfocus the url input and set back to dashboard
         "url_input_focus" => {
-            context.set_focus("id", "app");
+            context.components.by_attribute("id", "app").focus();
         }
 
         "add_new_project" => {
@@ -81,7 +80,7 @@ pub fn associated_functions(
         }
 
         "send_request_click" if is_request_body => {
-            dashboard.send_request(state, &mut context, &elements)
+            dashboard.send_request(state, &mut context, &children)
         }
 
         "show_request_headers" if is_request_body => {
@@ -89,7 +88,7 @@ pub fn associated_functions(
         }
 
         "send_request_click_request_body" if is_headers_editor => {
-            dashboard.send_request(state, &mut context, &elements)
+            dashboard.send_request(state, &mut context, &children)
         }
 
         "add_header_click" if is_headers_editor => {
@@ -111,22 +110,28 @@ pub fn associated_functions(
         "options_button_click" => dashboard.send_options_open(&mut context),
 
         "rename_project" => {
-            dashboard.rename_project(&value.to_string(), state, &mut context);
+            let name: String = event.data::<String>().clone();
+            dashboard.rename_project(&name, state, &mut context);
         }
 
         "rename_endpoint" => {
-            dashboard.rename_endpoint(&value.to_string(), state, &mut context);
+            let name: String = event.data::<String>().clone();
+            dashboard.rename_endpoint(&name, state, &mut context);
         }
 
         "rename_variable" => {
-            dashboard.rename_variable(&value.to_string(), state, &mut context);
+            let name: String = event.data::<String>().clone();
+            dashboard.rename_variable(&name, state, &mut context);
         }
 
         "open_add_variable_window" => {
             state
                 .floating_window
                 .set(FloatingWindow::AddProjectVariable);
-            context.set_focus("id", "add_project_variable");
+            context
+                .components
+                .by_attribute("id", "add_project_variable")
+                .focus();
 
             let Ok(message) = serde_json::to_string(&AddProjectVariableMessages::InitialFocus)
             else {
@@ -143,131 +148,124 @@ pub fn associated_functions(
         _ => {}
     }
 
-    let (component, _event) = ident.split_once("__").unwrap_or(("", ""));
+    let (component, _event) = name.split_once("__").unwrap_or(("", ""));
 
     if let Ok(component_ids) = dashboard.component_ids.try_borrow() {
         match component {
             "confirm_action" => ConfirmActionWindow::handle_message(
-                value,
-                ident,
+                event,
+                name,
                 state,
                 context,
-                elements,
+                children,
                 component_ids,
             ),
 
             "project_variables" => ProjectVariables::handle_message(
-                value,
-                ident,
+                event,
+                name,
                 state,
                 context,
-                elements,
+                children,
                 component_ids,
             ),
 
             "add_project_variable" => AddProjectVariable::handle_message(
-                value,
-                ident,
+                event,
+                name,
                 state,
                 context,
-                elements,
+                children,
                 component_ids,
             ),
 
             "body_mode_selector" => BodyModeSelector::handle_message(
-                value,
-                ident,
+                event,
+                name,
                 state,
                 context,
-                elements,
+                children,
                 component_ids,
             ),
 
             "file_selector" => {
-                FileSelector::handle_message(value, ident, state, context, elements, component_ids);
+                FileSelector::handle_message(event, name, state, context, children, component_ids);
             }
 
             "commands" => {
-                Commands::handle_message(value, ident, state, context, elements, component_ids);
+                Commands::handle_message(event, name, state, context, children, component_ids);
             }
 
             "codegen" => {
-                CodeGen::handle_message(value, ident, state, context, elements, component_ids);
+                CodeGen::handle_message(event, name, state, context, children, component_ids);
             }
 
             "add_header" => {
                 AddHeaderWindow::handle_message(
-                    value,
-                    ident,
+                    event,
+                    name,
                     state,
                     context,
-                    elements,
+                    children,
                     component_ids,
                 );
             }
 
             "edit_header_selector" => {
                 EditHeaderSelector::handle_message(
-                    value,
-                    ident,
+                    event,
+                    name,
                     state,
                     context,
-                    elements,
+                    children,
                     component_ids,
                 );
             }
 
             "method_selector" => {
                 MethodSelector::handle_message(
-                    value,
-                    ident,
+                    event,
+                    name,
                     state,
                     context,
-                    elements,
+                    children,
                     component_ids,
                 );
             }
 
             "project_window" => {
-                ProjectWindow::handle_message(
-                    value,
-                    ident,
-                    state,
-                    context,
-                    elements,
-                    component_ids,
-                );
+                ProjectWindow::handle_message(event, name, state, context, children, component_ids);
             }
 
             "edit_endpoint_name" => {
                 EditEndpointName::handle_message(
-                    value,
-                    ident,
+                    event,
+                    name,
                     state,
                     context,
-                    elements,
+                    children,
                     component_ids,
                 );
             }
 
             "edit_project_name" => {
                 EditProjectName::handle_message(
-                    value,
-                    ident,
+                    event,
+                    name,
                     state,
                     context,
-                    elements,
+                    children,
                     component_ids,
                 );
             }
 
             "endpoints_selector" => {
                 EndpointsSelector::handle_message(
-                    value,
-                    ident,
+                    event,
+                    name,
                     state,
                     context,
-                    elements,
+                    children,
                     component_ids,
                 );
             }
@@ -275,6 +273,6 @@ pub fn associated_functions(
             _ => {}
         }
     } else {
-        println!("Could not find id for {ident}");
+        println!("Could not find id for {name}");
     }
 }

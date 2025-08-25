@@ -1,6 +1,6 @@
 use anathema::{
-    component::Component,
-    state::{CommonVal, State, Value},
+    component::{Children, Component, Context, UserEvent},
+    state::{State, Value},
 };
 
 use crate::theme::{get_app_theme, AppTheme};
@@ -19,8 +19,8 @@ impl AppSection {
 
 #[derive(Default, State)]
 pub struct AppSectionState {
-    section_id: Value<Option<String>>,
-    section_text_id: Value<Option<String>>,
+    section_id: Value<String>,
+    section_text_id: Value<String>,
     app_theme: Value<AppTheme>,
 }
 
@@ -29,8 +29,8 @@ impl AppSectionState {
         let app_theme = get_app_theme();
 
         AppSectionState {
-            section_id: None.into(),
-            section_text_id: None.into(),
+            section_id: Value::new("".into()),
+            section_text_id: Value::new("".into()),
             app_theme: app_theme.into(),
         }
     }
@@ -40,62 +40,62 @@ impl Component for AppSection {
     type State = AppSectionState;
     type Message = ();
 
-    fn tick(
+    fn on_tick(
         &mut self,
         state: &mut Self::State,
-        elements: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
         _dt: std::time::Duration,
     ) {
-        if state.section_id.to_ref().is_none() {
-            let Some(section_id) = context.get_external("section_id") else {
+        if state.section_id.to_ref().is_empty() {
+            let Some(section_id) = context.attribute("section_id") else {
                 return;
             };
 
-            let Some(section_text_id) = context.get_external("section_text_id") else {
+            let Some(section_text_id) = context.attribute("section_text_id") else {
                 return;
             };
 
-            if let Some(id) = section_id.to_common() {
+            if let Some(id) = section_id.as_str() {
                 let id = id.to_string();
-                state.section_id.set(Some(id));
+                state.section_id.set(id);
             }
 
-            if let Some(section_text_id) = section_text_id.to_common() {
+            if let Some(section_text_id) = section_text_id.as_str() {
                 let text_id = section_text_id.to_string();
-                state.section_text_id.set(Some(text_id));
+                state.section_id.set(text_id);
             }
         }
 
-        self.resize(state, elements, context);
+        self.on_resize(state, children, context);
     }
 
-    fn receive(
+    fn on_event(
         &mut self,
-        ident: &str,
-        value: CommonVal<'_>,
+        event: &mut UserEvent<'_>,
         state: &mut Self::State,
-        mut elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
-        if ident == "focus_change" {
-            let focus = value.to_bool();
+        if event.name() == "focus_change" {
+            let focus: bool = *event.data();
+
             if !focus {
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             let section_id = state.section_id.to_ref().clone();
-            let Some(section_id) = section_id else { return };
-            let section_id = section_id.to_string().leak();
 
             match focus {
-                true => elements
-                    .by_attribute("id", CommonVal::Str(section_id))
+                true => children
+                    .elements()
+                    .by_attribute("id", section_id.as_str())
                     .each(|_element, attributes| {
                         attributes.set("foreground", "#ffff00");
                     }),
-                false => elements
-                    .by_attribute("id", CommonVal::Str(section_id))
+                false => children
+                    .elements()
+                    .by_attribute("id", section_id.as_str())
                     .each(|_element, attributes| {
                         attributes.set("foreground", "#ff0000");
                     }),

@@ -1,17 +1,13 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::cell::RefCell;
 
 use anathema::{
-    component::{Component, ComponentId, MouseEvent},
-    prelude::{Context, ToSourceKind, TuiBackend},
-    runtime::RuntimeBuilder,
+    component::{Children, Component, Context, MouseEvent},
+    prelude::ToSourceKind,
+    runtime::Builder,
     state::{State, Value},
-    widgets::Elements,
 };
 
-use crate::{
-    app::GlobalEventHandler,
-    theme::{get_app_theme, AppTheme},
-};
+use crate::theme::{get_app_theme, AppTheme};
 
 pub struct Button {
     #[allow(dead_code)]
@@ -39,43 +35,43 @@ impl Component for Button {
         &mut self,
         mouse: MouseEvent,
         _: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let context_ref = RefCell::new(context);
 
         let attribute = {
             let c = context_ref.borrow();
-            let Some(button_id) = c.get_external("button_id") else {
+            let Some(button_id) = c.attribute("button_id") else {
                 return;
             };
 
-            let Some(common_val) = button_id.to_common() else {
+            let Some(common_val) = button_id.as_str() else {
                 return;
             };
 
             &*common_val.to_string()
         };
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", attribute)
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     context_ref
                         .borrow_mut()
-                        .publish("click", |state| &state.button_id);
+                        .publish("click", |state: Self::State| {
+                            state.button_id.to_ref().clone()
+                        });
                 }
             });
     }
 }
 
 impl Button {
-    pub fn register(
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
-        template: impl ToSourceKind,
-    ) -> anyhow::Result<()> {
-        builder.register_prototype(
+    pub fn register(builder: &mut Builder<()>, template: impl ToSourceKind) -> anyhow::Result<()> {
+        builder.prototype(
             "button",
             template,
             || Button {

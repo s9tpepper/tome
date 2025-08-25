@@ -1,5 +1,5 @@
 container [height: 1]
   zstack
-    text input
-    text cursor_prefix
-      span [foreground: fg_color, background: bg_color] cursor_char
+    text state.input
+    text state.cursor_prefix
+      span [foreground: state.fg_color, background: state.bg_color] state.cursor_char

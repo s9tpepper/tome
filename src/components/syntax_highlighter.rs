@@ -109,10 +109,10 @@ pub fn highlight<'a>(src: &'a str, ext: &str, name: Option<String>) -> (Box<[Lin
     let theme = get_highlight_theme(name);
 
     let mut extension = ext;
-    if ext.contains(";") {
-        if let Some((ex, _)) = ext.split_once(';') {
-            extension = ex;
-        }
+    if ext.contains(";")
+        && let Some((ex, _)) = ext.split_once(';')
+    {
+        extension = ex;
     }
 
     let syntax = ps.find_syntax_by_extension(extension).unwrap();

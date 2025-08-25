@@ -1,16 +1,16 @@
 align [alignment: "center"]
   zstack
     vstack [width: 80]
-      container [fill: " ", height: 1, background: app_theme.overlay_heading, foreground: app_theme.overlay_foreground]
+      container [fill: " ", height: 1, background: state.app_theme.overlay_heading, foreground: state.app_theme.overlay_foreground]
         expand
           hstack
-            text [bold: true] " Choose Project " current_project
+            text [bold: true] " Choose Project " state.current_project
             spacer
-            text "[(P)rojects: " project_count "]"
-      border [sides: ["left", "right", "bottom"], background: app_theme.overlay_background, foreground: app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 80]
+            text "[(P)rojects: " state.project_count "]"
+      border [sides: ["left", "right", "bottom"], background: state.app_theme.overlay_background, foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 80]
         padding [padding: 1]
           vstack [height: 5, width: 80]
-            for project in window_list
+            for project in state.window_list
               hstack [foreground: project.row_fg_color, background: project.row_color]
                 text project.name
                 spacer
@@ -22,19 +22,19 @@ align [alignment: "center"]
           spacer
           container [id: "add_button"]
             text [min_height: 1] ""
-              span [foreground: app_theme.border_focused] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] button_cap_left
-              span [background: app_theme.overlay_submit_background, foreground: app_theme.overlay_submit_foreground] "(A)dd"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_submit_background] button_cap_right
+              span [foreground: state.app_theme.border_focused] "─"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_submit_background] state.button_cap_left
+              span [background: state.app_theme.overlay_submit_background, foreground: state.app_theme.overlay_submit_foreground] "(A)dd"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_submit_background] state.button_cap_right
           container [id: "rename_button"]
             text [min_height: 1] ""
-              span [foreground: app_theme.border_focused] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_left
-              span [background: app_theme.menu_color_2, foreground: app_theme.overlay_submit_foreground] "(R)ename"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.menu_color_2] button_cap_right
+              span [foreground: state.app_theme.border_focused] "─"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.menu_color_2] state.button_cap_left
+              span [background: state.app_theme.menu_color_2, foreground: state.app_theme.overlay_submit_foreground] "(R)ename"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.menu_color_2] state.button_cap_right
           container [id: "delete_button"]
             text [min_height: 1] ""
-              span [foreground: app_theme.border_focused] "─"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_left
-              span [background: app_theme.overlay_cancel_background, foreground: app_theme.overlay_cancel_foreground] "(D)elete"
-              span [bold: true, background: app_theme.overlay_background, foreground: app_theme.overlay_cancel_background] button_cap_right
+              span [foreground: state.app_theme.border_focused] "─"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_cancel_background] state.button_cap_left
+              span [background: state.app_theme.overlay_cancel_background, foreground: state.app_theme.overlay_cancel_foreground] "(D)elete"
+              span [bold: true, background: state.app_theme.overlay_background, foreground: state.app_theme.overlay_cancel_background] state.button_cap_right

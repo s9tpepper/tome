@@ -7,7 +7,6 @@ use std::{
 };
 
 use crate::{
-    app::GlobalEventHandler,
     components::response_renderer::{ResponseRendererMessages, CODE_SAMPLE},
     options::{get_syntax_theme, get_syntax_themes},
     templates::template,
@@ -15,9 +14,8 @@ use crate::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::TuiBackend,
-    runtime::RuntimeBuilder,
+    component::{Children, Component, ComponentId, Context},
+    runtime::Builder,
     state::{List, State, Value},
 };
 
@@ -50,7 +48,7 @@ impl SyntaxThemeSelectorState {
             current_first_index: 0.into(),
             current_last_index: 4.into(),
             visible_rows: 5.into(),
-            window_list: List::empty(),
+            window_list: List::empty().into(),
             selected_item: "".to_string().into(),
             code_sample: String::from(CODE_SAMPLE).into(),
             width: 0f32.into(),
@@ -89,9 +87,9 @@ pub struct SyntaxThemeSelector {
 impl SyntaxThemeSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "syntax_theme_selector",
             template("floating_windows/templates/syntax_theme_selector"),
             SyntaxThemeSelector::new(ids.clone()),
@@ -114,7 +112,7 @@ impl SyntaxThemeSelector {
     fn move_cursor_down(
         &self,
         state: &mut SyntaxThemeSelectorState,
-        context: &mut anathema::prelude::Context<'_, SyntaxThemeSelectorState>,
+        context: &mut Context<'_, '_, SyntaxThemeSelectorState>,
     ) {
         let last_complete_list_index = self.items_list.len().saturating_sub(1);
         let new_cursor = min(*state.cursor.to_ref() + 1, last_complete_list_index as u8);
@@ -143,7 +141,7 @@ impl SyntaxThemeSelector {
     fn move_cursor_up(
         &self,
         state: &mut SyntaxThemeSelectorState,
-        context: &mut anathema::prelude::Context<'_, SyntaxThemeSelectorState>,
+        context: &mut Context<'_, '_, SyntaxThemeSelectorState>,
     ) {
         let new_cursor = max(state.cursor.to_ref().saturating_sub(1), 0);
         state.cursor.set(new_cursor);
@@ -174,7 +172,7 @@ impl SyntaxThemeSelector {
         last_index: usize,
         selected_index: usize,
         state: &mut SyntaxThemeSelectorState,
-        context: &mut anathema::prelude::Context<'_, SyntaxThemeSelectorState>,
+        context: &mut Context<'_, '_, SyntaxThemeSelectorState>,
     ) {
         let display_items = &self.items_list[first_index..=last_index];
         let mut new_items_list: Vec<SyntaxTheme> = vec![];
@@ -183,7 +181,7 @@ impl SyntaxThemeSelector {
         });
 
         loop {
-            if state.window_list.len() > 0 {
+            if state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
@@ -191,7 +189,9 @@ impl SyntaxThemeSelector {
         }
 
         let mut theme_name: String = String::new();
-        let mut new_list_state = List::<SyntaxTheme>::empty();
+        let new_list_state = List::<SyntaxTheme>::empty();
+        state.window_list = new_list_state.into();
+
         new_items_list
             .into_iter()
             .enumerate()
@@ -221,17 +221,15 @@ impl SyntaxThemeSelector {
                         state.app_theme.to_ref().background.to_ref().clone().into();
                 }
 
-                new_list_state.push(syntax_theme);
+                state.window_list.push(syntax_theme);
             });
 
         self.update_code_sample(context, &theme_name);
-
-        state.window_list = new_list_state;
     }
 
     fn update_code_sample(
         &self,
-        context: &mut anathema::prelude::Context<'_, SyntaxThemeSelectorState>,
+        context: &mut Context<'_, '_, SyntaxThemeSelectorState>,
         theme_name: &str,
     ) {
         let component_ids = self.component_ids.try_borrow();
@@ -257,7 +255,7 @@ impl SyntaxThemeSelector {
     fn resize_window(
         &self,
         state: &mut SyntaxThemeSelectorState,
-        context: &mut anathema::prelude::Context<'_, SyntaxThemeSelectorState>,
+        context: &mut Context<'_, '_, SyntaxThemeSelectorState>,
     ) {
         let viewport_size = context.viewport.size();
         let vp_width = viewport_size.width as f32;
@@ -281,11 +279,11 @@ impl Component for SyntaxThemeSelector {
         true
     }
 
-    fn resize(
+    fn on_resize(
         &mut self,
         _state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>,
     ) {
         // NOTE: Causes a panic in anathema, revisit after updating anathema fork
         //
@@ -306,8 +304,8 @@ impl Component for SyntaxThemeSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         let current_syntax_theme = get_syntax_theme();
 
@@ -338,8 +336,8 @@ impl Component for SyntaxThemeSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             anathema::component::KeyCode::Char(char) => match char {
@@ -353,7 +351,9 @@ impl Component for SyntaxThemeSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("syntax_theme_selector__cancel", |state| &state.cursor)
+                context.publish("syntax_theme_selector__cancel", |state: Self::State| {
+                    state.cursor
+                })
             }
 
             anathema::component::KeyCode::Enter => {
@@ -366,11 +366,15 @@ impl Component for SyntaxThemeSelector {
                         state
                             .selected_item
                             .set(theme.to_string().replace(".tmTheme", ""));
-                        context.publish("syntax_theme_selector__selection", |state| {
-                            &state.selected_item
-                        });
+                        context
+                            .publish("syntax_theme_selector__selection", |state: Self::State| {
+                                state.selected_item
+                            });
                     }
-                    None => context.publish("syntax_theme_selector__cancel", |state| &state.cursor),
+                    None => context
+                        .publish("syntax_theme_selector__cancel", |state: Self::State| {
+                            state.cursor
+                        }),
                 }
             }
 

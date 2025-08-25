@@ -19,7 +19,7 @@ pub const SELECTED_ROW_COLOR: &str = "#FFFFFF";
 pub const DEFAULT_PROJECT_NAME: &str = "Unnamed";
 pub const DEFAULT_ENDPOINT_NAME: &str = "Unnamed";
 
-#[derive(anathema::state::State)]
+#[derive(State)]
 pub struct Project {
     pub name: Value<String>,
     pub endpoints: Value<List<Endpoint>>,
@@ -38,12 +38,16 @@ pub enum ProjectVariableType {
 }
 
 impl State for ProjectVariableType {
-    fn to_common(&self) -> Option<state::CommonVal<'_>> {
+    fn type_info(&self) -> state::Type {
+        state::Type::String
+    }
+
+    fn as_str(&self) -> Option<&str> {
         match self {
-            ProjectVariableType::String => Some(state::CommonVal::Str("String")),
-            ProjectVariableType::Boolean => Some(state::CommonVal::Str("Boolean")),
-            ProjectVariableType::Any => Some(state::CommonVal::Str("Any")),
-            ProjectVariableType::Number => Some(state::CommonVal::Str("Number")),
+            ProjectVariableType::String => Some("String"),
+            ProjectVariableType::Boolean => Some("Boolean"),
+            ProjectVariableType::Any => Some("Any"),
+            ProjectVariableType::Number => Some("Number"),
         }
     }
 }
@@ -53,7 +57,7 @@ pub struct ProjectVariable {
     pub id: Value<String>,
     pub key: Value<String>,
     pub value: Value<String>,
-    pub r#type: Value<ProjectVariableType>,
+    pub project_type: Value<ProjectVariableType>,
     pub name: Value<String>,
     pub system: Value<bool>,
     pub disabled: Value<bool>,
@@ -63,13 +67,40 @@ pub struct ProjectVariable {
     pub row_color: Value<String>,
 }
 
+impl From<&PersistedVariable> for ProjectVariable {
+    fn from(persisted_variable: &PersistedVariable) -> Self {
+        ProjectVariable {
+            id: persisted_variable.id.clone().unwrap_or_default().into(),
+            key: persisted_variable.key.clone().unwrap_or_default().into(),
+            value: persisted_variable.value.clone().unwrap_or_default().into(),
+            project_type: match persisted_variable.r#type.clone().unwrap_or_default() {
+                VariableType::String => ProjectVariableType::String.into(),
+                VariableType::Boolean => ProjectVariableType::Boolean.into(),
+                VariableType::Any => ProjectVariableType::Any.into(),
+                VariableType::Number => ProjectVariableType::Number.into(),
+            },
+            name: Value::new(persisted_variable.name.clone().unwrap_or_default()),
+            system: persisted_variable.system.unwrap_or_default().into(),
+            disabled: persisted_variable.disabled.unwrap_or_default().into(),
+            private: persisted_variable
+                .private
+                .clone()
+                .unwrap_or_default()
+                .into(),
+
+            row_color: DEFAULT_ROW_COLOR.to_string().into(),
+            row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
+        }
+    }
+}
+
 impl From<PersistedVariable> for ProjectVariable {
     fn from(persisted_variable: PersistedVariable) -> Self {
         ProjectVariable {
             id: persisted_variable.id.unwrap_or_default().into(),
             key: persisted_variable.key.unwrap_or_default().into(),
             value: persisted_variable.value.unwrap_or_default().into(),
-            r#type: match persisted_variable.r#type.unwrap_or_default() {
+            project_type: match persisted_variable.r#type.unwrap_or_default() {
                 VariableType::String => ProjectVariableType::String.into(),
                 VariableType::Boolean => ProjectVariableType::Boolean.into(),
                 VariableType::Any => ProjectVariableType::Any.into(),
@@ -92,8 +123,8 @@ impl Project {
             name: String::from(DEFAULT_PROJECT_NAME).into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
-            endpoints: List::empty(),
-            variable: List::empty(),
+            endpoints: List::empty().into(),
+            variable: List::empty().into(),
         }
     }
 
@@ -130,13 +161,13 @@ impl Project {
     }
 
     pub fn clear_variables(&mut self) {
-        while self.variable.len() > 0 {
+        while self.variable.is_empty() {
             self.variable.remove(0);
         }
     }
 
     pub fn clear_endpoints(&mut self) {
-        while self.endpoints.len() > 0 {
+        while self.endpoints.is_empty() {
             self.endpoints.remove(0);
         }
     }
@@ -164,7 +195,7 @@ impl Endpoint {
             body: String::from("").into(),
             body_mode: String::from("raw").into(),
             raw_type: String::from("text").into(),
-            headers: List::from_iter(get_default_headers()),
+            headers: List::from_iter(get_default_headers()).into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
         }
@@ -192,7 +223,7 @@ impl Endpoint {
     }
 
     fn clear_headers(&mut self) {
-        while self.headers.len() > 0 {
+        while self.headers.is_empty() {
             self.headers.remove(0);
         }
     }
@@ -207,7 +238,7 @@ impl Endpoint {
         self.row_color.set(DEFAULT_ROW_COLOR.to_string());
         self.row_fg_color.set(DEFAULT_ROW_COLOR.to_string());
 
-        while self.headers.len() > 0 {
+        while self.headers.is_empty() {
             self.headers.remove(0);
         }
 
@@ -232,7 +263,7 @@ impl Endpoint {
             raw_type: self.raw_type.to_ref().to_string().into(),
             row_color: DEFAULT_ROW_COLOR.to_string().into(),
             row_fg_color: DEFAULT_ROW_COLOR.to_string().into(),
-            headers: List::from_iter(headers),
+            headers: List::from_iter(headers).into(),
         }
     }
 }
@@ -291,7 +322,7 @@ impl From<&ProjectVariable> for PersistedVariable {
             key: Some(project_variable.key.to_ref().to_string()),
             value: Some(project_variable.value.to_ref().to_string()),
             private: Some(project_variable.private.to_ref().to_string()),
-            r#type: Some(match *project_variable.r#type.to_ref() {
+            r#type: Some(match *project_variable.project_type.to_ref() {
                 ProjectVariableType::String => VariableType::String,
                 ProjectVariableType::Boolean => VariableType::Boolean,
                 ProjectVariableType::Any => VariableType::Any,
@@ -311,7 +342,7 @@ impl From<ProjectVariable> for PersistedVariable {
             key: Some(project_variable.key.to_ref().to_string()),
             value: Some(project_variable.value.to_ref().to_string()),
             private: Some(project_variable.private.to_ref().to_string()),
-            r#type: Some(match *project_variable.r#type.to_ref() {
+            r#type: Some(match *project_variable.project_type.to_ref() {
                 ProjectVariableType::String => VariableType::String,
                 ProjectVariableType::Boolean => VariableType::Boolean,
                 ProjectVariableType::Any => VariableType::Any,
@@ -451,9 +482,7 @@ pub fn delete_project(project: &PersistedProject) -> anyhow::Result<()> {
     project_dir.push(format!("{}.project", project.name));
 
     let remove_result = fs::remove_file(project_dir);
-    if remove_result.is_err() {
-        let write_error = remove_result.unwrap_err();
-
+    if let Err(write_error) = remove_result {
         return Err(anyhow::Error::msg(write_error.to_string()));
     }
 
@@ -481,9 +510,7 @@ pub fn save_project(project: &PersistedProject) -> anyhow::Result<()> {
     project_dir.push(format!("{}.project", project.name));
 
     let write_result = fs::write(project_dir, serialized_project);
-    if write_result.is_err() {
-        let write_error = write_result.unwrap_err();
-
+    if let Err(write_error) = write_result {
         return Err(anyhow::Error::msg(write_error.to_string()));
     }
 
@@ -510,9 +537,9 @@ pub fn get_projects() -> anyhow::Result<Vec<PersistedProject>> {
 #[allow(unused)]
 pub fn get_project_list() -> anyhow::Result<Value<List<Project>>> {
     match get_projects() {
-        Ok(projects) => Ok(List::<Project>::from_iter(
-            projects.iter().map(|project| project.into()),
-        )),
+        Ok(projects) => {
+            Ok(List::<Project>::from_iter(projects.iter().map(|project| project.into())).into())
+        }
         Err(error) => Err(error),
     }
 }
@@ -559,7 +586,7 @@ impl From<&Project> for PersistedProject {
                 id: Some(pv.to_ref().id.to_ref().to_string()),
                 key: Some(pv.to_ref().key.to_ref().to_string()),
                 value: Some(pv.to_ref().value.to_ref().to_string()),
-                r#type: Some(match *pv.to_ref().r#type.to_ref() {
+                r#type: Some(match *pv.to_ref().project_type.to_ref() {
                     ProjectVariableType::String => VariableType::String,
                     ProjectVariableType::Boolean => VariableType::Boolean,
                     ProjectVariableType::Any => VariableType::Any,
@@ -596,7 +623,8 @@ impl From<&PersistedProject> for Project {
                 .endpoints
                 .iter()
                 .map(|persisted_endpoint| persisted_endpoint.into()),
-        );
+        )
+        .into();
 
         let variable = persisted_project
             .variable
@@ -605,7 +633,7 @@ impl From<&PersistedProject> for Project {
                 id: pv.id.clone().unwrap_or_default().into(),
                 key: pv.key.clone().unwrap_or_default().into(),
                 value: pv.value.clone().unwrap_or_default().into(),
-                r#type: match &pv.r#type {
+                project_type: match &pv.r#type {
                     Some(vt) => match vt {
                         VariableType::String => ProjectVariableType::String.into(),
                         VariableType::Boolean => ProjectVariableType::Boolean.into(),
@@ -640,7 +668,8 @@ impl From<&PersistedEndpoint> for Endpoint {
                 .headers
                 .iter()
                 .map(|header| header.into()),
-        );
+        )
+        .into();
 
         Endpoint {
             name: persisted_endpoint.name.clone().into(),

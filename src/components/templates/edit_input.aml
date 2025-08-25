@@ -1,8 +1,8 @@
 container [height: 1]
   zstack
-    border [foreground: border_color, width: 58, height: 3, border_style: "╭─╮│╯─╰│"]
+    border [foreground: state.border_color, width: 58, height: 3, border_style: "╭─╮│╯─╰│"]
       zstack
-        text input
-        text cursor_prefix
-          span [foreground: fg_color, background: bg_color] cursor_char
-    text "╭─" label ":"
+        text state.input
+        text state.cursor_prefix
+          span [foreground: state.fg_color, background: state.bg_color] state.cursor_char
+    text "╭─" state.label ":"

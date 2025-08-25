@@ -1,10 +1,10 @@
 align [alignment: "center"]
-  container [background: app_theme.overlay_background]
+  container [background: state.app_theme.overlay_background]
     zstack
-      border [foreground: app_theme.overlay_foreground ]
+      border [foreground: state.app_theme.overlay_foreground ]
         vstack [fill: " ", width: 54]
           padding [padding: 1]
-            hstack [foreground: app_theme.foreground]
+            hstack [foreground: state.app_theme.foreground]
               vstack
                 text "• (G)enerate Code"
                 text "• (I)mport from Postman"
@@ -13,5 +13,5 @@ align [alignment: "center"]
               vstack
                 text "• (A)dd Project Variable"
                 text "• (V)iew Project Variables"
-      container [width: 56, background: app_theme.overlay_heading, fill: " "]
-        text [background: app_theme.overlay_heading, width: 80, bold: true] "  Commands"
+      container [width: 56, background: state.app_theme.overlay_heading, fill: " "]
+        text [background: state.app_theme.overlay_heading, width: 80, bold: true] "  Commands"

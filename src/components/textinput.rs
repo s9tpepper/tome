@@ -1,10 +1,8 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId, KeyCode},
-    prelude::Context,
-    state::{AnyState, Value},
-    widgets::Elements,
+    component::{Children, Component, ComponentId, Context, KeyCode},
+    state::Value,
 };
 use serde::{Deserialize, Serialize};
 
@@ -63,8 +61,8 @@ impl Component for TextInput {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         self._on_blur(state, elements, context);
     }
@@ -72,8 +70,8 @@ impl Component for TextInput {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         self._on_focus(state, elements, context);
     }
@@ -82,39 +80,39 @@ impl Component for TextInput {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let emitter = context.emitter.clone();
 
         self._on_key(key, state, elements, context);
 
-        if let KeyCode::Char(_) = key.code {
-            if let Ok(ids) = self.component_ids.try_borrow() {
-                let input_value = state.input.to_ref().to_string();
-                let input_change_message =
-                    DashboardMessages::TextInput(TextInputMessages::Change(input_value));
+        if let KeyCode::Char(_) = key.code
+            && let Ok(ids) = self.component_ids.try_borrow()
+        {
+            let input_value = state.input.to_ref().to_string();
+            let input_change_message =
+                DashboardMessages::TextInput(TextInputMessages::Change(input_value));
 
-                if let Ok(serialized_message) = serde_json::to_string(&input_change_message) {
-                    for listener in &self.listeners {
-                        let msg = serialized_message.clone();
+            if let Ok(serialized_message) = serde_json::to_string(&input_change_message) {
+                for listener in &self.listeners {
+                    let msg = serialized_message.clone();
 
-                        ids.get(listener)
-                            .map(|component_id| emitter.emit(*component_id, msg));
-                    }
+                    ids.get(listener)
+                        .map(|component_id| emitter.emit(*component_id, msg));
                 }
             }
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
-        self._message(message, state, elements, context);
+        self._message(message, state, children, context);
     }
 
     fn accept_focus(&self) -> bool {
@@ -130,8 +128,8 @@ pub trait InputReceiver {
         &mut self,
         message: String,
         state: &mut InputState,
-        _: Elements<'_, '_>,
-        _: Context<'_, InputState>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, InputState>,
     ) {
         let position = message.len();
         state.input.set(message.clone());
@@ -144,14 +142,11 @@ pub trait InputReceiver {
     fn _on_focus(
         &mut self,
         state: &mut InputState,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, InputState>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         let input = state.input.to_ref();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
 
         let cursor_char = if pos == input.len() {
             ' '
@@ -164,15 +159,15 @@ pub trait InputReceiver {
         state.bg_color.set("white".to_string());
         state.focused.set(true);
 
-        context.publish("textarea_focus", |state| &state.focused);
+        context.publish("textarea_focus", |state: InputState| state.focused);
     }
 
     #[allow(dead_code)]
     fn _on_blur(
         &mut self,
         state: &mut InputState,
-        _elements: Elements<'_, '_>,
-        mut context: Context<'_, InputState>,
+        _elements: Children<'_, '_>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         state.cursor_char.set("".to_string());
         state.fg_color.set("white".to_string());
@@ -180,7 +175,7 @@ pub trait InputReceiver {
         state.focused.set(false);
 
         if !*state.focused.to_ref() {
-            context.publish("textarea_focus", |state| &state.focused);
+            context.publish("textarea_focus", |state: InputState| state.focused);
         }
     }
 
@@ -189,8 +184,8 @@ pub trait InputReceiver {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut InputState,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, InputState>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         // let mut input = state.input.to_mut();
         // if !*state.focused.to_ref() {
@@ -241,9 +236,9 @@ pub trait InputReceiver {
 
             // Move focus with this
             KeyCode::Esc => {
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
 
-                context.publish("textarea_focus", |state| &state.focused);
+                context.publish("textarea_focus", |state: InputState| state.focused);
             }
 
             _ => {}
@@ -254,15 +249,12 @@ pub trait InputReceiver {
         &mut self,
         char: char,
         state: &mut InputState,
-        mut context: Context<'_, InputState>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         let mut input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
         // NOTE: Input when cursor is at the far right
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
         input.insert(pos, char);
 
         let new_position = pos + 1;
@@ -284,16 +276,13 @@ pub trait InputReceiver {
 
         state.cursor_char.set(cursor_char.to_string());
 
-        context.publish("text_change", |state| &state.input)
+        context.publish("text_change", |state: InputState| state.input)
     }
 
-    fn delete(&self, state: &mut InputState, mut context: Context<'_, InputState>) {
+    fn delete(&self, state: &mut InputState, mut context: Context<'_, '_, InputState>) {
         let mut input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
 
         if pos == input.len() {
             return;
@@ -311,16 +300,13 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(pos).collect::<String>());
 
-        context.publish("text_change", |state| &state.input)
+        context.publish("text_change", |state: InputState| state.input)
     }
 
-    fn backspace(&mut self, state: &mut InputState, mut context: Context<'_, InputState>) {
+    fn backspace(&mut self, state: &mut InputState, mut context: Context<'_, '_, InputState>) {
         let mut input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
 
         if pos == 0 {
             return;
@@ -341,16 +327,13 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(new_pos).collect::<String>());
 
-        context.publish("text_change", |state| &state.input)
+        context.publish("text_change", |state: InputState| state.input)
     }
 
     fn move_cursor_left(&self, state: &mut InputState) {
         let input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
         if pos == 0 {
             return;
         }
@@ -368,11 +351,8 @@ pub trait InputReceiver {
 
     fn move_cursor_right(&self, state: &mut InputState) {
         let input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
         if pos == input.len() {
             return;
         }

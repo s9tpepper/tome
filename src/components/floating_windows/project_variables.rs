@@ -6,16 +6,13 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
+    component::{Children, Component, ComponentId, Context},
+    runtime::Builder,
     state::{List, State, Value},
-    widgets::Elements,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::GlobalEventHandler,
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{PersistedVariable, ProjectVariable},
@@ -47,7 +44,7 @@ impl ProjectVariablesState {
             current_first_index: 0.into(),
             current_last_index: 4.into(),
             visible_projects: 5.into(),
-            window_list: List::empty(),
+            window_list: List::empty().into(),
             selected_variable: "".to_string().into(),
             app_theme: app_theme.into(),
         }
@@ -69,9 +66,9 @@ pub struct ProjectVariables {
 impl ProjectVariables {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "project_variables",
             template("floating_windows/templates/project_variables"),
             ProjectVariables::new(ids.clone()),
@@ -120,14 +117,17 @@ impl ProjectVariables {
         );
     }
 
-    fn open_add_variable_window(&self, context: &mut Context<'_, ProjectVariablesState>) {
-        context.publish("open_add_variable_window", |state| &state.cursor);
+    fn open_add_variable_window(&self, context: &mut Context<'_, '_, ProjectVariablesState>) {
+        context.publish(
+            "open_add_variable_window",
+            |state: ProjectVariablesState| state.cursor,
+        );
     }
 
     fn open_edit_variable_window(
         &self,
         state: &mut ProjectVariablesState,
-        mut context: Context<'_, ProjectVariablesState>,
+        mut context: Context<'_, '_, ProjectVariablesState>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let persisted_variable = self.variables_list.get(selected_index);
@@ -136,37 +136,52 @@ impl ProjectVariables {
             Some(persisted_variable) => match serde_json::to_string(persisted_variable) {
                 Ok(persisted_variable_json) => {
                     state.selected_variable.set(persisted_variable_json);
-                    context.publish("rename_variable", |state| &state.selected_variable)
+                    context.publish("rename_variable", |state: ProjectVariablesState| {
+                        state.selected_variable
+                    })
                 }
 
-                Err(_) => context.publish("project_variables__cancel", |state| &state.cursor),
+                Err(_) => context.publish(
+                    "project_variables__cancel",
+                    |state: ProjectVariablesState| state.cursor,
+                ),
             },
-            None => context.publish("project_variables__cancel", |state| &state.cursor),
+            None => context.publish(
+                "project_variables__cancel",
+                |state: ProjectVariablesState| state.cursor,
+            ),
         }
     }
 
     fn open_delete_variable_window(
         &self,
         state: &mut ProjectVariablesState,
-        mut context: Context<'_, ProjectVariablesState>,
+        mut context: Context<'_, '_, ProjectVariablesState>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let persisted_variable = self.variables_list.get(selected_index);
 
         let Some(persisted_variable) = persisted_variable else {
-            context.publish("project_variables__cancel", |state| &state.cursor);
+            context.publish(
+                "project_variables__cancel",
+                |state: ProjectVariablesState| state.cursor,
+            );
             return;
         };
 
         match serde_json::to_string(persisted_variable) {
             Ok(variable_json) => {
                 state.selected_variable.set(variable_json);
-                context.publish("project_variables__delete", |state| {
-                    &state.selected_variable
-                });
+                context.publish(
+                    "project_variables__delete",
+                    |state: ProjectVariablesState| state.selected_variable,
+                );
             }
 
-            Err(_) => context.publish("project_variables__cancel", |state| &state.cursor),
+            Err(_) => context.publish(
+                "project_variables__cancel",
+                |state: ProjectVariablesState| state.cursor,
+            ),
         }
     }
 
@@ -230,7 +245,7 @@ impl ProjectVariables {
             });
 
         loop {
-            if state.window_list.len() > 0 {
+            if state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
@@ -281,19 +296,19 @@ impl ProjectVariables {
 
 impl DashboardMessageHandler for ProjectVariables {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
-        ident: impl Into<String>,
+        event: &mut anathema::component::UserEvent<'_>,
+        _: impl Into<String>,
         state: &mut DashboardState,
-        mut context: Context<'_, DashboardState>,
-        _: Elements<'_, '_>,
+        mut context: Context<'_, '_, DashboardState>,
+        _: anathema::component::Children<'_, '_>,
         component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
-        let event: String = ident.into();
+        let event_name: String = event.name().to_string();
 
-        match event.as_str() {
+        match event_name.as_str() {
             "project_variables__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             "project_variables__selection" => {
@@ -338,9 +353,12 @@ impl DashboardMessageHandler for ProjectVariables {
 
             "project_variables__delete" => {
                 state.floating_window.set(FloatingWindow::ConfirmAction);
-                context.set_focus("id", "confirm_action_window");
+                context
+                    .components
+                    .by_attribute("id", "confirm_action_window")
+                    .focus();
 
-                let value = &*value.to_common_str();
+                let value = event.data::<String>();
                 let variable = serde_json::from_str::<PersistedVariable>(value);
 
                 #[allow(clippy::single_match)]
@@ -386,8 +404,8 @@ impl Component for ProjectVariables {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             anathema::component::KeyCode::Char(char) => match char {
@@ -405,7 +423,9 @@ impl Component for ProjectVariables {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("project_variables__cancel", |state| &state.cursor)
+                context.publish("project_variables__cancel", |state: Self::State| {
+                    state.cursor
+                })
             }
 
             anathema::component::KeyCode::Enter => {
@@ -416,15 +436,19 @@ impl Component for ProjectVariables {
                     Some(project) => match serde_json::to_string(project) {
                         Ok(project_json) => {
                             state.selected_variable.set(project_json);
-                            context.publish("project_variables__selection", |state| {
-                                &state.selected_variable
-                            });
+                            context
+                                .publish("project_variables__selection", |state: Self::State| {
+                                    state.selected_variable
+                                });
                         }
-                        Err(_) => {
-                            context.publish("project_variables__cancel", |state| &state.cursor)
-                        }
+                        Err(_) => context
+                            .publish("project_variables__cancel", |state: Self::State| {
+                                state.cursor
+                            }),
                     },
-                    None => context.publish("project_variables__cancel", |state| &state.cursor),
+                    None => context.publish("project_variables__cancel", |state: Self::State| {
+                        state.cursor
+                    }),
                 }
             }
 
@@ -435,18 +459,18 @@ impl Component for ProjectVariables {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         let Ok(project_variables_messages) =
             serde_json::from_str::<ProjectVariablesMessages>(&message)

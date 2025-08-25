@@ -1,18 +1,14 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use anathema::{
-    component::{Component, ComponentId},
-    prelude::{Context, ToSourceKind, TuiBackend},
-    runtime::RuntimeBuilder,
-    state::{CommonVal, State, Value},
-    widgets::Elements,
-};
-use log::info;
-
 use crate::{
-    app::GlobalEventHandler,
     messages::focus_messages::FocusChange,
     theme::{get_app_theme, AppTheme},
+};
+use anathema::{
+    component::{Children, Component, ComponentId, Context},
+    prelude::ToSourceKind,
+    runtime::Builder,
+    state::{Maybe, State, Value},
 };
 
 #[derive(Default)]
@@ -24,14 +20,14 @@ pub struct FocusableSection {
 impl FocusableSection {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
         ident: impl Into<String>,
         template: impl ToSourceKind,
     ) -> anyhow::Result<()> {
         let name: String = ident.into();
         let input_template = template;
 
-        let app_id = builder.register_component(
+        let app_id = builder.component(
             name.clone(),
             input_template,
             FocusableSection {
@@ -67,7 +63,7 @@ impl FocusableSection {
 
 #[derive(Default, State)]
 pub struct FocusableSectionState {
-    target: Value<Option<String>>,
+    target: Value<Maybe<String>>,
     active_border_color: Value<String>,
     app_theme: Value<AppTheme>,
     transient_event_value: Value<String>,
@@ -94,32 +90,34 @@ impl Component for FocusableSection {
         false
     }
 
-    fn tick(
+    fn on_tick(
         &mut self,
         state: &mut Self::State,
-        _elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
         _dt: std::time::Duration,
     ) {
-        if state.target.to_ref().is_some() {
+        if state.target.to_ref().get_ref().is_some() {
             return;
         }
 
-        let Some(target) = context.get_external("target") else {
+        let Some(target) = context.attribute("target") else {
             return;
         };
 
-        if let Some(target) = target.to_common() {
-            state.target.set(Some(target.to_string()));
+        if let Some(target) = target.as_str() {
+            state
+                .target
+                .set(Maybe::<String>::from(Some(target.to_string())));
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         let focus_message = serde_json::from_str::<FocusChange>(&message);
         match focus_message {
@@ -162,24 +160,23 @@ impl Component for FocusableSection {
         }
     }
 
-    fn receive(
+    fn on_event(
         &mut self,
-        ident: &str,
-        value: CommonVal<'_>,
+        event: &mut anathema::component::UserEvent<'_>,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
-        if state.target.to_ref().is_none() {
+        if state.target.to_ref().get_ref().is_none() {
             return;
         }
 
         // TODO: Use FocusChange direct component message and refactor this focus_change
         // associated function out of this component
         #[allow(clippy::single_match)]
-        match ident {
+        match event.name() {
             "focus_change" => {
-                let focus = value.to_bool();
+                let focus = event.data::<bool>();
                 // dbg!(&focus);
 
                 match focus {
@@ -202,9 +199,12 @@ impl Component for FocusableSection {
             }
 
             _ => {
-                info!("Re-publishing event from focusable_section: {ident}");
+                let value = event.data::<String>();
+
                 state.transient_event_value.set(value.to_string());
-                context.publish(ident, |state| &state.transient_event_value);
+                context.publish(event.name(), |state: Self::State| {
+                    state.transient_event_value
+                });
             }
         }
     }

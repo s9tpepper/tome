@@ -85,16 +85,11 @@ impl From<PostmanVariable> for PersistedVariable {
 
 impl From<PersistedVariable> for Variable {
     fn from(value: PersistedVariable) -> Self {
-        let mut variable = Variable {
+        Variable {
             name: value.key.unwrap_or_default().into(),
             public: value.value.unwrap_or_default().into(),
             private: value.private.unwrap_or_default().into(),
-            common: String::from(""),
-        };
-
-        variable.update_common();
-
-        variable
+        }
     }
 }
 

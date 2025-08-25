@@ -1,5 +1,4 @@
 use crate::{
-    app::GlobalEventHandler,
     options::{
         get_button_caps, get_button_style, save_options, ButtonStyle, Options, BUTTON_STYLE_ANGLED,
         BUTTON_STYLE_ROUNDED, BUTTON_STYLE_SQUARED,
@@ -11,10 +10,9 @@ use crate::{
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
-    state::{CommonVal, State, Value},
+    component::{Children, Component, ComponentId, Context},
+    runtime::Builder,
+    state::{State, Value},
 };
 
 use crate::options::get_options;
@@ -82,12 +80,16 @@ enum OptionsWindows {
 }
 
 impl State for OptionsWindows {
-    fn to_common(&self) -> Option<CommonVal<'_>> {
+    fn type_info(&self) -> anathema::state::Type {
+        anathema::state::Type::String
+    }
+
+    fn as_str(&self) -> Option<&str> {
         match self {
-            OptionsWindows::SyntaxThemeSelector => Some(CommonVal::Str("SyntaxThemeSelector")),
-            OptionsWindows::AppThemeSelector => Some(CommonVal::Str("AppThemeSelector")),
-            OptionsWindows::ButtonStyleSelector => Some(CommonVal::Str("ButtonStyleSelector")),
-            OptionsWindows::None => Some(CommonVal::Str("None")),
+            OptionsWindows::SyntaxThemeSelector => Some("SyntaxThemeSelector"),
+            OptionsWindows::AppThemeSelector => Some("AppThemeSelector"),
+            OptionsWindows::ButtonStyleSelector => Some("ButtonStyleSelector"),
+            OptionsWindows::None => Some("None"),
         }
     }
 }
@@ -99,10 +101,10 @@ impl OptionsView {
 
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
         let options = get_options();
-        let id = builder.register_component(
+        let id = builder.component(
             "options",
             template("templates/options"),
             OptionsView::new(ids.clone()),
@@ -115,7 +117,7 @@ impl OptionsView {
         Ok(())
     }
 
-    fn go_back(&self, context: anathema::prelude::Context<'_, OptionsViewState>) {
+    fn go_back(&self, context: Context<'_, '_, OptionsViewState>) {
         let component_ids = self.component_ids.try_borrow();
         if component_ids.is_err() {
             return;
@@ -136,41 +138,50 @@ impl OptionsView {
     fn open_theme_selector(
         &self,
         state: &mut OptionsViewState,
-        mut context: anathema::prelude::Context<'_, OptionsViewState>,
+        mut context: Context<'_, '_, OptionsViewState>,
     ) {
         state
             .options_window
             .set(OptionsWindows::SyntaxThemeSelector);
 
-        context.set_focus("id", "syntax_theme_selector");
+        context
+            .components
+            .by_attribute("id", "syntax_theme_selector")
+            .focus();
     }
 
     fn open_app_theme_selector(
         &self,
         state: &mut OptionsViewState,
-        mut context: anathema::prelude::Context<'_, OptionsViewState>,
+        mut context: Context<'_, '_, OptionsViewState>,
     ) {
         state.options_window.set(OptionsWindows::AppThemeSelector);
 
-        context.set_focus("id", "app_theme_selector");
+        context
+            .components
+            .by_attribute("id", "app_theme_selector")
+            .focus();
     }
 
     fn open_button_style_selector(
         &self,
         state: &mut OptionsViewState,
-        mut context: anathema::prelude::Context<'_, OptionsViewState>,
+        mut context: Context<'_, '_, OptionsViewState>,
     ) {
         state
             .options_window
             .set(OptionsWindows::ButtonStyleSelector);
 
-        context.set_focus("id", "button_style_selector");
+        context
+            .components
+            .by_attribute("id", "button_style_selector")
+            .focus();
     }
 
     fn update_button_style(
         &self,
         state: &mut OptionsViewState,
-        context: Context<'_, OptionsViewState>,
+        context: Context<'_, '_, OptionsViewState>,
     ) {
         let _ = self.component_ids.try_borrow().map(|ids| {
             if let Ok(msg) = serde_json::to_string(&DashboardMessages::ButtonStyleUpdate) {
@@ -187,7 +198,7 @@ impl OptionsView {
     fn update_app_theme(
         &self,
         state: &mut OptionsViewState,
-        context: Context<'_, OptionsViewState>,
+        context: Context<'_, '_, OptionsViewState>,
     ) {
         let app_theme_name = state.options.to_ref().app_theme_name.to_ref().clone();
         let app_theme = get_app_theme_by_name(&app_theme_name);
@@ -227,7 +238,7 @@ impl OptionsView {
         });
     }
 
-    fn send_error_message(&self, error_message: &str, context: Context<'_, OptionsViewState>) {
+    fn send_error_message(&self, error_message: &str, context: Context<'_, '_, OptionsViewState>) {
         let dashboard_msg = DashboardMessages::ShowError(error_message.to_string());
         let Ok(msg) = serde_json::to_string(&dashboard_msg) else {
             return;
@@ -251,8 +262,8 @@ impl Component for OptionsView {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         match key.code {
             #[allow(clippy::single_match)]
@@ -270,21 +281,21 @@ impl Component for OptionsView {
         }
     }
 
-    fn receive(
+    fn on_event(
         &mut self,
-        ident: &str,
-        value: CommonVal<'_>,
+        event: &mut anathema::component::UserEvent<'_>,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
-        match ident {
+        match event.name() {
             "syntax_theme_selector__selection" => {
                 state.options_window.set(OptionsWindows::None);
-                context.set_focus("id", "options");
+                context.components.by_attribute("id", "options").focus();
 
                 let mut options = get_options();
 
+                let value = event.data::<String>().clone();
                 let new_theme = value.to_string().replace(".tmTheme", "");
                 options.syntax_theme = new_theme.clone();
 
@@ -305,16 +316,17 @@ impl Component for OptionsView {
             | "button_style_selector__cancel"
             | "app_theme_selector__cancel" => {
                 state.options_window.set(OptionsWindows::None);
-                context.set_focus("id", "options");
+                context.components.by_attribute("id", "options").focus();
             }
 
             "button_style_selector__selection" => {
                 state.options_window.set(OptionsWindows::None);
-                context.set_focus("id", "options");
+                context.components.by_attribute("id", "options").focus();
 
                 let mut options = get_options();
 
-                options.button_style = match value.to_string().as_str() {
+                let val = event.data::<String>().clone();
+                options.button_style = match val.to_string().as_str() {
                     BUTTON_STYLE_ANGLED => ButtonStyle::Angled,
                     BUTTON_STYLE_SQUARED => ButtonStyle::Squared,
                     BUTTON_STYLE_ROUNDED => ButtonStyle::Rounded,
@@ -325,7 +337,7 @@ impl Component for OptionsView {
 
                 match save_options(options) {
                     Ok(_) => {
-                        state.options.to_mut().button_style.set(value.to_string());
+                        state.options.to_mut().button_style.set(val.to_string());
                         self.update_button_style(state, context);
                     }
                     Err(error) => {
@@ -338,15 +350,19 @@ impl Component for OptionsView {
 
             "app_theme_selector__selection" => {
                 state.options_window.set(OptionsWindows::None);
-                context.set_focus("id", "options");
+                context.components.by_attribute("id", "options").focus();
 
                 let mut options = get_options();
 
-                options.app_theme_name = value.to_string();
+                options.app_theme_name = event.data::<String>().clone();
 
                 match save_options(options) {
                     Ok(_) => {
-                        state.options.to_mut().app_theme_name.set(value.to_string());
+                        state
+                            .options
+                            .to_mut()
+                            .app_theme_name
+                            .set(event.data::<String>().clone());
                         self.update_app_theme(state, context);
                     }
                     Err(error) => {

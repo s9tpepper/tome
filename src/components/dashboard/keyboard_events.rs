@@ -1,18 +1,6 @@
-use anathema::{
-    component::{KeyCode, KeyEvent},
-    prelude::Context,
-    widgets::Elements,
-};
+use anathema::component::{Children, Context, KeyCode, KeyEvent};
 
-use crate::{
-    components::{
-        edit_header_selector::EditHeaderSelectorMessages, floating_windows::FloatingWindow,
-        send_message,
-    },
-    fs::save_response,
-    projects::Header,
-    requests::do_request,
-};
+use crate::components::floating_windows::FloatingWindow;
 
 use super::{DashboardComponent, DashboardDisplay, DashboardState};
 
@@ -20,8 +8,8 @@ pub fn keyboard_events(
     dashboard: &mut DashboardComponent,
     event: KeyEvent,
     state: &mut DashboardState,
-    elements: Elements<'_, '_>,
-    mut context: Context<'_, DashboardState>,
+    elements: Children<'_, '_>,
+    mut context: Context<'_, '_, DashboardState>,
 ) {
     match event.code {
         KeyCode::Char(char) => {
@@ -69,7 +57,10 @@ pub fn keyboard_events(
                 // Open Request Method selection window
                 'm' => {
                     state.floating_window.set(FloatingWindow::Method);
-                    context.set_focus("id", "method_selector");
+                    context
+                        .components
+                        .by_attribute("id", "method_selector")
+                        .focus();
                 }
 
                 'a' => match main_display {
@@ -89,7 +80,7 @@ pub fn keyboard_events(
         }
 
         KeyCode::Esc => {
-            context.set_focus("id", "app");
+            context.components.by_attribute("id", "app").focus();
 
             if *state.floating_window.to_ref() != FloatingWindow::None {
                 state.floating_window.set(FloatingWindow::None);

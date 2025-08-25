@@ -1,9 +1,8 @@
 use std::{fmt::Display, str::FromStr};
 
 use anathema::{
-    component::{Component, KeyCode},
+    component::{Children, Component, Context, KeyCode},
     state::{State, Value},
-    widgets::Elements,
 };
 
 use crate::theme::{get_app_theme, AppTheme};
@@ -39,31 +38,31 @@ impl MethodSelectorState {
 
 impl DashboardMessageHandler for MethodSelector {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
-        ident: impl Into<String>,
+        event: &mut anathema::component::UserEvent<'_>,
+        _: impl Into<String>,
         state: &mut super::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
-        _: Elements<'_, '_>,
-        _component_ids: std::cell::Ref<
+        mut context: anathema::component::Context<'_, '_, super::dashboard::DashboardState>,
+        _: anathema::component::Children<'_, '_>,
+        _: std::cell::Ref<
             '_,
             std::collections::HashMap<String, anathema::component::ComponentId<String>>,
         >,
     ) {
-        let event: String = ident.into();
+        let event_name: String = event.name().to_string();
 
-        match event.as_str() {
+        match event_name.as_str() {
             "method_selector__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
             }
 
             "method_selector__new" => {
-                let value = &*value.to_common_str();
+                let value = event.data::<String>().to_string();
 
                 state.endpoint.to_mut().method.set(value.to_string());
 
                 // Trigger a resize on the text input by setting focus and then resetting it to app
-                context.set_focus("id", "url_input");
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "url_input").focus();
+                context.components.by_attribute("id", "app").focus();
             }
 
             _ => {}
@@ -82,8 +81,8 @@ impl Component for MethodSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        mut _elements: anathema::widgets::Elements<'_, '_>,
-        mut _context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -94,8 +93,8 @@ impl Component for MethodSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _elements: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             KeyCode::Char(char) => {
@@ -113,14 +112,18 @@ impl Component for MethodSelector {
                     }
                 };
 
-                context.publish("method_selector__new", |state| &state.selection);
-                context.publish("method_selector__cancel", |state| &state.selection);
-                context.set_focus("id", "app")
+                context.publish("method_selector__new", |state: Self::State| state.selection);
+                context.publish("method_selector__cancel", |state: Self::State| {
+                    state.selection
+                });
+                context.components.by_attribute("id", "app").focus()
             }
 
             KeyCode::Esc => {
-                context.publish("method_selector__cancel", |state| &state.selection);
-                context.set_focus("id", "app")
+                context.publish("method_selector__cancel", |state: Self::State| {
+                    state.selection
+                });
+                context.components.by_attribute("id", "app").focus()
             }
 
             _ => (),
@@ -128,6 +131,7 @@ impl Component for MethodSelector {
     }
 }
 
+#[allow(unused)]
 #[derive(Default)]
 enum Method {
     #[default]

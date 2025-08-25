@@ -1,22 +1,22 @@
-zstack [background: app_theme.background]
+zstack [background: state.app_theme.background]
   vstack [id: "app_stack"]
     zstack
-      container [height: 1, background: app_theme.top_bar_background, foreground: app_theme.top_bar_foreground]
+      container [height: 1, background: state.app_theme.top_bar_background, foreground: state.app_theme.top_bar_foreground]
         expand
           hstack [id: "project_endpoint_details"]
             @button (click -> project_name_click) [
               button_item: project.name,
               button_label: "Pro(j)ect: ",
-              foreground: app_theme.project_name_background,
-              background: app_theme.top_bar_background,
+              foreground: state.app_theme.project_name_background,
+              background: state.app_theme.top_bar_background,
               button_id: "project_button"
             ]
 
             @button (click -> endpoint_name_click) [
               button_item: endpoint.name,
               button_label: "Endpoint (N)ame: ",
-              foreground: app_theme.endpoint_name_background,
-              background: app_theme.top_bar_background,
+              foreground: state.app_theme.endpoint_name_background,
+              background: state.app_theme.top_bar_background,
               button_id: "endpoint_name_button"
             ]
             spacer
@@ -28,47 +28,47 @@ zstack [background: app_theme.background]
             @button (click -> new_project_click) [
               button_label: "",
               button_item: "Ne(w) Project",
-              foreground: app_theme.menu_opt_background,
-              background: app_theme.top_bar_background,
+              foreground: state.app_theme.menu_opt_background,
+              background: state.app_theme.top_bar_background,
               button_id: "new_project_button"
             ]
 
             @button (click -> new_endpoint_click) [
               button_label: "",
               button_item: "New Endpoin(t)",
-              foreground: app_theme.menu_opt_background,
-              background: app_theme.top_bar_background,
+              foreground: state.app_theme.menu_opt_background,
+              background: state.app_theme.top_bar_background,
               button_id: "new_endpoint_button"
             ]
 
             @button (click -> commands_button_click) [
               button_label: "",
               button_item: "(C)ommands",
-              foreground: app_theme.menu_opt_background,
-              background: app_theme.top_bar_background,
+              foreground: state.app_theme.menu_opt_background,
+              background: state.app_theme.top_bar_background,
               button_id: "commands_button"
             ]
 
     hstack
-      @row [border_color: app_theme.border_unfocused, top_label: "(M)ethod", expanding: false, minwidth: 13]
+      @row [border_color: state.app_theme.border_unfocused, top_label: "(M)ethod", expanding: false, minwidth: 13]
         $children
           container [id: "method_box", width: 13]
-            text [foreground: app_theme.foreground, text_align: "right"] endpoint.method
+            text [foreground: state.app_theme.foreground, text_align: "right"] endpoint.method
       expand [axis: "horizontal"]
         container [id: "url_component"]
-          @url_input [id: "url", border_color: app_theme.border_unfocused, target: "url_input"]
+          @url_input [id: "url", border_color: state.app_theme.border_unfocused, target: "url_input"]
 
     expand [axis: "vertical"]
       zstack
-        if main_display == "request_body"
+        if state.main_display == "request_body"
           expand
             container [id: "request_body_component"]
               @request_body_section (
                 send_request_click -> send_request_click_request_body,
                 show_request_headers -> show_request_headers,
-              ) [id: "request", border_color: app_theme.border_unfocused, target: "textarea"]
+              ) [id: "request", border_color: state.app_theme.border_unfocused, target: "textarea"]
 
-        if main_display == "response_body"
+        if state.main_display == "response_body"
           expand
             zstack
               @response_renderer (
@@ -78,18 +78,18 @@ zstack [background: app_theme.background]
                 send_save_response_click -> send_save_response_click
               ) [id: "response_renderer"]
 
-        if main_display == "request_headers_editor"
+        if state.main_display == "request_headers_editor"
           expand
             zstack
               @app_section [
-                border_color: app_theme.border_unfocused,
+                border_color: state.app_theme.border_unfocused,
                 top_label: "Request Headers",
                 bottom_label: ["Send (R)equest", "(A)dd Header", "Edit (H)eader", "(B)ack to Request"],
                 show_top_label: true,
                 show_bottom_label: false
               ]
                 $children
-                  @request_headers_editor [ headers: request_headers ]
+                  @request_headers_editor [ headers: state.request_headers ]
 
               vstack
                 spacer
@@ -98,32 +98,32 @@ zstack [background: app_theme.background]
                   @button (click -> send_request_click) [
                     button_label: "",
                     button_item: "Send (R)equest",
-                    foreground: app_theme.menu_opt_background,
-                    background: app_theme.background,
+                    foreground: state.app_theme.menu_opt_background,
+                    background: state.app_theme.background,
                     button_id: "send_request_from_headers_button"
                   ]
-                  text [foreground: border_color, background: app_theme.background] "─"
+                  text [foreground: state.border_color, background: state.app_theme.background] "─"
                   @button (click -> add_header_click) [
                     button_label: "",
                     button_item: "(A)dd Header",
-                    foreground: app_theme.menu_opt_background,
-                    background: app_theme.background,
+                    foreground: state.app_theme.menu_opt_background,
+                    background: state.app_theme.background,
                     button_id: "add_header_button"
                   ]
-                  text [foreground: border_color, background: app_theme.background] "─"
+                  text [foreground: state.border_color, background: state.app_theme.background] "─"
                   @button (click -> edit_header_click) [
                     button_label: "",
                     button_item: "Edit (H)eader",
-                    foreground: app_theme.menu_opt_background,
-                    background: app_theme.background,
+                    foreground: state.app_theme.menu_opt_background,
+                    background: state.app_theme.background,
                     button_id: "edit_header_button"
                   ]
-                  text [foreground: border_color, background: app_theme.background] "─"
+                  text [foreground: state.border_color, background: state.app_theme.background] "─"
                   @button (click -> back_to_request_click) [
                     button_label: "",
                     button_item: "(B)ack to Request",
-                    foreground: app_theme.menu_opt_background,
-                    background: app_theme.background,
+                    foreground: state.app_theme.menu_opt_background,
+                    background: state.app_theme.background,
                     button_id: "back_to_request_button"
                   ]
 
@@ -132,14 +132,14 @@ zstack [background: app_theme.background]
           expand
             zstack
               @app_section [
-                border_color: app_theme.border_unfocused,
+                border_color: state.app_theme.border_unfocused,
                 top_label: "Response Headers",
                 bottom_label: ["(B)ack to Response"],
                 show_top_label: true,
                 show_bottom_label: false
               ]
                 $children
-                  @request_headers_editor [ headers: response_headers ]
+                  @request_headers_editor [ headers: state.response_headers ]
               vstack
                 spacer
                 hstack
@@ -147,166 +147,50 @@ zstack [background: app_theme.background]
                   @button (click -> back_to_request_from_response_click) [
                     button_label: "",
                     button_item: "(B)ack to Request",
-                    foreground: app_theme.menu_opt_background,
-                    background: app_theme.background,
+                    foreground: state.app_theme.menu_opt_background,
+                    background: state.app_theme.background,
                     button_id: "back_to_request_button"
                   ]
 
 
-    container [height: 1, background: app_theme.bottom_bar_background, foreground: app_theme.bottom_bar_foreground]
+    container [height: 1, background: state.app_theme.bottom_bar_background, foreground: state.app_theme.bottom_bar_foreground]
       expand
         hstack
-          text app_message
+          text state.app_message
           spacer
           hstack
             @button (click -> save_project_click) [
               button_label: "",
               button_item: "(S)ave Project",
-              foreground: app_theme.menu_color_1,
-              background: app_theme.background,
+              foreground: state.app_theme.menu_color_1,
+              background: state.app_theme.background,
               button_id: "save_project_button"
             ]
             @button (click -> save_endpoint_click) [
               button_label: "",
               button_item: "Save Endpo(i)nt",
-              foreground: app_theme.menu_color_2,
-              background: app_theme.background,
+              foreground: state.app_theme.menu_color_2,
+              background: state.app_theme.background,
               button_id: "save_endpoint_button"
             ]
             @button (click -> swap_project_click) [
               button_label: "",
               button_item: "Swap (P)roject",
-              foreground: app_theme.menu_color_3,
-              background: app_theme.background,
+              foreground: state.app_theme.menu_color_3,
+              background: state.app_theme.background,
               button_id: "swap_project_button"
             ]
             @button (click -> swap_endpoint_click) [
               button_label: "",
               button_item: "Swap (E)ndpoint",
-              foreground: app_theme.menu_color_4,
-              background: app_theme.background,
+              foreground: state.app_theme.menu_color_4,
+              background: state.app_theme.background,
               button_id: "swap_endpoint_button"
             ]
             @button (click -> options_button_click) [
               button_label: "",
               button_item: "(O)ptions",
-              foreground: app_theme.menu_color_5,
-              background: app_theme.background,
+              foreground: state.app_theme.menu_color_5,
+              background: state.app_theme.background,
               button_id: "options_button"
             ]
-
-  if floating_window == "AddHeader"
-    @add_header_window (
-      add_header__submit->add_header__submit,
-      add_header__cancel->add_header__cancel,
-      add_header__name_update->add_header__name_update,
-      add_header__value_update->add_header__value_update
-    ) [id: "add_header_window", name: edit_header_name, value: edit_header_value]
-
-  if floating_window == "Method"
-    @method_selector (
-      method_selector__cancel->method_selector__cancel,
-      method_selector__new->method_selector__new
-    ) [id: "method_selector"]
-
-  if floating_window == "EditHeaderSelector"
-    @edit_header_selector (
-      edit_header_selector__cancel -> edit_header_selector__cancel,
-      edit_header_selector__delete -> edit_header_selector__delete,
-      edit_header_selector__add -> edit_header_selector__add,
-      edit_header_selector__edit -> edit_header_selector__edit
-    ) [id: "edit_header_selector", headers: request_headers]
-
-  if floating_window == "Project"
-    @project_selector (
-      project_window__cancel -> project_window__cancel,
-      project_window__selection -> project_window__selection,
-      project_window__delete -> project_window__delete,
-      rename_project -> rename_project,
-      add_new_project -> add_new_project
-    ) [id: "project_selector"]
-
-  if floating_window == "ConfirmAction"
-    @confirm_action_window (
-      confirm_action__cancel -> confirm_action__cancel
-    ) [id: "confirm_action_window"]
-
-  if floating_window == "ChangeEndpointName"
-    @edit_endpoint_name (
-      edit_endpoint_name__cancel -> edit_endpoint_name__cancel,
-      edit_endpoint_name__submit -> edit_endpoint_name__submit,
-      edit_endpoint_name__specific_endpoint_rename -> edit_endpoint_name__specific_endpoint_rename
-    ) [id: "edit_endpoint_name"]
-
-  if floating_window == "ChangeProjectName"
-    @edit_project_name (
-      edit_project_name__cancel -> edit_project_name__cancel,
-      edit_project_name__submit -> edit_project_name__submit,
-      edit_project_name__specific_project_rename -> edit_project_name__specific_project_rename
-    ) [id: "edit_project_name"]
-
-  if floating_window == "EndpointsSelector"
-    @endpoints_selector_window (
-      endpoints_selector__cancel -> endpoints_selector__cancel,
-      endpoints_selector__selection -> endpoints_selector__selection,
-      endpoints_selector__delete -> endpoints_selector__delete,
-      rename_endpoint -> rename_endpoint
-    ) [id: "endpoints_selector_window"]
-
-  if floating_window == "Commands"
-    @commands_window (
-      commands__selection -> commands__selection,
-      commands__cancel -> commands__cancel
-    ) [id: "commands_window"]
-
-  if floating_window == "CodeGen"
-    @codegen_window (
-      codegen__selection -> codegen__selection,
-      codegen__cancel -> codegen__cancel
-    ) [id: "codegen_window"]
-
-  if floating_window == "PostmanFileSelector"
-    @postman_file_selector (
-      file_selector__cancel -> file_selector__cancel
-    ) [id: "postman_file_selector"]
-
-  if floating_window == "BodyModeSelector"
-    @body_mode_selector (
-      body_mode_selector__selection -> body_mode_selector__selection,
-      body_mode_selector__cancel -> body_mode_selector__cancel
-    ) [id: "body_mode_selector"]
-
-  if floating_window == "AddProjectVariable"
-    align [alignment: "center"]
-      @add_project_variable (
-        add_project_variable__submit -> add_project_variable__submit,
-        add_project_variable__cancel -> add_project_variable__cancel,
-      ) [id: "add_project_variable"]
-
-  if floating_window == "ViewProjectVariables"
-    align [alignment: "center"]
-      @project_variables (
-        project_variables__cancel -> project_variables__cancel,
-        project_variables__selection -> project_variables__selection,
-        project_variables__delete -> project_variables__delete,
-        open_add_variable_window -> open_add_variable_window,
-        rename_variable -> rename_variable
-      ) [id: "project_variables"]
-
-  if floating_window == "Error"
-    align [alignment: "center"]
-      vstack [fill: " ", background: app_theme.overlay_background]
-        container [width: 40, foreground: app_theme.overlay_background, background: app_theme.menu_color_3]
-          text " Error"
-        container [width: 40]
-          padding [padding: 1]
-            text [foreground: app_theme.menu_color_3, width: 40, wrap: "wrap"] error_message
-
-  if floating_window == "Message"
-    align [alignment: "center"]
-      vstack [fill: " ", background: app_theme.overlay_background]
-        container [width: 40, foreground: app_theme.overlay_background, background: app_theme.menu_color_5]
-          text " " message_label
-        container [width: 40]
-          padding [padding: 1]
-            text [foreground: app_theme.menu_color_5, width: 40, wrap: "wrap"] message

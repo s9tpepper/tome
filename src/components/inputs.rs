@@ -1,12 +1,11 @@
 use anathema::{
-    component::{Component, KeyCode},
-    prelude::Context,
-    state::{AnyState, Value},
-    widgets::Elements,
+    component::{Children, Component, Context, KeyCode},
+    state::Value,
 };
 
 use crate::theme::get_app_theme;
 
+#[allow(unused)]
 #[derive(Default)]
 pub struct TextInput;
 
@@ -66,8 +65,8 @@ impl Component for TextInput {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         self._on_focus(state, elements, context);
     }
@@ -76,20 +75,20 @@ impl Component for TextInput {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         self._on_key(&key, state, &elements, &mut context);
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
-        self._message(message, state, elements, context);
+        self._message(message, state, children, context);
     }
 
     fn accept_focus(&self) -> bool {
@@ -105,8 +104,8 @@ pub trait InputReceiver {
         &mut self,
         message: String,
         state: &mut InputState,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, InputState>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         let position = message.len();
         state.input.set(message.clone());
@@ -114,21 +113,19 @@ pub trait InputReceiver {
         state.cursor_position.set(position);
         state.cursor_char.set(" ".to_string());
 
-        context.publish("text_change", |state| &state.input);
+        context.publish("text_change", |state: InputState| state.input);
     }
 
     #[allow(dead_code)]
     fn _on_focus(
         &mut self,
         state: &mut InputState,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, InputState>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         let input = state.input.to_ref();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
-        let pos = cursor_position.as_uint();
+
+        let pos = *state.cursor_position.to_ref();
 
         let cursor_char = if pos == input.len() {
             ' '
@@ -147,15 +144,15 @@ pub trait InputReceiver {
 
         state.border_color.set(state.border_color_focused.clone());
 
-        context.publish("textarea_focus", |state| &state.focused);
+        context.publish("textarea_focus", |state: InputState| state.focused);
     }
 
     #[allow(dead_code)]
     fn _on_blur(
         &mut self,
         state: &mut InputState,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, InputState>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, InputState>,
     ) {
         state
             .fg_color
@@ -167,7 +164,7 @@ pub trait InputReceiver {
 
         state.border_color.set(state.border_color_unfocused.clone());
 
-        context.publish("textarea_focus", |state| &state.focused);
+        context.publish("textarea_focus", |state: InputState| state.focused);
 
         // NOTE: This is causing lots of windows to lose focus for some reason
         // context.set_focus("id", "app");
@@ -178,8 +175,8 @@ pub trait InputReceiver {
         &mut self,
         event: &anathema::component::KeyEvent,
         state: &mut InputState,
-        _: &anathema::widgets::Elements<'_, '_>,
-        context: &mut anathema::prelude::Context<'_, InputState>,
+        _: &Children<'_, '_>,
+        context: &mut Context<'_, '_, InputState>,
     ) {
         match event.code {
             // NOTE: Unused for TextInput
@@ -235,7 +232,7 @@ pub trait InputReceiver {
                     .set(state.cursor_unselected_bg.to_ref().to_string());
                 state.focused.set(false);
 
-                context.publish("escape", |state| &state.focused);
+                context.publish("escape", |state: InputState| state.focused);
             }
 
             _ => {}
@@ -246,15 +243,12 @@ pub trait InputReceiver {
         &mut self,
         char: char,
         state: &mut InputState,
-        context: &mut Context<'_, InputState>,
+        context: &mut Context<'_, '_, InputState>,
     ) {
         let mut input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
         // NOTE: Input when cursor is at the far right
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
         input.insert(pos, char);
 
         let new_position = pos + 1;
@@ -276,16 +270,12 @@ pub trait InputReceiver {
 
         state.cursor_char.set(cursor_char.to_string());
 
-        context.publish("text_change", |state| &state.input)
+        context.publish("text_change", |state: InputState| state.input)
     }
 
-    fn delete(&self, state: &mut InputState, context: &mut Context<'_, InputState>) {
+    fn delete(&self, state: &mut InputState, context: &mut Context<'_, '_, InputState>) {
         let mut input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
-
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
 
         if pos == input.len() {
             return;
@@ -303,16 +293,13 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(pos).collect::<String>());
 
-        context.publish("text_change", |state| &state.input)
+        context.publish("text_change", |state: InputState| state.input)
     }
 
-    fn backspace(&mut self, state: &mut InputState, context: &mut Context<'_, InputState>) {
+    fn backspace(&mut self, state: &mut InputState, context: &mut Context<'_, '_, InputState>) {
         let mut input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
 
         if pos == 0 {
             return;
@@ -333,16 +320,13 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(new_pos).collect::<String>());
 
-        context.publish("text_change", |state| &state.input)
+        context.publish("text_change", |state: InputState| state.input)
     }
 
     fn move_cursor_left(&self, state: &mut InputState) {
         let input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
         if pos == 0 {
             return;
         }
@@ -360,11 +344,8 @@ pub trait InputReceiver {
 
     fn move_cursor_right(&self, state: &mut InputState) {
         let input = state.input.to_mut();
-        let Some(cursor_position) = state.cursor_position.to_number() else {
-            return;
-        };
 
-        let pos = cursor_position.as_uint();
+        let pos = *state.cursor_position.to_ref();
         if pos == input.len() {
             return;
         }

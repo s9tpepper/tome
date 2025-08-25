@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use anathema::prelude::Context;
+use anathema::component::Context;
 
 use crate::{
     components::floating_windows::FloatingWindow,
@@ -17,7 +17,7 @@ pub fn handle_confirmations(
     dashboard: &DashboardComponent,
     confirm_action: ConfirmAction,
     state: &mut DashboardState,
-    mut context: Context<'_, DashboardState>,
+    mut context: Context<'_, '_, DashboardState>,
 ) {
     match confirm_action {
         ConfirmAction::ConfirmationDeleteHeader(delete_header_answer) => match delete_header_answer
@@ -72,7 +72,7 @@ pub fn handle_confirmations(
 
             false => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
         },
 
@@ -108,7 +108,7 @@ pub fn handle_confirmations(
 
                 false => {
                     state.floating_window.set(FloatingWindow::None);
-                    context.set_focus("id", "app");
+                    context.components.by_attribute("id", "app").focus();
                 }
             }
         }
@@ -148,7 +148,7 @@ pub fn handle_confirmations(
 
                 false => {
                     state.floating_window.set(FloatingWindow::None);
-                    context.set_focus("id", "app");
+                    context.components.by_attribute("id", "app").focus();
                 }
             }
         }
@@ -195,7 +195,7 @@ pub fn handle_confirmations(
 
                 false => {
                     state.floating_window.set(FloatingWindow::None);
-                    context.set_focus("id", "app");
+                    context.components.by_attribute("id", "app").focus();
                 }
             }
         }

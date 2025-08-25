@@ -4,7 +4,6 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use anathema::prelude::Context;
 use directories::{ProjectDirs, UserDirs};
 
 use crate::components::dashboard::{DashboardComponent, DashboardState};

@@ -1,15 +1,13 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId, KeyCode, KeyEvent},
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
+    component::{Children, Component, ComponentId, Context, KeyCode, KeyEvent, UserEvent},
+    runtime::Builder,
     state::{State, Value},
-    widgets::{components::events::KeyState, Elements},
+    widgets::components::events::KeyState,
 };
 
 use crate::{
-    app::GlobalEventHandler,
     messages::confirm_actions::{ConfirmAction, ConfirmDetails, ConfirmationAnswer},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -39,9 +37,9 @@ impl ConfirmActionWindow {
 
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "confirm_action_window",
             template("templates/confirm_action_window"),
             ConfirmActionWindow::new(ids.clone()),
@@ -80,11 +78,11 @@ impl ConfirmActionWindowState {
 
 impl DashboardMessageHandler for ConfirmActionWindow {
     fn handle_message(
-        _: anathema::state::CommonVal<'_>,
+        _: &mut UserEvent<'_>,
         ident: impl Into<String>,
         state: &mut super::dashboard::DashboardState,
-        mut context: Context<'_, super::dashboard::DashboardState>,
-        _: Elements<'_, '_>,
+        mut context: Context<'_, '_, super::dashboard::DashboardState>,
+        _: Children<'_, '_>,
         _: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
         let event: String = ident.into();
@@ -94,7 +92,7 @@ impl DashboardMessageHandler for ConfirmActionWindow {
             "confirm_action__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
 
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             _ => {}
@@ -113,8 +111,8 @@ impl Component for ConfirmActionWindow {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         state.active = true;
     }
@@ -122,8 +120,8 @@ impl Component for ConfirmActionWindow {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         state.active = false;
     }
@@ -132,15 +130,16 @@ impl Component for ConfirmActionWindow {
         &mut self,
         mouse: anathema::component::MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
-        if !state.active || !mouse.lsb_up() {
+        if !state.active || !mouse.left_up() {
             return;
         }
 
         let is_yes_click = RefCell::new(false);
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "yes_button")
             .first(|_, _| {
@@ -155,7 +154,7 @@ impl Component for ConfirmActionWindow {
                     state: KeyState::Release,
                 },
                 state,
-                elements,
+                children,
                 context,
             );
 
@@ -163,7 +162,8 @@ impl Component for ConfirmActionWindow {
         }
 
         let is_no_click = RefCell::new(false);
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "no_button")
             .first(|_, _| {
@@ -178,7 +178,7 @@ impl Component for ConfirmActionWindow {
                     state: KeyState::Release,
                 },
                 state,
-                elements,
+                children,
                 context,
             );
         }
@@ -188,8 +188,8 @@ impl Component for ConfirmActionWindow {
         &mut self,
         key: KeyEvent,
         _: &mut Self::State,
-        _: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match key.code {
             KeyCode::Char(char) => match char {
@@ -268,19 +268,21 @@ impl Component for ConfirmActionWindow {
             },
 
             KeyCode::Esc => {
-                context.publish("confirm_action__cancel", |state| &state.title);
+                context.publish("confirm_action__cancel", |state: Self::State| {
+                    state.title.to_ref().clone()
+                });
             }
 
             _ => {}
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>,
     ) {
         let Ok(confirm_action) = serde_json::from_str::<ConfirmAction>(message.as_str()) else {
             // TODO: Close this and send an error message

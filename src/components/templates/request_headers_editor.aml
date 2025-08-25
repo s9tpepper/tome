@@ -2,5 +2,5 @@ expand
   vstack [id: "request_headers_editor"]
     padding [padding: 0]
       vstack
-        for header in endpoint.headers
+        for header in state.endpoint.headers
           text header.name ": " header.value

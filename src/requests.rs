@@ -6,7 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use anathema::prelude::Context;
+use anathema::component::{Children, Context};
 use anyhow::bail;
 use mime::Mime;
 use ureq::Response;
@@ -130,8 +130,8 @@ fn test_replace_multiple_incomplete_pairs2() {
 
 pub fn do_request(
     state: &mut DashboardState,
-    context: &mut anathema::prelude::Context<'_, DashboardState>,
-    _: &anathema::widgets::Elements<'_, '_>,
+    context: &mut Context<'_, '_, DashboardState>,
+    _: &Children<'_, '_>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
     let project: PersistedProject = (&*state.project.to_ref()).into();
@@ -269,13 +269,13 @@ fn get_extension(content_type: &str) -> String {
 fn handle_successful_response(
     response: Response,
     state: &mut DashboardState,
-    context: &mut Context<'_, DashboardState>,
+    context: &mut Context<'_, '_, DashboardState>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
     let status = response.status();
 
     loop {
-        if state.response_headers.len() > 0 {
+        if state.response_headers.is_empty() {
             state.response_headers.pop_back();
         } else {
             break;
@@ -332,13 +332,16 @@ fn handle_successful_response(
     state.response_body_window_label.set(window_label);
     state.main_display.set(DashboardDisplay::ResponseBody);
 
-    context.set_focus("id", "response_renderer");
+    context
+        .components
+        .by_attribute("id", "response_renderer")
+        .focus();
 
     let response_msg = ResponseRendererMessages::ResponseUpdate(ext);
-    if let Ok(msg) = serde_json::to_string(&response_msg) {
-        if let Ok(component_ids) = dashboard.component_ids.try_borrow() {
-            let _ = send_message("response_renderer", msg, &component_ids, context.emitter);
-        };
+    if let Ok(msg) = serde_json::to_string(&response_msg)
+        && let Ok(component_ids) = dashboard.component_ids.try_borrow()
+    {
+        let _ = send_message("response_renderer", msg, &component_ids, context.emitter);
     };
 
     Ok(())
@@ -347,7 +350,7 @@ fn handle_successful_response(
 fn handle_error_response(
     error: ureq::Error,
     state: &mut DashboardState,
-    context: &mut Context<'_, DashboardState>,
+    context: &mut Context<'_, '_, DashboardState>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
     match error {
@@ -363,15 +366,18 @@ fn handle_error_response(
             state.response.set(body.clone());
             state.response_body_window_label.set(window_label);
             state.main_display.set(DashboardDisplay::ResponseBody);
-            context.set_focus("id", "response_renderer");
+            context
+                .components
+                .by_attribute("id", "response_renderer")
+                .focus();
 
             // TODO: Once the response headers are being extracted, figure out the correct
             // extension type to use to syntax highlight the response
             let response_msg = ResponseRendererMessages::SyntaxPreview(None);
-            if let Ok(msg) = serde_json::to_string(&response_msg) {
-                if let Ok(component_ids) = dashboard.component_ids.try_borrow() {
-                    let _ = send_message("response_renderer", msg, &component_ids, context.emitter);
-                };
+            if let Ok(msg) = serde_json::to_string(&response_msg)
+                && let Ok(component_ids) = dashboard.component_ids.try_borrow()
+            {
+                let _ = send_message("response_renderer", msg, &component_ids, context.emitter);
             };
 
             Ok(())

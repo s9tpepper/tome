@@ -1,17 +1,14 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId, MouseEvent},
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
-    state::{CommonVal, State, Value},
-    widgets::Elements,
+    component::{Children, Component, ComponentId, Context, MouseEvent},
+    runtime::Builder,
+    state::{Maybe, State, Value},
 };
 use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::GlobalEventHandler,
     components::{
         dashboard::{DashboardMessageHandler, DashboardMessages},
         send_message,
@@ -39,42 +36,33 @@ pub struct EditProjectName {
 
 impl DashboardMessageHandler for EditProjectName {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
-        ident: impl Into<String>,
+        event: &mut anathema::component::UserEvent<'_>,
+        _ident: impl Into<String>,
         state: &mut crate::components::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, crate::components::dashboard::DashboardState>,
-        _: Elements<'_, '_>,
+        mut context: anathema::component::Context<
+            '_,
+            '_,
+            crate::components::dashboard::DashboardState,
+        >,
+        _children: anathema::component::Children<'_, '_>,
         component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
-        let event: String = ident.into();
-        match event.as_str() {
+        let event_name: String = event.name().to_string();
+        match event_name.as_str() {
             "edit_project_name__specific_project_rename" => {
-                let Ok(specific_name_update) =
-                    serde_json::from_str::<SpecificNameUpdate>(&value.to_string())
-                else {
-                    let error_message =
-                        "There was an error while processing the name update".to_string();
-                    let dashboard_messages = DashboardMessages::ShowError(error_message);
-
-                    let Ok(message) = serde_json::to_string(&dashboard_messages) else {
-                        return;
-                    };
-
-                    let _ = send_message("dashboard", message, &component_ids, context.emitter);
-                    return;
-                };
+                let specific_name_update = event.data::<SpecificNameUpdate>();
 
                 if *state.project.to_ref().name.to_ref() == specific_name_update.old_name {
                     state
                         .project
                         .to_mut()
                         .name
-                        .set(specific_name_update.new_name);
+                        .set(specific_name_update.new_name.clone());
                 }
 
                 state.floating_window.set(FloatingWindow::None);
 
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
 
                 if let Ok(message) = serde_json::to_string(&EditProjectNameMessages::ClearInput) {
                     let _ = send_message(
@@ -89,6 +77,7 @@ impl DashboardMessageHandler for EditProjectName {
             "edit_project_name__submit" => {
                 info!("Handling edit_project_name__submit");
 
+                let value = event.data::<String>().clone();
                 let new_name = value.to_string();
                 info!("new_name: {new_name}");
 
@@ -96,7 +85,7 @@ impl DashboardMessageHandler for EditProjectName {
 
                 state.floating_window.set(FloatingWindow::None);
 
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
 
                 if let Ok(message) = serde_json::to_string(&EditProjectNameMessages::ClearInput) {
                     info!("Clearing dialog input for edit_name");
@@ -112,7 +101,7 @@ impl DashboardMessageHandler for EditProjectName {
             "edit_project_name__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
 
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
             _ => {}
         }
@@ -130,8 +119,8 @@ impl Component for EditProjectName {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 
@@ -147,8 +136,8 @@ impl Component for EditProjectName {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         state
             .cancel_button_color
@@ -163,8 +152,8 @@ impl Component for EditProjectName {
         &mut self,
         mouse: MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         // TODO: Remove this state.active after Anathema update
         if !state.active {
@@ -173,31 +162,32 @@ impl Component for EditProjectName {
 
         let mut context_ref = RefCell::new(context);
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "submit_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.submit(state, &mut context_ref);
                 }
             });
-
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "cancel_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.cancel(state, &mut context_ref);
                 }
             });
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         if let Ok(msg) = serde_json::from_str::<EditProjectNameMessages>(&message) {
             match msg {
@@ -234,18 +224,20 @@ impl Component for EditProjectName {
         }
     }
 
-    fn receive(
+    fn on_event(
         &mut self,
-        ident: &str,
-        value: anathema::state::CommonVal<'_>,
+        event: &mut anathema::component::UserEvent<'_>,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         #[allow(clippy::single_match)]
-        match ident {
-            "name_input_escape" => context.set_focus("id", "edit_project_name"),
-            "name_input_update" => state.name.set(value.to_string()),
+        match event.name() {
+            "name_input_escape" => context
+                .components
+                .by_attribute("id", "edit_project_name")
+                .focus(),
+            "name_input_update" => state.name.set(event.data::<String>().clone()),
             "name_input_enter" => self.submit(state, &mut context.into()),
 
             _ => {}
@@ -256,19 +248,22 @@ impl Component for EditProjectName {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match key.code {
             anathema::component::KeyCode::Char(char) => match char {
-                'p' | 'P' => context.set_focus("id", "project_name_input"),
+                'p' | 'P' => context
+                    .components
+                    .by_attribute("id", "project_name_input")
+                    .focus(),
                 's' | 'S' => self.submit(state, &mut context.into()),
                 'c' | 'C' => self.cancel(state, &mut context.into()),
 
                 _ => {}
             },
             anathema::component::KeyCode::Esc => {
-                context.publish("edit_project_name__cancel", |state| &state.name)
+                context.publish("edit_project_name__cancel", |state: Self::State| state.name)
             }
 
             _ => {}
@@ -279,7 +274,7 @@ impl Component for EditProjectName {
 impl EditProjectName {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
         let app_theme = get_app_theme();
 
@@ -287,7 +282,7 @@ impl EditProjectName {
         let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
         let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
 
-        let id = builder.register_component(
+        let id = builder.component(
             "edit_project_name",
             template("floating_windows/templates/edit_project_name"),
             EditProjectName {
@@ -321,7 +316,11 @@ impl EditProjectName {
         update_theme(state);
     }
 
-    fn set_name_input(&self, input_value: &str, mut context: Context<'_, EditProjectNameState>) {
+    fn set_name_input(
+        &self,
+        input_value: &str,
+        mut context: Context<'_, '_, EditProjectNameState>,
+    ) {
         if let Ok(ids) = self.component_ids.try_borrow() {
             let _ = send_message(
                 "edit_project_name_input",
@@ -331,50 +330,32 @@ impl EditProjectName {
             );
         }
 
-        context.set_focus("id", "project_name_input");
+        context
+            .components
+            .by_attribute("id", "project_name_input")
+            .focus();
     }
 
     fn rename_specific_project(
         &self,
         project: &PersistedProject,
         state: &mut EditProjectNameState,
-        context_ref: &mut RefCell<Context<'_, EditProjectNameState>>,
+        context_ref: &mut RefCell<Context<'_, '_, EditProjectNameState>>,
     ) {
         let mut context = context_ref.borrow_mut();
-
-        let specific_name_update = SpecificNameUpdate {
-            old_name: project.name.to_string(),
-            new_name: state.name.to_ref().to_string(),
-        };
-
-        let Ok(common) = serde_json::to_string(&specific_name_update) else {
-            let error_message = "There was an error with the name update".to_string();
-            let dashboard_messages = DashboardMessages::ShowError(error_message);
-
-            let Ok(message) = serde_json::to_string(&dashboard_messages) else {
-                return;
-            };
-
-            let Ok(ids) = self.component_ids.try_borrow() else {
-                return;
-            };
-
-            let _ = send_message("dashboard", message, &ids, context.emitter);
-            return;
-        };
 
         state.specific_name_change = Some(SpecificNameChange {
             old_name: project.name.to_string().into(),
             new_name: state.name.to_ref().to_string().into(),
-            common,
         })
         .into();
 
         match rename_project(project, &state.name.to_ref()) {
             Ok(_) => {
-                context.publish("edit_project_name__specific_project_rename", |state| {
-                    &state.specific_name_change
-                });
+                context.publish(
+                    "edit_project_name__specific_project_rename",
+                    |state: EditProjectNameState| state.specific_name_change,
+                );
             }
             Err(_) => {
                 let error_message = "There was an error renaming the project".to_string();
@@ -396,7 +377,7 @@ impl EditProjectName {
     fn submit(
         &self,
         state: &mut EditProjectNameState,
-        context: &mut RefCell<Context<'_, EditProjectNameState>>,
+        context: &mut RefCell<Context<'_, '_, EditProjectNameState>>,
     ) {
         match &self.persisted_project {
             Some(persisted_project) => {
@@ -406,9 +387,10 @@ impl EditProjectName {
 
             None => {
                 info!("Publishing edit_project_name__submit event");
-                context
-                    .borrow_mut()
-                    .publish("edit_project_name__submit", |state| &state.name);
+                context.borrow_mut().publish(
+                    "edit_project_name__submit",
+                    |state: EditProjectNameState| state.name,
+                );
             }
         }
 
@@ -418,11 +400,12 @@ impl EditProjectName {
     fn cancel(
         &self,
         state: &mut EditProjectNameState,
-        context: &mut RefCell<Context<'_, EditProjectNameState>>,
+        context: &mut RefCell<Context<'_, '_, EditProjectNameState>>,
     ) {
-        context
-            .borrow_mut()
-            .publish("edit_project_name__cancel", |state| &state.name);
+        context.borrow_mut().publish(
+            "edit_project_name__cancel",
+            |state: EditProjectNameState| state.name,
+        );
 
         state.active = false;
     }
@@ -441,7 +424,7 @@ pub struct EditProjectNameState {
     success_button_color: Value<String>,
     cancel_button_color: Value<String>,
 
-    specific_name_change: Value<Option<SpecificNameChange>>,
+    specific_name_change: Value<Maybe<SpecificNameChange>>,
 
     #[state_ignore]
     success_color_focused: String,
@@ -458,45 +441,10 @@ pub struct EditProjectNameState {
     active: bool,
 }
 
+#[derive(Default, Debug, State)]
 pub struct SpecificNameChange {
     pub old_name: Value<String>,
     pub new_name: Value<String>,
-    pub common: String,
-}
-
-impl ::anathema::state::State for SpecificNameChange {
-    fn state_get(
-        &self,
-        path: ::anathema::state::Path<'_>,
-        sub: ::anathema::state::Subscriber,
-    ) -> ::core::prelude::v1::Option<::anathema::state::ValueRef> {
-        let ::anathema::state::Path::Key(key) = path else {
-            return ::core::prelude::v1::None;
-        };
-        match key {
-            "old_name" => ::core::prelude::v1::Some(self.old_name.value_ref(sub)),
-            "new_name" => ::core::prelude::v1::Some(self.new_name.value_ref(sub)),
-            _ => ::core::prelude::v1::None,
-        }
-    }
-
-    fn state_lookup(
-        &self,
-        path: ::anathema::state::Path<'_>,
-    ) -> ::core::prelude::v1::Option<::anathema::state::PendingValue> {
-        let ::anathema::state::Path::Key(key) = path else {
-            return ::core::prelude::v1::None;
-        };
-        match key {
-            "old_name" => ::core::prelude::v1::Some(self.old_name.to_pending()),
-            "new_name" => ::core::prelude::v1::Some(self.new_name.to_pending()),
-            _ => ::core::prelude::v1::None,
-        }
-    }
-
-    fn to_common(&self) -> ::core::prelude::v1::Option<::anathema::state::CommonVal<'_>> {
-        Some(CommonVal::Str(&self.common))
-    }
 }
 
 fn update_theme(state: &mut EditProjectNameState) {

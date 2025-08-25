@@ -6,14 +6,12 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId},
-    prelude::TuiBackend,
-    runtime::RuntimeBuilder,
+    component::{Children, Component, ComponentId, Context},
+    runtime::Builder,
     state::{List, State, Value},
 };
 
 use crate::{
-    app::GlobalEventHandler,
     options::{get_button_style, BUTTON_STYLE_ANGLED, BUTTON_STYLE_ROUNDED, BUTTON_STYLE_SQUARED},
     projects::DEFAULT_ROW_COLOR,
     templates::template,
@@ -61,7 +59,7 @@ impl ButtonStyleSelectorState {
         ButtonStyleSelectorState {
             cursor: 0.into(),
             visible_items: 5.into(),
-            window_list: List::from_iter(button_styles),
+            window_list: List::from_iter(button_styles).into(),
             selected_button_style: "".to_string().into(),
             app_theme: app_theme.into(),
         }
@@ -77,9 +75,9 @@ pub struct ButtonStyleSelector {
 impl ButtonStyleSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "button_style_selector",
             template("floating_windows/templates/button_style_selector"),
             ButtonStyleSelector::new(ids.clone()),
@@ -147,8 +145,8 @@ impl Component for ButtonStyleSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             anathema::component::KeyCode::Char(char) => match char {
@@ -162,7 +160,9 @@ impl Component for ButtonStyleSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("button_style_selector__cancel", |state| &state.cursor)
+                context.publish("button_style_selector__cancel", |state: Self::State| {
+                    state.cursor
+                })
             }
 
             anathema::component::KeyCode::Enter => {
@@ -176,11 +176,15 @@ impl Component for ButtonStyleSelector {
                             .selected_button_style
                             .set(button_style_state.to_ref().name.to_ref().to_string());
 
-                        context.publish("button_style_selector__selection", |state| {
-                            &state.selected_button_style
-                        });
+                        context
+                            .publish("button_style_selector__selection", |state: Self::State| {
+                                state.selected_button_style
+                            });
                     }
-                    None => context.publish("button_style_selector__cancel", |state| &state.cursor),
+                    None => context
+                        .publish("button_style_selector__cancel", |state: Self::State| {
+                            state.cursor
+                        }),
                 }
             }
 
@@ -191,8 +195,8 @@ impl Component for ButtonStyleSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 

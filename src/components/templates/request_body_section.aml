@@ -1,6 +1,6 @@
 zstack
   zstack
-    border [id: section_id, foreground: active_border_color, border_style: "╭─╮│╯─╰│"]
+    border [id: state.section_id, foreground: state.active_border_color, border_style: "╭─╮│╯─╰│"]
       @request_body_input [id: "textarea"]
 
     vstack
@@ -11,26 +11,26 @@ zstack
     text " Bod(y) Mode: ["
     container [id: "body_mode_display", width: 17, height: 1, fill: " "]
       align [width: 17, alignment: "center", height: 1]
-        text [text_align: "center", width: 11] endpoint.body_mode ":" endpoint.raw_type
+        text [text_align: "center", width: 11] state.endpoint.body_mode ":" state.endpoint.raw_type
     text "]─╮"
 
   vstack
     spacer
     hstack
       text [min_height: 1] "╰"
-      text [foreground: border_color, background: app_theme.background] "─"
+      text [foreground: state.border_color, background: state.app_theme.background] "─"
       @button (click -> send_request_click) [
         button_label: "",
         button_item: "Send (R)equest",
-        foreground: app_theme.menu_opt_background,
-        background: app_theme.background,
+        foreground: state.app_theme.menu_opt_background,
+        background: state.app_theme.background,
         button_id: "send_request_from_headers_button"
       ]
       text [min_height: 1] "─"
       @button (click -> show_request_headers) [
         button_label: "",
         button_item: "Show Request Hea(d)ers",
-        foreground: app_theme.menu_opt_background,
-        background: app_theme.background,
+        foreground: state.app_theme.menu_opt_background,
+        background: state.app_theme.background,
         button_id: "send_request_from_headers_button"
       ]

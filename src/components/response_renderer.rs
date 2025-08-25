@@ -8,19 +8,17 @@ use std::{
 };
 
 use anathema::{
-    component::{Component, ComponentId, KeyCode, KeyEvent},
+    component::{Children, Component, ComponentId, Context, KeyCode, KeyEvent},
     geometry::Size,
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
-    state::{CommonVal, Hex, List, State, Value},
-    widgets::{components::events::KeyState, Elements},
+    runtime::Builder,
+    state::{Hex, List, Maybe, State, Value},
+    widgets::components::events::KeyState,
 };
 use log::info;
 use serde::{Deserialize, Serialize};
 use syntect::highlighting::Theme;
 
 use crate::{
-    app::GlobalEventHandler,
     options::get_syntax_theme,
     templates::template,
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
@@ -63,7 +61,7 @@ pub struct ResponseRenderer {
 impl ResponseRenderer {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
         ident: String,
     ) -> anyhow::Result<()> {
         let template = if ident == "response_renderer" {
@@ -72,7 +70,7 @@ impl ResponseRenderer {
             template("templates/syntax_highlighter_renderer")
         };
 
-        let id = builder.register_component(
+        let id = builder.component(
             ident.clone(),
             template,
             ResponseRenderer::new(ids.clone()),
@@ -154,7 +152,7 @@ impl ResponseRenderer {
         extension: String,
         state: &mut ResponseRendererState,
         offset: usize,
-        context: Context<'_, ResponseRendererState>,
+        context: Context<'_, '_, ResponseRendererState>,
     ) {
         if self.response_reader.is_none() {
             return;
@@ -169,7 +167,7 @@ impl ResponseRenderer {
         let size = self.size.unwrap();
         let response_reader = self.response_reader.as_mut().unwrap();
         self.response_offset = offset;
-        self.viewport_height = size.height;
+        self.viewport_height = size.height as usize;
 
         let mut buf: Vec<u8> = vec![];
         match response_reader.read_to_end(&mut buf) {
@@ -190,7 +188,11 @@ impl ResponseRenderer {
         self.scroll_response(state, offset);
     }
 
-    fn send_error_message(&self, error_message: &str, context: Context<'_, ResponseRendererState>) {
+    fn send_error_message(
+        &self,
+        error_message: &str,
+        context: Context<'_, '_, ResponseRendererState>,
+    ) {
         let dashboard_msg = DashboardMessages::ShowError(error_message.to_string());
         let Ok(msg) = serde_json::to_string(&dashboard_msg) else {
             return;
@@ -214,7 +216,7 @@ impl ResponseRenderer {
 
         let size = self.size.unwrap();
         self.response_offset = offset;
-        self.viewport_height = size.height;
+        self.viewport_height = size.height as usize;
 
         let mut viewable_lines: Vec<String> = vec![];
 
@@ -233,8 +235,8 @@ impl ResponseRenderer {
             let line = &self.response_lines[index];
             info!("Rendering line: {line}");
 
-            if line.len() > size.width {
-                let (new_line, _) = line.split_at(size.width.saturating_sub(5));
+            if line.len() > size.width.into() {
+                let (new_line, _) = line.split_at(size.width.saturating_sub(5).into());
 
                 let t = format!("{new_line}...");
 
@@ -273,7 +275,7 @@ impl ResponseRenderer {
         theme: Option<String>,
     ) {
         loop {
-            if state.lines.len() == 0 {
+            if state.lines.is_empty() {
                 break;
             }
 
@@ -295,7 +297,7 @@ impl ResponseRenderer {
 
         highlighted_lines.iter().for_each(|hl| {
             let mut line: Line = Line {
-                spans: List::empty(),
+                spans: List::empty().into(),
             };
 
             let head_src = hl.head.src.replace("\n", "");
@@ -347,10 +349,11 @@ impl ResponseRenderer {
 
     fn update_size(
         &mut self,
-        context: Context<'_, ResponseRendererState>,
-        elements: &mut Elements<'_, '_>,
+        context: Context<'_, '_, ResponseRendererState>,
+        children: &mut Children<'_, '_>,
     ) {
-        elements
+        children
+            .elements()
             .by_attribute("id", "response_border")
             .first(|element, _| {
                 info!("{:?}", element.size());
@@ -373,8 +376,8 @@ impl ResponseRenderer {
     fn next_filter_match(
         &mut self,
         state: &mut ResponseRendererState,
-        elements: Elements<'_, '_>,
-        context: Context<'_, ResponseRendererState>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, ResponseRendererState>,
     ) {
         let current_index = self.text_filter.search_navigation_cursor;
         let last_index = self.text_filter.indexes.len().saturating_sub(1);
@@ -392,14 +395,14 @@ impl ResponseRenderer {
 
         let line = line.unwrap_or(&0);
 
-        self.scroll_to_line(state, elements, context, *line);
+        self.scroll_to_line(state, children, context, *line);
     }
 
     fn previous_filter_match(
         &mut self,
         state: &mut ResponseRendererState,
-        elements: Elements<'_, '_>,
-        context: Context<'_, ResponseRendererState>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, ResponseRendererState>,
     ) {
         let current_index = self.text_filter.search_navigation_cursor;
         self.text_filter.search_navigation_cursor = if current_index > 0 {
@@ -413,14 +416,14 @@ impl ResponseRenderer {
             .indexes
             .get(self.text_filter.search_navigation_cursor)
             .unwrap_or(&0);
-        self.scroll_to_line(state, elements, context, *line);
+        self.scroll_to_line(state, children, context, *line);
     }
 
     fn scroll(
         &mut self,
         state: &mut ResponseRendererState,
-        elements: Elements<'_, '_>,
-        context: Context<'_, ResponseRendererState>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, ResponseRendererState>,
         direction: ScrollDirection,
     ) {
         info!("scroll() direction: {direction:?}");
@@ -436,7 +439,7 @@ impl ResponseRenderer {
 
         if !state.filter.to_ref().is_empty() {
             let filter = state.filter.to_ref().to_string();
-            self.apply_response_filter(filter, state, context, elements);
+            self.apply_response_filter(filter, state, context, children);
         }
     }
 
@@ -444,12 +447,12 @@ impl ResponseRenderer {
         &mut self,
         filter: String,
         state: &mut ResponseRendererState,
-        context: Context<'_, ResponseRendererState>,
-        elements: Elements<'_, '_>,
+        context: Context<'_, '_, ResponseRendererState>,
+        children: Children<'_, '_>,
     ) {
         info!("apply_response_filter");
         loop {
-            if state.filter_indexes.len() == 0 {
+            if state.filter_indexes.is_empty() {
                 break;
             }
 
@@ -476,10 +479,10 @@ impl ResponseRenderer {
 
         state.filter_total.set(state.filter_indexes.len());
 
-        if state.filter_indexes.len() > 0 {
+        if state.filter_indexes.is_empty() {
             self.text_filter = self.get_text_filter(state);
 
-            self.do_filter(state, elements, context);
+            self.do_filter(state, children, context);
         } else {
             if self.text_filter.total > 0 {
                 self.text_filter.total = 0;
@@ -494,8 +497,8 @@ impl ResponseRenderer {
     fn do_filter(
         &mut self,
         state: &mut ResponseRendererState,
-        elements: Elements<'_, '_>,
-        context: Context<'_, ResponseRendererState>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, ResponseRendererState>,
     ) {
         // NOTE: Go to the first search match if user is still typing in search filter
         // don't do this if user is scrolling with Ctrl D/U or N/P
@@ -503,7 +506,7 @@ impl ResponseRenderer {
             let default_index = 0;
             let first_index = self.text_filter.indexes.first().unwrap_or(&default_index);
 
-            self.scroll_to_line(state, elements, context, *first_index);
+            self.scroll_to_line(state, children, context, *first_index);
         }
 
         self.apply_filter_highlights(state);
@@ -512,7 +515,7 @@ impl ResponseRenderer {
     fn apply_filter_highlights(&mut self, state: &mut ResponseRendererState) {
         if let Some(size) = self.size {
             let rows = size.height;
-            let range_end = (self.response_offset + rows).saturating_sub(1);
+            let range_end = (self.response_offset + (rows as usize)).saturating_sub(1);
             let match_range = (self.response_offset, range_end);
 
             highlight_matches(
@@ -544,8 +547,8 @@ impl ResponseRenderer {
     fn scroll_to_line(
         &mut self,
         state: &mut ResponseRendererState,
-        _elements: Elements<'_, '_>,
-        _context: Context<'_, ResponseRendererState>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, ResponseRendererState>,
         line: usize,
     ) {
         self.scroll_response(state, line);
@@ -553,7 +556,7 @@ impl ResponseRenderer {
         self.apply_filter_highlights(state);
     }
 
-    fn back_to_request(&self, context: Context<'_, ResponseRendererState>) {
+    fn back_to_request(&self, context: Context<'_, '_, ResponseRendererState>) {
         if let Ok(message) = serde_json::to_string(&DashboardMessages::BackToRequest) {
             let Ok(ids) = self.component_ids.try_borrow() else {
                 return;
@@ -584,7 +587,7 @@ impl Line {
 
     pub fn empty() -> Self {
         Self {
-            spans: List::empty(),
+            spans: List::empty().into(),
         }
     }
 }
@@ -595,8 +598,26 @@ struct Span {
     bold: Value<bool>,
     foreground: Value<Hex>,
     background: Value<Hex>,
-    original_background: Value<Option<Hex>>,
-    original_foreground: Value<Option<Hex>>,
+    original_background: Value<Maybe<Hex>>,
+    original_foreground: Value<Maybe<Hex>>,
+}
+
+impl Span {
+    pub fn get_og_bg_hex(&self) -> Hex {
+        let hex = self.original_background.to_ref().as_hex();
+        match hex {
+            Some(Hex { r, g, b }) => Hex { r, g, b },
+            None => Hex { r: 0, g: 0, b: 0 },
+        }
+    }
+
+    pub fn get_og_fg_hex(&self) -> Hex {
+        let hex = self.original_foreground.to_ref().as_hex();
+        match hex {
+            Some(Hex { r, g, b }) => Hex { r, g, b },
+            None => Hex { r: 0, g: 0, b: 0 },
+        }
+    }
 }
 
 #[derive(Default, State)]
@@ -609,7 +630,7 @@ pub struct ResponseRendererState {
     pub buf_cursor_y: Value<i32>,
     /// Rendered lines in the text area for current page
     pub lines: Value<List<Line>>,
-    pub current_instruction: Value<Option<String>>,
+    pub current_instruction: Value<Maybe<String>>,
     pub title: Value<String>,
     pub waiting: Value<String>,
     pub show_cursor: Value<bool>,
@@ -645,7 +666,7 @@ impl ResponseRendererState {
             screen_cursor_y: 0.into(),
             buf_cursor_x: 0.into(),
             buf_cursor_y: 0.into(),
-            lines: List::from_iter(vec![Line::empty()]),
+            lines: List::from_iter(vec![Line::empty()]).into(),
             current_instruction: None.into(),
             title: "".to_string().into(),
             waiting: false.to_string().into(),
@@ -654,7 +675,7 @@ impl ResponseRendererState {
             percent_scrolled: "0".to_string().into(),
             app_theme: app_theme.into(),
             filter: "".to_string().into(),
-            filter_indexes: List::from_iter(vec![]),
+            filter_indexes: List::from_iter(vec![]).into(),
             filter_total: 0.into(),
             filter_nav_index: 0.into(),
         }
@@ -669,19 +690,19 @@ impl Component for ResponseRenderer {
         true
     }
 
-    fn receive(
+    fn on_event(
         &mut self,
-        ident: &str,
-        value: CommonVal<'_>,
+        event: &mut anathema::component::UserEvent<'_>,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
-        match ident {
+        match event.name() {
             "response_filter__input_update" => {
+                let value = event.data::<String>().clone();
                 info!("response_filter__input_update");
-                state.filter.set(value.to_string());
-                self.apply_response_filter(value.to_string(), state, context, elements);
+                state.filter.set(value.clone());
+                self.apply_response_filter(value, state, context, children);
 
                 info!("self.text_filter.total: {}", self.text_filter.total);
                 if self.text_filter.total > 0 {
@@ -692,12 +713,17 @@ impl Component for ResponseRenderer {
             }
 
             "response_filter__input_escape" => {
-                context.set_focus("id", "response_renderer");
+                context
+                    .components
+                    .by_attribute("id", "response_renderer")
+                    .focus();
                 info!("Set focus back to response_renderer");
             }
 
             _ => {
-                context.publish(ident, |state| &state.transient_event_value);
+                context.publish(event.name(), |state: Self::State| {
+                    state.transient_event_value
+                });
             }
         }
     }
@@ -705,26 +731,31 @@ impl Component for ResponseRenderer {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
-        self.update_size(context, &mut elements);
+        self.update_size(context, &mut children);
         info!("response_renderer has focus");
 
         state.filter_input_focused = false;
     }
 
-    fn on_blur(&mut self, _: &mut Self::State, _: Elements<'_, '_>, _: Context<'_, Self::State>) {
+    fn on_blur(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
+    ) {
         info!("response_renderer lost focus");
     }
 
-    fn resize(
+    fn on_resize(
         &mut self,
         _: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
-        self.update_size(context, &mut elements);
+        self.update_size(context, &mut children);
 
         // TODO: Update response text when the window gets resized
         // NOTE: Causes panic!
@@ -735,12 +766,13 @@ impl Component for ResponseRenderer {
         &mut self,
         mouse: anathema::component::MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let mut direction: Option<ScrollDirection> = None;
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "container")
             .first(|_, _| match mouse.state {
@@ -758,8 +790,8 @@ impl Component for ResponseRenderer {
         };
 
         match dir {
-            ScrollDirection::Up => self.scroll(state, elements, context, ScrollDirection::Up),
-            ScrollDirection::Down => self.scroll(state, elements, context, ScrollDirection::Down),
+            ScrollDirection::Up => self.scroll(state, children, context, ScrollDirection::Up),
+            ScrollDirection::Down => self.scroll(state, children, context, ScrollDirection::Down),
         }
     }
 
@@ -767,8 +799,8 @@ impl Component for ResponseRenderer {
         &mut self,
         event: KeyEvent,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         #[allow(clippy::single_match)]
         match event.code {
@@ -776,23 +808,26 @@ impl Component for ResponseRenderer {
 
             KeyCode::Char(char) => match event.ctrl {
                 true => match char {
-                    'd' => self.scroll(state, elements, context, ScrollDirection::Down),
-                    'u' => self.scroll(state, elements, context, ScrollDirection::Up),
-                    'p' => self.previous_filter_match(state, elements, context),
-                    'n' => self.next_filter_match(state, elements, context),
+                    'd' => self.scroll(state, children, context, ScrollDirection::Down),
+                    'u' => self.scroll(state, children, context, ScrollDirection::Up),
+                    'p' => self.previous_filter_match(state, children, context),
+                    'n' => self.next_filter_match(state, children, context),
                     _ => {}
                 },
 
                 false => match char {
                     'b' => self.back_to_request(context),
                     'f' => {
-                        context.set_focus("id", "response_body_input");
+                        context
+                            .components
+                            .by_attribute("id", "response_body_input")
+                            .focus();
                         state.filter_input_focused = true;
                         info!("Set focus to response_body_input");
 
                         if !state.filter.to_ref().is_empty() {
                             let filter = state.filter.to_ref().to_string();
-                            self.apply_response_filter(filter, state, context, elements);
+                            self.apply_response_filter(filter, state, context, children);
                         }
                     }
 
@@ -826,12 +861,12 @@ impl Component for ResponseRenderer {
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         // TODO: Fix this later, why is this ending up here?
         // This is ending up here after pressing T to create a new endpoint.
@@ -900,17 +935,15 @@ fn clear_highlights(state: &mut ResponseRendererState) {
         let mut spans = l.spans.to_mut();
         spans.iter_mut().for_each(|span| {
             let mut s = span.to_mut();
-            let og_opt = *s.original_background.to_ref();
-            if let Some(og_bg) = og_opt {
-                s.background.set(og_bg);
-                s.original_background.set(None);
-            };
 
-            let og_opt = *s.original_foreground.to_ref();
-            if let Some(og_fg) = og_opt {
-                s.foreground.set(og_fg);
-                s.original_foreground.set(None);
-            }
+            let og_bg_hex = s.get_og_bg_hex();
+            s.background.set(og_bg_hex);
+
+            let og_fg_hex = s.get_og_fg_hex();
+            s.foreground.set(og_fg_hex);
+
+            s.original_foreground.set(None.into());
+            s.original_background.set(None.into());
         });
     });
 }
@@ -970,11 +1003,11 @@ fn highlight_matches(
 
                             let mut s = span.to_mut();
                             let og_bg = Some(*s.background.to_ref());
-                            s.original_background.set(og_bg);
+                            s.original_background.set(og_bg.into());
                             s.background.set(Hex::from((255, 255, 0)));
 
                             let og_fg = Some(*s.foreground.to_ref());
-                            s.original_foreground.set(og_fg);
+                            s.original_foreground.set(og_fg.into());
                             s.foreground.set(Hex::from((0, 0, 0)));
                         }
                     }

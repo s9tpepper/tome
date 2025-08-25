@@ -3,13 +3,15 @@
 use std::{cell::RefCell, cmp::min, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId, Emitter, KeyCode, KeyEvent, MouseEvent},
+    component::{
+        Children, Component, ComponentId, Context, Emitter, KeyCode, KeyEvent, MouseEvent,
+    },
     default_widgets::Overflow,
     geometry::{Pos, Size},
-    prelude::{Context, ToSourceKind, TuiBackend},
-    runtime::RuntimeBuilder,
+    prelude::ToSourceKind,
+    runtime::Builder,
     state::{State, Value},
-    widgets::{Element, Elements},
+    widgets::Element,
 };
 use arboard::Clipboard;
 use log::info;
@@ -17,7 +19,7 @@ use rstest::rstest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::{GlobalEventHandler, TAB_NAV},
+    app::TAB_NAV,
     messages::focus_messages::FocusChange,
     theme::{get_app_theme, AppTheme},
 };
@@ -81,7 +83,7 @@ pub struct TextArea {
 impl TextArea {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
         ident: String,
         tpl: impl ToSourceKind,
         input_for: Option<String>,
@@ -105,7 +107,7 @@ impl TextArea {
             ident,
         };
 
-        let app_id = builder.register_component(
+        let app_id = builder.component(
             name.clone(),
             tpl,
             TextArea {
@@ -129,12 +131,11 @@ impl TextArea {
             false => serde_json::to_string(&FocusChange::Unfocused),
         };
 
-        if message.is_ok() {
+        if let Ok(message) = message {
             let Ok(ids) = self.component_ids.try_borrow() else {
                 return;
             };
 
-            let message = message.unwrap();
             for listener in &self.listeners {
                 ids.get(listener)
                     .map(|id| emitter.emit(*id, message.clone()));
@@ -181,8 +182,8 @@ impl Component for TextArea {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         state.focused.set(false);
 
@@ -197,8 +198,8 @@ impl Component for TextArea {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         state.focused.set(true);
 
@@ -214,12 +215,13 @@ impl Component for TextArea {
         &mut self,
         mouse: MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         // NOTE: This on_mouse doesn't work when the text area is focused because
         // the GlobalEvent handler is disabling the mouse events
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "container")
             .first(|element, _| {
@@ -242,8 +244,8 @@ impl Component for TextArea {
         &mut self,
         key: KeyEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        mut elements: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match key.code {
             KeyCode::Char(c) => {
@@ -313,17 +315,18 @@ fn copy(state: &mut TextAreaState) {
 // TODO: Add tests for the backspace function
 fn backspace(
     state: &mut TextAreaState,
-    mut context: Context<'_, TextAreaState>,
-    elements: &mut Elements<'_, '_>,
+    mut context: Context<'_, '_, TextAreaState>,
+    children: &mut Children<'_, '_>,
 ) {
     let mut block = false;
-    elements
+    children
+        .elements()
         .by_attribute("id", "container")
         .first(|_, attributes| {
-            if let Some(editable) = attributes.get::<bool>("editable") {
-                if !editable {
-                    block = true;
-                }
+            if let Some(editable) = attributes.get_as::<bool>("editable")
+                && !editable
+            {
+                block = true;
             }
         });
 
@@ -360,31 +363,32 @@ fn backspace(
     update_cursor_after_move(state);
 
     let event_name = format!("{}_textchange", state.ident);
-    context.publish(&event_name, |state| &state.display_input);
+    context.publish(&event_name, |state: TextAreaState| state.display_input);
 }
 
-fn escape(state: &mut TextAreaState, mut context: Context<'_, TextAreaState>) {
-    context.set_focus("id", "app");
+fn escape(state: &mut TextAreaState, mut context: Context<'_, '_, TextAreaState>) {
+    context.components.by_attribute("id", "app").focus();
 
     let event_name = format!("{}_escape", state.ident);
-    context.publish(&event_name, |state| &state.cursor_char);
-    context.publish("textarea_focus", |state| &state.focused);
+    context.publish(&event_name, |state: TextAreaState| state.cursor_char);
+    context.publish("textarea_focus", |state: TextAreaState| state.focused);
 }
 
 // TODO: Add tests for the delete function
 fn delete(
     state: &mut TextAreaState,
-    mut context: Context<'_, TextAreaState>,
-    elements: &mut Elements<'_, '_>,
+    mut context: Context<'_, '_, TextAreaState>,
+    children: &mut Children<'_, '_>,
 ) {
     let mut block = false;
-    elements
+    children
+        .elements()
         .by_attribute("id", "container")
         .first(|_, attributes| {
-            if let Some(editable) = attributes.get::<bool>("editable") {
-                if !editable {
-                    block = true;
-                }
+            if let Some(editable) = attributes.get_as::<bool>("editable")
+                && !editable
+            {
+                block = true;
             }
         });
 
@@ -414,7 +418,7 @@ fn delete(
     update_cursor_after_move(state);
 
     let event_name = format!("{}_textchange", state.ident);
-    context.publish(&event_name, |state| &state.display_input);
+    context.publish(&event_name, |state: TextAreaState| state.display_input);
 }
 
 fn move_down(state: &mut TextAreaState, size: Size) {
@@ -429,22 +433,23 @@ fn move_down(state: &mut TextAreaState, size: Size) {
         .fold(0, |ndx, line| ndx + line.len().saturating_sub(1));
     let ending_index = starting_index + current_line.len().saturating_sub(1);
 
-    let is_wider_than_width = current_line.len() > size.width;
+    let is_wider_than_width = current_line.len() > size.width as usize;
     let is_cursor_not_on_last_subline =
-        state.cursor_pos.x < current_line.len().saturating_sub(size.width);
+        state.cursor_pos.x < current_line.len().saturating_sub(size.width as usize);
 
-    let total_sublines = ((current_line.len() / size.width) as f32).ceil() as usize;
-    let last_full_line_start = starting_index + (total_sublines.saturating_sub(1) * size.width);
-    let last_full_line_end = last_full_line_start + size.width;
+    let total_sublines = ((current_line.len() / size.width as usize) as f32).ceil() as usize;
+    let last_full_line_start =
+        starting_index + (total_sublines.saturating_sub(1) * size.width as usize);
+    let last_full_line_end = last_full_line_start + size.width as usize;
 
     if is_wider_than_width && is_cursor_not_on_last_subline {
-        state.cursor_pos.x += size.width;
+        state.cursor_pos.x += size.width as usize;
         return;
     } else if is_wider_than_width
         && state.cursor_pos.x >= last_full_line_start
         && state.cursor_pos.x <= last_full_line_end
     {
-        let last_line_pos = state.cursor_pos.x + size.width;
+        let last_line_pos = state.cursor_pos.x + size.width as usize;
         state.cursor_pos.x = min(last_line_pos, ending_index);
         return;
     }
@@ -465,8 +470,9 @@ fn move_down(state: &mut TextAreaState, size: Size) {
     render_display(state);
 }
 
-fn handle_move_down(state: &mut TextAreaState, elements: &mut Elements<'_, '_>) {
-    elements
+fn handle_move_down(state: &mut TextAreaState, children: &mut Children<'_, '_>) {
+    children
+        .elements()
         .by_attribute("id", "container")
         .first(|element, _| {
             let size = element.size();
@@ -483,11 +489,11 @@ fn move_up(state: &mut TextAreaState, size: Size) {
 
     let input = state.display_input.to_ref().to_string();
     let current_line = input.lines().nth(state.cursor_pos.y).unwrap_or("");
-    let is_wider_than_width = current_line.len() > size.width;
-    let is_cursor_on_subline = state.cursor_pos.x > size.width;
+    let is_wider_than_width = current_line.len() > size.width as usize;
+    let is_cursor_on_subline = state.cursor_pos.x > size.width as usize;
 
     if is_wider_than_width && is_cursor_on_subline {
-        state.cursor_pos.x -= size.width;
+        state.cursor_pos.x -= size.width as usize;
         info!("textarea.rs :: move_up() - returning from is_cursor_on_subline check");
         return;
     }
@@ -507,9 +513,9 @@ fn move_up(state: &mut TextAreaState, size: Size) {
     }
     let line_width = new_line_contents.len();
 
-    if line_width > size.width {
-        let sub_lines = (line_width / size.width) as i16;
-        let shift = sub_lines as usize * size.width;
+    if line_width > size.width.into() {
+        let sub_lines = (line_width / size.width as usize) as i16;
+        let shift = sub_lines as usize * size.width as usize;
 
         state.cursor_pos.x += shift;
     }
@@ -517,8 +523,9 @@ fn move_up(state: &mut TextAreaState, size: Size) {
     render_display(state);
 }
 
-fn handle_move_up(state: &mut TextAreaState, elements: &mut Elements<'_, '_>) {
-    elements
+fn handle_move_up(state: &mut TextAreaState, children: &mut Children<'_, '_>) {
+    children
+        .elements()
         .by_attribute("id", "container")
         .first(|element, _| {
             let size = element.size();
@@ -604,16 +611,17 @@ fn update_cursor_after_move(state: &mut TextAreaState) {
 fn handle_typing(
     c: char,
     state: &mut TextAreaState,
-    elements: &mut Elements<'_, '_>,
-    context: &mut Context<'_, TextAreaState>,
+    children: &mut Children<'_, '_>,
+    context: &mut Context<'_, '_, TextAreaState>,
 ) {
-    elements
+    children
+        .elements()
         .by_attribute("id", "container")
         .first(|element, attributes| {
-            if let Some(editable) = attributes.get::<bool>("editable") {
-                if !editable {
-                    return;
-                }
+            if let Some(editable) = attributes.get_as::<bool>("editable")
+                && !editable
+            {
+                return;
             }
 
             add_character(c, state);
@@ -621,7 +629,7 @@ fn handle_typing(
             scroll_into_view(element, state);
 
             let event_name = format!("{}_textchange", state.ident);
-            context.publish(&event_name, |state| &state.display_input);
+            context.publish(&event_name, |state: TextAreaState| state.display_input);
         });
 }
 

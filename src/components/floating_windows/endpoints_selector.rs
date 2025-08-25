@@ -7,20 +7,17 @@ use std::{
 
 use anathema::{
     component::{
-        Component, ComponentId,
+        Children, Component, ComponentId, Context,
         KeyCode::{Char, Down, Enter, Esc, Up},
         MouseEvent,
     },
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
+    runtime::Builder,
     state::{List, State, Value},
-    widgets::Elements,
 };
 use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app::GlobalEventHandler,
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{Endpoint, PersistedEndpoint},
@@ -61,7 +58,7 @@ impl EndpointsSelectorState {
             current_first_index: 0.into(),
             current_last_index: 4.into(),
             visible_rows: 5.into(),
-            window_list: List::empty(),
+            window_list: List::empty().into(),
             selected_item: "".to_string().into(),
             app_theme: app_theme.into(),
         }
@@ -78,9 +75,9 @@ pub struct EndpointsSelector {
 impl EndpointsSelector {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "endpoints_selector_window",
             template("floating_windows/templates/endpoints_selector"),
             EndpointsSelector::new(ids.clone()),
@@ -163,7 +160,7 @@ impl EndpointsSelector {
     ) {
         if self.items_list.is_empty() {
             loop {
-                if state.window_list.len() > 0 {
+                if state.window_list.is_empty() {
                     state.window_list.pop_front();
                 } else {
                     break;
@@ -186,14 +183,16 @@ impl EndpointsSelector {
         });
 
         loop {
-            if state.window_list.len() > 0 {
+            if state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
             }
         }
 
-        let mut new_list_state = List::<Endpoint>::empty();
+        let new_list_state = List::<Endpoint>::empty();
+        state.window_list = new_list_state.into();
+
         new_items_list
             .into_iter()
             .enumerate()
@@ -231,16 +230,14 @@ impl EndpointsSelector {
                         .into();
                 }
 
-                new_list_state.push(endpoint);
+                state.window_list.push(endpoint);
             });
-
-        state.window_list = new_list_state;
     }
 
     fn delete_endpoint(
         &self,
         state: &mut EndpointsSelectorState,
-        context: &mut RefCell<Context<'_, EndpointsSelectorState>>,
+        context: &mut RefCell<Context<'_, '_, EndpointsSelectorState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let persisted_endpoint = self.items_list.get(selected_index);
@@ -249,25 +246,28 @@ impl EndpointsSelector {
             Some(persisted_endpoint) => match serde_json::to_string(persisted_endpoint) {
                 Ok(project_json) => {
                     state.selected_item.set(project_json);
-                    context
-                        .borrow_mut()
-                        .publish("endpoints_selector__delete", |state| &state.selected_item)
+                    context.borrow_mut().publish(
+                        "endpoints_selector__delete",
+                        |state: EndpointsSelectorState| state.selected_item,
+                    )
                 }
 
-                Err(_) => context
-                    .borrow_mut()
-                    .publish("endpoints_selector__cancel", |state| &state.cursor),
+                Err(_) => context.borrow_mut().publish(
+                    "endpoints_selector__cancel",
+                    |state: EndpointsSelectorState| state.cursor,
+                ),
             },
-            None => context
-                .borrow_mut()
-                .publish("endpoints_selector__cancel", |state| &state.cursor),
+            None => context.borrow_mut().publish(
+                "endpoints_selector__cancel",
+                |state: EndpointsSelectorState| state.cursor,
+            ),
         }
     }
 
     fn rename_endpoint(
         &self,
         state: &mut EndpointsSelectorState,
-        context: &mut RefCell<Context<'_, EndpointsSelectorState>>,
+        context: &mut RefCell<Context<'_, '_, EndpointsSelectorState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let project = self.items_list.get(selected_index);
@@ -278,81 +278,72 @@ impl EndpointsSelector {
                     state.selected_item.set(project_json);
                     context
                         .borrow_mut()
-                        .publish("rename_endpoint", |state| &state.selected_item)
+                        .publish("rename_endpoint", |state: EndpointsSelectorState| {
+                            state.selected_item
+                        })
                 }
 
-                Err(_) => context
-                    .borrow_mut()
-                    .publish("endpoints_selector__cancel", |state| &state.cursor),
+                Err(_) => context.borrow_mut().publish(
+                    "endpoints_selector__cancel",
+                    |state: EndpointsSelectorState| state.cursor,
+                ),
             },
-            None => context
-                .borrow_mut()
-                .publish("endpoints_selector__cancel", |state| &state.cursor),
+            None => context.borrow_mut().publish(
+                "endpoints_selector__cancel",
+                |state: EndpointsSelectorState| state.cursor,
+            ),
         }
     }
 }
 
 impl DashboardMessageHandler for EndpointsSelector {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
-        ident: impl Into<String>,
+        event: &mut anathema::component::UserEvent<'_>,
+        _ident: impl Into<String>,
         state: &mut DashboardState,
-        mut context: anathema::prelude::Context<'_, DashboardState>,
-        _: Elements<'_, '_>,
+        mut context: Context<'_, '_, DashboardState>,
+        _children: anathema::component::Children<'_, '_>,
         component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
-        let event: String = ident.into();
+        let event_name: String = event.name().to_string();
 
-        match event.as_str() {
+        match event_name.as_str() {
             "endpoints_selector__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             "endpoints_selector__selection" => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
 
-                let value = &*value.to_common_str();
-                let endpoint = serde_json::from_str::<PersistedEndpoint>(value);
-
-                match endpoint {
-                    Ok(endpoint) => {
-                        state.endpoint.set((&endpoint).into());
-                    }
-                    Err(_) => todo!(),
-                }
+                let endpoint = event.data::<PersistedEndpoint>();
+                state.endpoint.set(endpoint.into());
             }
 
             "endpoints_selector__delete" => {
                 state.floating_window.set(FloatingWindow::ConfirmAction);
-                context.set_focus("id", "confirm_action_window");
+                context
+                    .components
+                    .by_attribute("id", "confirm_action_window")
+                    .focus();
 
-                let value = &*value.to_common_str();
-                let endpoint = serde_json::from_str::<PersistedEndpoint>(value);
+                let endpoint = event.data::<PersistedEndpoint>();
 
-                match endpoint {
-                    Ok(endpoint) => {
-                        let confirm_delete_endpoint = ConfirmDetails {
-                            title: format!("Delete {}", endpoint.name),
-                            message: "Are you sure you want to delete?".into(),
-                            data: endpoint,
-                        };
+                let confirm_delete_endpoint = ConfirmDetails {
+                    title: format!("Delete {}", endpoint.name),
+                    message: "Are you sure you want to delete?".into(),
+                    data: endpoint.clone(),
+                };
 
-                        let confirm_message =
-                            ConfirmAction::ConfirmDeletePersistedEndpoint(confirm_delete_endpoint);
+                let confirm_message =
+                    ConfirmAction::ConfirmDeletePersistedEndpoint(confirm_delete_endpoint);
 
-                        if let Ok(message) = serde_json::to_string(&confirm_message) {
-                            let confirm_action_window_id =
-                                component_ids.get("confirm_action_window");
-                            if let Some(id) = confirm_action_window_id {
-                                context.emit(*id, message);
-                            }
-                        }
+                if let Ok(message) = serde_json::to_string(&confirm_message) {
+                    let confirm_action_window_id = component_ids.get("confirm_action_window");
+                    if let Some(id) = confirm_action_window_id {
+                        context.emit(*id, message);
                     }
-
-                    // TODO: Fix these todo()!
-                    Err(_) => todo!(),
                 }
             }
 
@@ -372,8 +363,8 @@ impl Component for EndpointsSelector {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
     }
@@ -381,8 +372,8 @@ impl Component for EndpointsSelector {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         state.active = false;
     }
@@ -391,8 +382,8 @@ impl Component for EndpointsSelector {
         &mut self,
         mouse: MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         // TODO: Remove this state.active after Anathema update
         if !state.active {
@@ -401,20 +392,22 @@ impl Component for EndpointsSelector {
 
         let mut context_ref = RefCell::new(context);
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "rename_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.rename_endpoint(state, &mut context_ref);
                 }
             });
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "delete_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.delete_endpoint(state, &mut context_ref);
                 }
             });
@@ -424,8 +417,8 @@ impl Component for EndpointsSelector {
         &mut self,
         event: anathema::component::KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             Char(char) => match char {
@@ -441,7 +434,9 @@ impl Component for EndpointsSelector {
 
             Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("endpoints_selector__cancel", |state| &state.cursor)
+                context.publish("endpoints_selector__cancel", |state: Self::State| {
+                    state.cursor
+                })
             }
 
             Enter => {
@@ -452,15 +447,19 @@ impl Component for EndpointsSelector {
                     Some(endpoint) => match serde_json::to_string(endpoint) {
                         Ok(endpoint_json) => {
                             state.selected_item.set(endpoint_json);
-                            context.publish("endpoints_selector__selection", |state| {
-                                &state.selected_item
-                            });
+                            context
+                                .publish("endpoints_selector__selection", |state: Self::State| {
+                                    state.selected_item
+                                });
                         }
-                        Err(_) => {
-                            context.publish("endpoints_selector__cancel", |state| &state.cursor)
-                        }
+                        Err(_) => context
+                            .publish("endpoints_selector__cancel", |state: Self::State| {
+                                state.cursor
+                            }),
                     },
-                    None => context.publish("endpoints_selector__cancel", |state| &state.cursor),
+                    None => context.publish("endpoints_selector__cancel", |state: Self::State| {
+                        state.cursor
+                    }),
                 }
             }
 
@@ -468,12 +467,12 @@ impl Component for EndpointsSelector {
         }
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        _: anathema::prelude::Context<'_, Self::State>,
+        _children: Children<'_, '_>,
+        _context: Context<'_, '_, Self::State>,
     ) {
         info!("endpoints_selector.rs :: message()");
         let endpoints_selector_message =

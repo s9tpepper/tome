@@ -1,6 +1,6 @@
 container [height: 3]
   @app_section [
-    border_color: active_border_color,
+    border_color: state.active_border_color,
     top_label: "(U)RL",
     show_top_label: true,
     section_id: "url_border",

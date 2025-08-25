@@ -1,15 +1,15 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Component, ComponentId, Emitter, KeyCode},
-    prelude::{Context, ToSourceKind, TuiBackend},
-    runtime::RuntimeBuilder,
-    widgets::Elements,
+    component::{Children, Component, ComponentId, Context, Emitter, KeyCode},
+    prelude::ToSourceKind,
+    runtime::Builder,
 };
 use log::info;
 
 use crate::{
-    app::GlobalEventHandler, messages::focus_messages::FocusChange, theme::{get_app_theme, get_app_theme_persisted, AppTheme}
+    messages::focus_messages::FocusChange,
+    theme::{get_app_theme, get_app_theme_persisted, AppTheme},
 };
 
 use super::{
@@ -31,7 +31,7 @@ pub struct EditInput {
 impl EditInput {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
         ident: impl Into<String>,
         template: impl ToSourceKind,
         input_for: Option<String>,
@@ -44,7 +44,7 @@ impl EditInput {
             &app_theme.background.to_ref(),
         );
 
-        let app_id = builder.register_component(
+        let app_id = builder.component(
             name.clone(),
             template,
             EditInput {
@@ -87,8 +87,8 @@ impl EditInput {
         }
     }
 
-    fn send_enter(&self, context: &mut Context<'_, InputState>) {
-        context.publish("edit_input__enter", |state| &state.input);
+    fn send_enter(&self, context: &mut Context<'_, '_, InputState>) {
+        context.publish("edit_input__enter", |state: InputState| state.input);
     }
 
     // TODO: Remove the duplication between send_escape and send_text_update()
@@ -128,20 +128,20 @@ impl EditInput {
         }
     }
 
-    fn send_focus_to_listeners(&self, state: &mut InputState,  emitter: Emitter) {
+    fn send_focus_to_listeners(&self, state: &mut InputState, emitter: Emitter) {
         let message = match *state.focused.to_ref() {
             true => serde_json::to_string(&FocusChange::Focused),
             false => serde_json::to_string(&FocusChange::Unfocused),
         };
 
-        if message.is_ok() {
+        if let Ok(message) = message {
             let Ok(ids) = self.component_ids.try_borrow() else {
                 return;
             };
 
-            let message = message.unwrap();
             for listener in &self.listeners {
-                ids.get(listener).map(|id| emitter.emit(*id, message.clone()));
+                ids.get(listener)
+                    .map(|id| emitter.emit(*id, message.clone()));
             }
         }
     }
@@ -155,8 +155,8 @@ impl Component for EditInput {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let emitter = context.emitter.clone();
         self._on_focus(state, elements, context);
@@ -167,8 +167,8 @@ impl Component for EditInput {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let emitter = context.emitter.clone();
         self._on_blur(state, elements, context);
@@ -179,26 +179,28 @@ impl Component for EditInput {
         &mut self,
         key: anathema::component::KeyEvent,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        mut context: Context<'_, Self::State>,
+        elements: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         self._on_key(&key, state, &elements, &mut context);
 
-        if let KeyCode::Enter = &key.code { self.send_enter(&mut context) }
+        if let KeyCode::Enter = &key.code {
+            self.send_enter(&mut context)
+        }
 
         let emitter = context.emitter.clone();
         self.send_to_listeners(key.code, state, emitter);
     }
 
-    fn message(
+    fn on_message(
         &mut self,
         message: Self::Message,
         state: &mut Self::State,
-        elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         let emitter = context.emitter.clone();
-        self._message(message, state, elements, context);
+        self._message(message, state, children, context);
         self.send_to_listeners(KeyCode::Char(' '), state, emitter);
     }
 

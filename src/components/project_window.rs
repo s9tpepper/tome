@@ -7,19 +7,16 @@ use std::{
 
 use anathema::{
     component::{
-        Component, ComponentId,
+        Children, Component, ComponentId, Context,
         KeyCode::{Char, Down, Enter, Esc, Up},
-        MouseEvent,
+        KeyEvent, MouseEvent,
     },
-    prelude::{Context, TuiBackend},
-    runtime::RuntimeBuilder,
+    runtime::Builder,
     state::{List, State, Value},
-    widgets::Elements,
 };
 use log::info;
 
 use crate::{
-    app::GlobalEventHandler,
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
     projects::{get_projects, PersistedProject, Project},
     templates::template,
@@ -59,7 +56,7 @@ impl ProjectWindowState {
             current_first_index: 0.into(),
             current_last_index: 4.into(),
             visible_projects: 5.into(),
-            window_list: List::empty(),
+            window_list: List::empty().into(),
             selected_project: "".to_string().into(),
             app_theme: app_theme.into(),
         }
@@ -76,9 +73,9 @@ pub struct ProjectWindow {
 impl ProjectWindow {
     pub fn register(
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
-        builder: &mut RuntimeBuilder<TuiBackend, GlobalEventHandler>,
+        builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let id = builder.register_component(
+        let id = builder.component(
             "project_selector",
             template("templates/project_window"),
             ProjectWindow::new(ids.clone()),
@@ -175,7 +172,7 @@ impl ProjectWindow {
         });
 
         loop {
-            if state.window_list.len() > 0 {
+            if state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
@@ -226,7 +223,7 @@ impl ProjectWindow {
     fn rename_project(
         &self,
         state: &mut ProjectWindowState,
-        context: &mut RefCell<Context<'_, ProjectWindowState>>,
+        context: &mut RefCell<Context<'_, '_, ProjectWindowState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let project = self.project_list.get(selected_index);
@@ -237,29 +234,35 @@ impl ProjectWindow {
                     state.selected_project.set(project_json);
                     context
                         .borrow_mut()
-                        .publish("rename_project", |state| &state.selected_project)
+                        .publish("rename_project", |state: ProjectWindowState| {
+                            state.selected_project
+                        })
                 }
 
                 Err(_) => context
                     .borrow_mut()
-                    .publish("project_window__cancel", |state| &state.cursor),
+                    .publish("project_window__cancel", |state: ProjectWindowState| {
+                        state.cursor
+                    }),
             },
             None => context
                 .borrow_mut()
-                .publish("project_window__cancel", |state| &state.cursor),
+                .publish("project_window__cancel", |state: ProjectWindowState| {
+                    state.cursor
+                }),
         }
     }
 
-    fn add_project(&self, context: &mut RefCell<Context<'_, ProjectWindowState>>) {
+    fn add_project(&self, context: &mut RefCell<Context<'_, '_, ProjectWindowState>>) {
         context
             .borrow_mut()
-            .publish("add_new_project", |state| &state.cursor);
+            .publish("add_new_project", |state: ProjectWindowState| state.cursor);
     }
 
     fn delete_project(
         &self,
         state: &mut ProjectWindowState,
-        context: &mut RefCell<Context<'_, ProjectWindowState>>,
+        context: &mut RefCell<Context<'_, '_, ProjectWindowState>>,
     ) {
         let selected_index = *state.cursor.to_ref() as usize;
         let project = self.project_list.get(selected_index);
@@ -270,43 +273,49 @@ impl ProjectWindow {
                     state.selected_project.set(project_json);
                     context
                         .borrow_mut()
-                        .publish("project_window__delete", |state| &state.selected_project)
+                        .publish("project_window__delete", |state: ProjectWindowState| {
+                            state.selected_project
+                        })
                 }
 
                 Err(_) => context
                     .borrow_mut()
-                    .publish("project_window__cancel", |state| &state.cursor),
+                    .publish("project_window__cancel", |state: ProjectWindowState| {
+                        state.cursor
+                    }),
             },
             None => context
                 .borrow_mut()
-                .publish("project_window__cancel", |state| &state.cursor),
+                .publish("project_window__cancel", |state: ProjectWindowState| {
+                    state.cursor
+                }),
         }
     }
 }
 
 impl DashboardMessageHandler for ProjectWindow {
     fn handle_message(
-        value: anathema::state::CommonVal<'_>,
-        ident: impl Into<String>,
+        event: &mut anathema::component::UserEvent<'_>,
+        _: impl Into<String>,
         state: &mut super::dashboard::DashboardState,
-        mut context: anathema::prelude::Context<'_, super::dashboard::DashboardState>,
-        _: Elements<'_, '_>,
+        mut context: Context<'_, '_, super::dashboard::DashboardState>,
+        _: anathema::component::Children<'_, '_>,
         component_ids: std::cell::Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
-        let event: String = ident.into();
+        let event_name: String = event.name().to_string();
 
-        match event.as_str() {
+        match event_name.as_str() {
             "project_window__cancel" => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
             }
 
             "project_window__selection" => {
                 state.floating_window.set(FloatingWindow::None);
-                context.set_focus("id", "app");
+                context.components.by_attribute("id", "app").focus();
 
-                let value = &*value.to_common_str();
-                let project = serde_json::from_str::<PersistedProject>(value);
+                let value = event.data::<String>().clone();
+                let project = serde_json::from_str::<PersistedProject>(&value);
 
                 match project {
                     Ok(project) => {
@@ -355,10 +364,13 @@ impl DashboardMessageHandler for ProjectWindow {
 
             "project_window__delete" => {
                 state.floating_window.set(FloatingWindow::ConfirmAction);
-                context.set_focus("id", "confirm_action_window");
+                context
+                    .components
+                    .by_attribute("id", "confirm_action_window")
+                    .focus();
 
-                let value = &*value.to_common_str();
-                let project = serde_json::from_str::<PersistedProject>(value);
+                let value = event.data::<String>().clone();
+                let project = serde_json::from_str::<PersistedProject>(&value);
 
                 match project {
                     Ok(project) => {
@@ -398,10 +410,10 @@ impl Component for ProjectWindow {
 
     fn on_key(
         &mut self,
-        event: anathema::component::KeyEvent,
+        event: KeyEvent,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        mut context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
     ) {
         match event.code {
             Char(char) => match char {
@@ -419,7 +431,7 @@ impl Component for ProjectWindow {
 
             Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("project_window__cancel", |state| &state.cursor)
+                context.publish("project_window__cancel", |state: Self::State| state.cursor)
             }
 
             Enter => {
@@ -430,13 +442,16 @@ impl Component for ProjectWindow {
                     Some(project) => match serde_json::to_string(project) {
                         Ok(project_json) => {
                             state.selected_project.set(project_json);
-                            context.publish("project_window__selection", |state| {
-                                &state.selected_project
+                            context.publish("project_window__selection", |state: Self::State| {
+                                state.selected_project
                             });
                         }
-                        Err(_) => context.publish("project_window__cancel", |state| &state.cursor),
+                        Err(_) => context
+                            .publish("project_window__cancel", |state: Self::State| state.cursor),
                     },
-                    None => context.publish("project_window__cancel", |state| &state.cursor),
+                    None => {
+                        context.publish("project_window__cancel", |state: Self::State| state.cursor)
+                    }
                 }
             }
 
@@ -448,8 +463,8 @@ impl Component for ProjectWindow {
         &mut self,
         mouse: MouseEvent,
         state: &mut Self::State,
-        mut elements: Elements<'_, '_>,
-        context: Context<'_, Self::State>,
+        mut children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         // TODO: Remove this state.active after Anathema update
         if !state.active {
@@ -458,29 +473,32 @@ impl Component for ProjectWindow {
 
         let mut context_ref = RefCell::new(context);
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "add_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.add_project(&mut context_ref);
                 }
             });
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "rename_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.rename_project(state, &mut context_ref);
                 }
             });
 
-        elements
+        children
+            .elements()
             .at_position(mouse.pos())
             .by_attribute("id", "delete_button")
             .first(|_, _| {
-                if mouse.lsb_up() {
+                if mouse.left_up() {
                     self.delete_project(state, &mut context_ref);
                 }
             });
@@ -489,8 +507,8 @@ impl Component for ProjectWindow {
     fn on_blur(
         &mut self,
         state: &mut Self::State,
-        _: Elements<'_, '_>,
-        _: Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
     ) {
         state.active = false;
     }
@@ -498,8 +516,8 @@ impl Component for ProjectWindow {
     fn on_focus(
         &mut self,
         state: &mut Self::State,
-        _: anathema::widgets::Elements<'_, '_>,
-        context: anathema::prelude::Context<'_, Self::State>,
+        _: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
     ) {
         self.update_app_theme(state);
 
