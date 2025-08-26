@@ -160,7 +160,7 @@ impl EndpointsSelector {
     ) {
         if self.items_list.is_empty() {
             loop {
-                if state.window_list.is_empty() {
+                if !state.window_list.is_empty() {
                     state.window_list.pop_front();
                 } else {
                     break;
@@ -183,7 +183,7 @@ impl EndpointsSelector {
         });
 
         loop {
-            if state.window_list.is_empty() {
+            if !state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;

@@ -493,7 +493,7 @@ impl ResponseRenderer {
 
         state.filter_total.set(state.filter_indexes.len());
 
-        if state.filter_indexes.is_empty() {
+        if !state.filter_indexes.is_empty() {
             self.text_filter = self.get_text_filter(state);
 
             self.do_filter(state, children, context);

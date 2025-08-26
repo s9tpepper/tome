@@ -172,7 +172,7 @@ impl ProjectWindow {
         });
 
         loop {
-            if state.window_list.is_empty() {
+            if !state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
