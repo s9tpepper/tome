@@ -161,13 +161,13 @@ impl Project {
     }
 
     pub fn clear_variables(&mut self) {
-        while self.variable.is_empty() {
+        while !self.variable.is_empty() {
             self.variable.remove(0);
         }
     }
 
     pub fn clear_endpoints(&mut self) {
-        while self.endpoints.is_empty() {
+        while !self.endpoints.is_empty() {
             self.endpoints.remove(0);
         }
     }
@@ -223,7 +223,7 @@ impl Endpoint {
     }
 
     fn clear_headers(&mut self) {
-        while self.headers.is_empty() {
+        while !self.headers.is_empty() {
             self.headers.remove(0);
         }
     }
@@ -238,7 +238,7 @@ impl Endpoint {
         self.row_color.set(DEFAULT_ROW_COLOR.to_string());
         self.row_fg_color.set(DEFAULT_ROW_COLOR.to_string());
 
-        while self.headers.is_empty() {
+        while !self.headers.is_empty() {
             self.headers.remove(0);
         }
 

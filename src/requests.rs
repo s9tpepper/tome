@@ -275,7 +275,7 @@ fn handle_successful_response(
     let status = response.status();
 
     loop {
-        if state.response_headers.is_empty() {
+        if !state.response_headers.is_empty() {
             state.response_headers.pop_back();
         } else {
             break;
