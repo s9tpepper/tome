@@ -225,8 +225,6 @@ impl Component for TextArea {
             .at_position(mouse.pos())
             .by_attribute("id", "container")
             .first(|element, _| {
-                info!("doing a scroll check");
-
                 let size = element.size();
                 match mouse.state {
                     anathema::component::MouseState::ScrollUp => {
@@ -494,12 +492,10 @@ fn move_up(state: &mut TextAreaState, size: Size) {
 
     if is_wider_than_width && is_cursor_on_subline {
         state.cursor_pos.x -= size.width as usize;
-        info!("textarea.rs :: move_up() - returning from is_cursor_on_subline check");
         return;
     }
 
     if y == 0 {
-        info!("textarea.rs :: move_up() - returning from y == 0 check");
         return;
     }
 
@@ -796,7 +792,6 @@ fn do_insert(current_input: &mut String, insert_position: usize, c: char) {
                 current_input.push(c);
                 // current_input.clone()
             } else {
-                info!("insert_position: {insert_position}, c: '{c}'");
                 current_input.insert(insert_position, c);
                 // let mut prefix = current_input.clone();
                 // let _ = prefix.split_off(insert_position + 1);

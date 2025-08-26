@@ -1,4 +1,4 @@
-overflow [id: "container"]
+overflow [id: "container", axis: "vertical", clamp: true]
   zstack
     text [id: "contents", foreground: foreground] state.display_input
     if state.focused == true
