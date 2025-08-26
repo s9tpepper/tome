@@ -8,6 +8,7 @@ use std::{
 
 use anathema::component::{Children, Context};
 use anyhow::bail;
+use log::info;
 use mime::Mime;
 use ureq::Response;
 use ureq_multipart::MultipartBuilder;
@@ -272,14 +273,16 @@ fn handle_successful_response(
     context: &mut Context<'_, '_, DashboardState>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
+    info!("requests::handle_successful_response()");
+
     let status = response.status();
 
     loop {
-        if !state.response_headers.is_empty() {
-            state.response_headers.pop_back();
-        } else {
+        if state.response_headers.is_empty() {
             break;
         }
+
+        state.response_headers.pop_back();
     }
 
     let mut ext = String::from("txt");
@@ -328,20 +331,23 @@ fn handle_successful_response(
     // response renderer is reading it all into lines anyway
     let full_response = fs::read_to_string(file_path)?;
     state.response.set(full_response);
+    state.response_extension.set(ext.clone());
 
     state.response_body_window_label.set(window_label);
     state.main_display.set(DashboardDisplay::ResponseBody);
 
-    context
-        .components
-        .by_attribute("id", "response_renderer")
-        .focus();
+    // context
+    //     .components
+    //     .by_attribute("id", "response_renderer")
+    //     .focus();
 
     let response_msg = ResponseRendererMessages::ResponseUpdate(ext);
     if let Ok(msg) = serde_json::to_string(&response_msg)
-        && let Ok(component_ids) = dashboard.component_ids.try_borrow()
+    //&& let Ok(component_ids) = dashboard.component_ids.try_borrow()
     {
-        let _ = send_message("response_renderer", msg, &component_ids, context.emitter);
+        //let _ = send_message("response_renderer", msg, &component_ids, context.emitter);
+        context.components.by_name("response_renderer").send(msg);
+        info!("Sent ResponseRendererMessages::ResponseUpdate()")
     };
 
     Ok(())
@@ -353,6 +359,8 @@ fn handle_error_response(
     context: &mut Context<'_, '_, DashboardState>,
     dashboard: &mut DashboardComponent,
 ) -> anyhow::Result<()> {
+    info!("requests::handle_error_response()");
+
     match error {
         ureq::Error::Status(code, response) => {
             let body = response

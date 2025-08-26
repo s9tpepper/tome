@@ -9,7 +9,7 @@ use std::{
 };
 
 use anathema::{
-    component::{Children, Component, ComponentId, Context, KeyCode, KeyEvent},
+    component::{Children, Component, ComponentId, Context, Emitter, KeyCode, KeyEvent},
     geometry::Size,
     runtime::Builder,
     state::{Hex, List, Maybe, State, Value},
@@ -43,7 +43,7 @@ pub struct ResponseRenderer {
     #[allow(unused)]
     component_ids: Rc<RefCell<HashMap<String, ComponentId<String>>>>,
     text_filter: TextFilter,
-    theme: Option<Theme>,
+    theme: Option<&'static Theme>,
 
     // overflow: Option<&'app mut Overflow>,
     size: Option<Size>,
@@ -153,13 +153,17 @@ impl ResponseRenderer {
         extension: String,
         state: &mut ResponseRendererState,
         offset: usize,
-        context: Context<'_, '_, ResponseRendererState>,
+        emitter: Emitter,
     ) {
+        info!("response_renderer::response_renderer()");
+
         if self.response_reader.is_none() {
+            info!("response_renderer::response_renderer() response_reader.is_none()");
             return;
         }
 
         if self.size.is_none() {
+            info!("response_renderer::response_renderer() size.is_none()");
             return;
         }
 
@@ -185,18 +189,14 @@ impl ResponseRenderer {
             Err(error) => {
                 let error_message = format!("There was an error reading the response: {}", error);
 
-                self.send_error_message(&error_message, context);
+                self.send_error_message(&error_message, emitter);
             }
         }
 
         self.scroll_response(state, offset);
     }
 
-    fn send_error_message(
-        &self,
-        error_message: &str,
-        context: Context<'_, '_, ResponseRendererState>,
-    ) {
+    fn send_error_message(&self, error_message: &str, emitter: Emitter) {
         let dashboard_msg = DashboardMessages::ShowError(error_message.to_string());
         let Ok(msg) = serde_json::to_string(&dashboard_msg) else {
             return;
@@ -204,7 +204,7 @@ impl ResponseRenderer {
         let Ok(ids) = self.component_ids.try_borrow() else {
             return;
         };
-        let _ = send_message("dashboard", msg, &ids, context.emitter);
+        let _ = send_message("dashboard", msg, &ids, &emitter);
     }
 
     fn scroll_response(&mut self, state: &mut ResponseRendererState, offset: usize) {
@@ -228,16 +228,16 @@ impl ResponseRenderer {
         let last_viewable_index = self.response_offset + self.viewport_height;
         let ending_index = min(last_viewable_index, last_response_line_index);
 
-        info!(
-            "Rendering from {} to {}",
-            self.response_offset, ending_index
-        );
+        // info!(
+        //     "Rendering from {} to {}",
+        //     self.response_offset, ending_index
+        // );
 
         for index in self.response_offset..ending_index {
-            info!("Rendering index: {index}");
+            // info!("Rendering index: {index}");
 
             let line = &self.response_lines[index];
-            info!("Rendering line: {line}");
+            // info!("Rendering line: {line}");
 
             if line.len() > size.width.into() {
                 let (new_line, _) = line.split_at(size.width.saturating_sub(5).into());
@@ -265,7 +265,7 @@ impl ResponseRenderer {
 
         state.percent_scrolled.set(percent_scrolled);
 
-        info!("viewable_response: {viewable_response}");
+        // info!("viewable_response: {viewable_response}");
 
         self.set_response(state, viewable_response, Some(theme));
     }
@@ -361,19 +361,13 @@ impl ResponseRenderer {
         info!("Finished setting response at {timestamp_seconds:?}");
     }
 
-    fn update_size(
-        &mut self,
-        context: Context<'_, '_, ResponseRendererState>,
-        children: &mut Children<'_, '_>,
-    ) {
+    fn update_size(&mut self, size: Size, children: &mut Children<'_, '_>) {
         children
             .elements()
             .by_attribute("id", "response_border")
             .first(|element, _| {
                 info!("{:?}", element.size());
             });
-
-        let size = context.viewport.size();
 
         let app_titles = 2; // top/bottom menus of dashboard
         let url_method_inputs = 3; // height of url and method inputs with borders
@@ -579,6 +573,26 @@ impl ResponseRenderer {
             let _ = send_message("dashboard", message, &ids, context.emitter);
         }
     }
+
+    fn response_update(
+        &mut self,
+        extension: &str,
+        emitter: Emitter,
+        state: &mut ResponseRendererState,
+    ) {
+        info!("response_renderer::response_update()");
+
+        // TODO: Try to delete this file if the program closes/quits/crashes
+        let reader_result = get_file_reader("/tmp/tome_response.txt");
+        if reader_result.is_err() {
+            println!("Error getting reader for response...");
+            return;
+        }
+
+        let response_reader = reader_result.unwrap();
+        self.response_reader = Some(response_reader);
+        self.render_response(extension.to_string(), state, 0, emitter);
+    }
 }
 
 #[derive(Debug, State)]
@@ -746,10 +760,29 @@ impl Component for ResponseRenderer {
         mut children: Children<'_, '_>,
         context: Context<'_, '_, Self::State>,
     ) {
-        self.update_size(context, &mut children);
         info!("response_renderer has focus");
 
+        let ext_attr = context.attribute("extension");
+        let emitter = context.emitter.clone();
+        let size = context.viewport.size();
+
+        self.update_size(size, &mut children);
         state.filter_input_focused = false;
+
+        if let Some(extension) = ext_attr
+            && let Some(ext) = extension.as_str()
+        {
+            self.response_update(ext, emitter, state);
+        }
+    }
+
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("response_renderer").focus();
     }
 
     fn on_blur(
@@ -767,7 +800,7 @@ impl Component for ResponseRenderer {
         mut children: Children<'_, '_>,
         context: Context<'_, '_, Self::State>,
     ) {
-        self.update_size(context, &mut children);
+        self.update_size(context.viewport.size(), &mut children);
 
         // TODO: Update response text when the window gets resized
         // NOTE: Causes panic!
@@ -880,6 +913,8 @@ impl Component for ResponseRenderer {
         _: Children<'_, '_>,
         context: Context<'_, '_, Self::State>,
     ) {
+        info!("response_renderer::on_message({message})");
+
         // TODO: Fix this later, why is this ending up here?
         // This is ending up here after pressing T to create a new endpoint.
         // This messages should be going to request_body_input, but it is ending
@@ -898,16 +933,7 @@ impl Component for ResponseRenderer {
                 }
 
                 ResponseRendererMessages::ResponseUpdate(extension) => {
-                    // TODO: Try to delete this file if the program closes/quits/crashes
-                    let reader_result = get_file_reader("/tmp/tome_response.txt");
-                    if reader_result.is_err() {
-                        println!("Error getting reader for response...");
-                        return;
-                    }
-
-                    let response_reader = reader_result.unwrap();
-                    self.response_reader = Some(response_reader);
-                    self.render_response(extension, state, 0, context);
+                    self.response_update(&extension, context.emitter.clone(), state);
                 }
 
                 ResponseRendererMessages::SyntaxPreview(theme) => {
@@ -940,7 +966,7 @@ impl Component for ResponseRenderer {
                 let error_message =
                     format!("There was an error handling a response message: {}", error);
 
-                self.send_error_message(&error_message, context);
+                self.send_error_message(&error_message, context.emitter.clone());
             }
         }
     }

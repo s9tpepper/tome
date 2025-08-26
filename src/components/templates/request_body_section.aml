@@ -1,6 +1,6 @@
 zstack
   zstack
-    border [id: state.section_id, foreground: state.active_border_color, border_style: "╭─╮│╯─╰│"]
+    border [id: attributes.section_id, foreground: state.active_border_color, border_style: "╭─╮│╯─╰│"]
       @request_body_input [id: "textarea"]
 
     vstack
@@ -18,7 +18,7 @@ zstack
     spacer
     hstack
       text [min_height: 1] "╰"
-      text [foreground: state.border_color, background: state.app_theme.background] "─"
+      text [foreground: state.app_theme.foreground, background: state.app_theme.background] "─"
       @button (click -> send_request_click) [
         button_label: "",
         button_item: "Send (R)equest",

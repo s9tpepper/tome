@@ -204,13 +204,13 @@ impl SyntaxThemeSelector {
             .for_each(|(index, mut syntax_theme)| {
                 let visible_index = selected_index.saturating_sub(first_index);
                 if index == visible_index {
-                    // syntax_theme.row_fg_color = fg.clone().into();
-                    // syntax_theme.row_color = bg.clone().into();
+                    syntax_theme.row_fg_color = fg.clone().into();
+                    syntax_theme.row_color = bg.clone().into();
 
                     theme_name = syntax_theme.name.to_ref().to_string();
                 } else {
-                    // syntax_theme.row_fg_color = fg.clone().into();
-                    // syntax_theme.row_color = bg.clone().into();
+                    syntax_theme.row_fg_color = fg.clone().into();
+                    syntax_theme.row_color = bg.clone().into();
                 }
 
                 state.window_list.push(syntax_theme);

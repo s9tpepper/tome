@@ -1,5 +1,5 @@
 zstack
-  border [id: state.section_id, foreground: state.border_color, border_style: "╭─╮│╯─╰│"]
+  border [id: state.section_id, foreground: state.app_theme.border_color, border_style: "╭─╮│╯─╰│"]
     $children
 
   vstack

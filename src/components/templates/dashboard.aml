@@ -61,104 +61,101 @@ zstack [background: state.app_theme.background]
 
     expand [axis: "vertical"]
       zstack
-        if state.main_display == "request_body"
-          expand
-            container [id: "request_body_component"]
-              @request_body_section (
-                send_request_click -> send_request_click_request_body,
-                show_request_headers -> show_request_headers,
-              ) [id: "request", border_color: state.app_theme.border_unfocused, target: "textarea", endpoint: state.endpoint]
+        switch state.main_display
+          case "request_body":
+            expand
+              container [id: "request_body_component"]
+                @request_body_section (
+                  send_request_click -> send_request_click_request_body,
+                  show_request_headers -> show_request_headers,
+                ) [id: "request", border_color: state.app_theme.border_unfocused, target: "textarea", endpoint: state.endpoint]
 
-        if state.main_display == "response_body"
-          expand
-            zstack
-              @response_renderer (
-                send_back_to_request_from_response_renderer_click -> send_back_to_request_from_response_renderer_click,
-                send_show_response_headers_click -> send_show_response_headers_click,
-                send_copy_response_click -> send_copy_response_click,
-                send_save_response_click -> send_save_response_click
-              ) [id: "response_renderer"]
+          case "response_body":
+            expand
+              zstack
+                @response_renderer (
+                  send_back_to_request_from_response_renderer_click -> send_back_to_request_from_response_renderer_click,
+                  send_show_response_headers_click -> send_show_response_headers_click,
+                  send_copy_response_click -> send_copy_response_click,
+                  send_save_response_click -> send_save_response_click
+                ) [id: "response_renderer", response: state.response, extension: state.response_extension]
 
-        if state.main_display == "request_headers_editor"
-          expand
-            zstack
-              @app_section [
-                border_color: state.app_theme.border_unfocused,
-                top_label: "Request Headers",
-                bottom_label: ["Send (R)equest", "(A)dd Header", "Edit (H)eader", "(B)ack to Request"],
-                show_top_label: true,
-                show_bottom_label: false
-              ]
-                $children
-                  @request_headers_editor [ headers: state.request_headers ]
+          case "request_headers_editor":
+            expand
+              zstack
+                @app_section [
+                  border_color: state.app_theme.border_unfocused,
+                  top_label: "Request Headers",
+                  bottom_label: ["Send (R)equest", "(A)dd Header", "Edit (H)eader", "(B)ack to Request"],
+                  show_top_label: true,
+                  show_bottom_label: false
+                ]
+                  $children
+                    @request_headers_editor [ headers: state.request_headers ]
 
-              vstack
-                spacer
-                hstack
-                  text [min_height: 1] "╰"
-                  @button (click -> send_request_click) [
-                    button_label: "",
-                    button_item: "Send (R)equest",
-                    foreground: state.app_theme.menu_opt_background,
-                    background: state.app_theme.background,
-                    button_id: "send_request_from_headers_button"
-                  ]
-                  text [foreground: state.border_color, background: state.app_theme.background] "─"
-                  @button (click -> add_header_click) [
-                    button_label: "",
-                    button_item: "(A)dd Header",
-                    foreground: state.app_theme.menu_opt_background,
-                    background: state.app_theme.background,
-                    button_id: "add_header_button"
-                  ]
-                  text [foreground: state.border_color, background: state.app_theme.background] "─"
-                  @button (click -> edit_header_click) [
-                    button_label: "",
-                    button_item: "Edit (H)eader",
-                    foreground: state.app_theme.menu_opt_background,
-                    background: state.app_theme.background,
-                    button_id: "edit_header_button"
-                  ]
-                  text [foreground: state.border_color, background: state.app_theme.background] "─"
-                  @button (click -> back_to_request_click) [
-                    button_label: "",
-                    button_item: "(B)ack to Request",
-                    foreground: state.app_theme.menu_opt_background,
-                    background: state.app_theme.background,
-                    button_id: "back_to_request_button"
-                  ]
-
-
-        if main_display == "response_headers"
-          expand
-            zstack
-              @app_section [
-                border_color: state.app_theme.border_unfocused,
-                top_label: "Response Headers",
-                bottom_label: ["(B)ack to Response"],
-                show_top_label: true,
-                show_bottom_label: false
-              ]
-                $children
-                  @request_headers_editor [ headers: state.response_headers ]
-              vstack
-                spacer
-                hstack
-                  text [min_height: 1] "╰"
-                  @button (click -> back_to_request_from_response_click) [
-                    button_label: "",
-                    button_item: "(B)ack to Request",
-                    foreground: state.app_theme.menu_opt_background,
-                    background: state.app_theme.background,
-                    button_id: "back_to_request_button"
-                  ]
+                vstack
+                  spacer
+                  hstack
+                    text [min_height: 1] "╰"
+                    @button (click -> send_request_click) [
+                      button_label: "",
+                      button_item: "Send (R)equest",
+                      foreground: state.app_theme.menu_opt_background,
+                      background: state.app_theme.background,
+                      button_id: "send_request_from_headers_button"
+                    ]
+                    text [foreground: state.border_color, background: state.app_theme.background] "─"
+                    @button (click -> add_header_click) [
+                      button_label: "",
+                      button_item: "(A)dd Header",
+                      foreground: state.app_theme.menu_opt_background,
+                      background: state.app_theme.background,
+                      button_id: "add_header_button"
+                    ]
+                    text [foreground: state.border_color, background: state.app_theme.background] "─"
+                    @button (click -> edit_header_click) [
+                      button_label: "",
+                      button_item: "Edit (H)eader",
+                      foreground: state.app_theme.menu_opt_background,
+                      background: state.app_theme.background,
+                      button_id: "edit_header_button"
+                    ]
+                    text [foreground: state.border_color, background: state.app_theme.background] "─"
+                    @button (click -> back_to_request_click) [
+                      button_label: "",
+                      button_item: "(B)ack to Request",
+                      foreground: state.app_theme.menu_opt_background,
+                      background: state.app_theme.background,
+                      button_id: "back_to_request_button"
+                    ]
+          case "response_headers":
+            expand
+              zstack
+                @app_section [
+                  border_color: state.app_theme.border_unfocused,
+                  top_label: "Response Headers",
+                  bottom_label: ["(B)ack to Response"],
+                  show_top_label: true,
+                  show_bottom_label: false
+                ]
+                  $children
+                    @request_headers_editor [ headers: state.response_headers ]
+                vstack
+                  spacer
+                  hstack
+                    text [min_height: 1] "╰"
+                    @button (click -> back_to_request_from_response_click) [
+                      button_label: "",
+                      button_item: "(B)ack to Request",
+                      foreground: state.app_theme.menu_opt_background,
+                      background: state.app_theme.background,
+                      button_id: "back_to_request_button"
+                    ]
 
 
     container [height: 1, background: state.app_theme.bottom_bar_background, foreground: state.app_theme.bottom_bar_foreground]
       expand
         hstack
-          text state.app_message
-          spacer
           hstack
             @button (click -> save_project_click) [
               button_label: "",
