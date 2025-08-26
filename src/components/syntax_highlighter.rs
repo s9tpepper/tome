@@ -104,8 +104,11 @@ pub fn get_highlight_theme(name: Option<String>) -> Theme {
     }
 }
 
+thread_local! {
+    static PS: SyntaxSet = SyntaxSet::load_defaults_newlines();
+}
+
 pub fn highlight<'a>(src: &'a str, ext: &str, name: Option<String>) -> (Box<[Line<'a>]>, Theme) {
-    let ps = SyntaxSet::load_defaults_newlines();
     let theme = get_highlight_theme(name);
 
     let mut extension = ext;
@@ -115,28 +118,35 @@ pub fn highlight<'a>(src: &'a str, ext: &str, name: Option<String>) -> (Box<[Lin
         extension = ex;
     }
 
-    let syntax = ps.find_syntax_by_extension(extension).unwrap();
-    let mut h = HighlightLines::new(syntax, &theme);
-    let mut output = vec![];
+    let output = PS.with(|ps| {
+        let syntax = ps
+            .find_syntax_by_extension(extension)
+            .unwrap_or_else(|| ps.find_syntax_plain_text());
 
-    for line in LinesWithEndings::from(src) {
-        // info!("Highlinting this slice: {line}");
+        let mut h = HighlightLines::new(syntax, &theme);
+        let mut output = vec![];
 
-        let mut head = h
-            .highlight_line(line, &ps)
-            .unwrap()
-            .into_iter()
-            .map(Span::from)
-            .collect::<Vec<_>>();
+        for line in LinesWithEndings::from(src) {
+            // info!("Highlinting this slice: {line}");
 
-        let tail = head.split_off(1);
+            let mut head = h
+                .highlight_line(line, ps)
+                .unwrap()
+                .into_iter()
+                .map(Span::from)
+                .collect::<Vec<_>>();
 
-        let head = head.remove(0);
-        output.push(Line {
-            tail: tail.into_boxed_slice(),
-            head,
-        });
-    }
+            let tail = head.split_off(1);
+
+            let head = head.remove(0);
+            output.push(Line {
+                tail: tail.into_boxed_slice(),
+                head,
+            });
+        }
+
+        output
+    });
 
     info!("output length: {}", output.len());
     (output.into_boxed_slice(), theme)
