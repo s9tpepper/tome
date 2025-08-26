@@ -1,7 +1,7 @@
 zstack
   @app_section [
     border_color: state.app_theme.border_unfocused,
-    top_label: state.response_body_window_label,
+    top_label: attributes.response_body_window_label,
     bottom_label: ["(B)ack to Request", "Show Response (H)eaders", "Cop(y) Response", "Sa(v)e Response"],
     show_top_label: false,
     show_bottom_label: false,
@@ -42,7 +42,7 @@ zstack
         background: state.app_theme.background,
         button_id: "send_back_to_request_from_response_renderer"
       ]
-      text [foreground: state.border_color, background: state.app_theme.background] "─"
+      text [foreground: state.app_theme.border_focused, background: state.app_theme.background] "─"
       @button (click -> send_show_response_headers_click) [
         button_label: "",
         button_item: "Show Response (H)eaders",
@@ -50,7 +50,7 @@ zstack
         background: state.app_theme.background,
         button_id: "send_show_response_headers"
       ]
-      text [foreground: state.border_color, background: state.app_theme.background] "─"
+      text [foreground: state.app_theme.border_focused, background: state.app_theme.background] "─"
       @button (click -> send_copy_response_click) [
         button_label: "",
         button_item: "Cop(y) Response",
@@ -58,7 +58,7 @@ zstack
         background: state.app_theme.background,
         button_id: "send_copy_response"
       ]
-      text [foreground: state.border_color, background: state.app_theme.background] "─"
+      text [foreground: state.app_theme.border_focused, background: state.app_theme.background] "─"
       @button (click -> send_save_response_click) [
         button_label: "",
         button_item: "Sa(v)e Response",
