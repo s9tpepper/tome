@@ -4,10 +4,9 @@ zstack
 
   vstack
     if attributes.show_top_label
-      text "╭─" top_label ":"
+      text "╭─" attributes.top_label ":"
 
     if attributes.show_bottom_label
-      //spacer
       vstack
         spacer
         text [min_height: 1] "╰"

@@ -4,7 +4,8 @@ container [height: 3]
     top_label: "(U)RL",
     show_top_label: true,
     section_id: "url_border",
-    section_text_id: "url_input"
+    section_text_id: "url_input",
   ]
     $children
-      @url_text_input (textarea_focus -> focus_change) [id: "url_input"]
+      expand [axis: "horizontal"]
+        @url_text_input (textarea_focus -> focus_change) [id: "url_input"]
