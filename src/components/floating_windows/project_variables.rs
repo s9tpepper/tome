@@ -117,11 +117,12 @@ impl ProjectVariables {
         );
     }
 
-    fn open_add_variable_window(&self, context: &mut Context<'_, '_, ProjectVariablesState>) {
-        context.publish(
-            "open_add_variable_window",
-            |state: ProjectVariablesState| state.cursor,
-        );
+    fn open_add_variable_window(
+        &self,
+        context: &mut Context<'_, '_, ProjectVariablesState>,
+        state: &mut ProjectVariablesState,
+    ) {
+        context.publish("open_add_variable_window", state.cursor.copy_value());
     }
 
     fn open_edit_variable_window(
@@ -136,20 +137,12 @@ impl ProjectVariables {
             Some(persisted_variable) => match serde_json::to_string(persisted_variable) {
                 Ok(persisted_variable_json) => {
                     state.selected_variable.set(persisted_variable_json);
-                    context.publish("rename_variable", |state: ProjectVariablesState| {
-                        state.selected_variable
-                    })
+                    context.publish("rename_variable", state.selected_variable.to_ref().clone())
                 }
 
-                Err(_) => context.publish(
-                    "project_variables__cancel",
-                    |state: ProjectVariablesState| state.cursor,
-                ),
+                Err(_) => context.publish("project_variables__cancel", state.cursor.copy_value()),
             },
-            None => context.publish(
-                "project_variables__cancel",
-                |state: ProjectVariablesState| state.cursor,
-            ),
+            None => context.publish("project_variables__cancel", state.cursor.copy_value()),
         }
     }
 
@@ -162,10 +155,7 @@ impl ProjectVariables {
         let persisted_variable = self.variables_list.get(selected_index);
 
         let Some(persisted_variable) = persisted_variable else {
-            context.publish(
-                "project_variables__cancel",
-                |state: ProjectVariablesState| state.cursor,
-            );
+            context.publish("project_variables__cancel", state.cursor.copy_value());
             return;
         };
 
@@ -174,14 +164,11 @@ impl ProjectVariables {
                 state.selected_variable.set(variable_json);
                 context.publish(
                     "project_variables__delete",
-                    |state: ProjectVariablesState| state.selected_variable,
+                    state.selected_variable.to_ref().clone(),
                 );
             }
 
-            Err(_) => context.publish(
-                "project_variables__cancel",
-                |state: ProjectVariablesState| state.cursor,
-            ),
+            Err(_) => context.publish("project_variables__cancel", state.cursor.copy_value()),
         }
     }
 
@@ -411,7 +398,7 @@ impl Component for ProjectVariables {
             anathema::component::KeyCode::Char(char) => match char {
                 'j' => self.move_cursor_down(state),
                 'k' => self.move_cursor_up(state),
-                'a' => self.open_add_variable_window(&mut context),
+                'a' => self.open_add_variable_window(&mut context, state),
                 'e' => self.open_edit_variable_window(state, context),
                 'd' => self.open_delete_variable_window(state, context),
 
@@ -423,9 +410,7 @@ impl Component for ProjectVariables {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("project_variables__cancel", |state: Self::State| {
-                    state.cursor
-                })
+                context.publish("project_variables__cancel", state.cursor.copy_value())
             }
 
             anathema::component::KeyCode::Enter => {
@@ -436,19 +421,16 @@ impl Component for ProjectVariables {
                     Some(project) => match serde_json::to_string(project) {
                         Ok(project_json) => {
                             state.selected_variable.set(project_json);
-                            context
-                                .publish("project_variables__selection", |state: Self::State| {
-                                    state.selected_variable
-                                });
+                            context.publish(
+                                "project_variables__selection",
+                                state.selected_variable.to_ref().clone(),
+                            );
                         }
-                        Err(_) => context
-                            .publish("project_variables__cancel", |state: Self::State| {
-                                state.cursor
-                            }),
+                        Err(_) => {
+                            context.publish("project_variables__cancel", state.cursor.copy_value())
+                        }
                     },
-                    None => context.publish("project_variables__cancel", |state: Self::State| {
-                        state.cursor
-                    }),
+                    None => context.publish("project_variables__cancel", state.cursor.copy_value()),
                 }
             }
 

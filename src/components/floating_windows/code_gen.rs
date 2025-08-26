@@ -131,11 +131,11 @@ impl Component for CodeGen {
                 let language = self.languages.get(&char).unwrap_or(&default_language);
                 state.language.set(language.clone());
 
-                context.publish("codegen__selection", |state: Self::State| state.language);
+                context.publish("codegen__selection", state.language.to_ref().clone());
             }
 
             anathema::component::KeyCode::Esc => {
-                context.publish("codegen__cancel", |state: Self::State| state.language);
+                context.publish("codegen__cancel", state.language.to_ref().clone());
             }
 
             _ => {}

@@ -480,7 +480,7 @@ impl Component for FileSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("file_selector__cancel", |state: Self::State| state.cursor)
+                context.publish("file_selector__cancel", state.cursor.copy_value())
             }
 
             anathema::component::KeyCode::Enter => {

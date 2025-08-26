@@ -243,19 +243,17 @@ impl EditHeaderSelector {
                     state.selected_item.set(project_json);
                     context.borrow_mut().publish(
                         "edit_header_selector__delete",
-                        |state: EditHeaderSelectorState| state.selected_item,
+                        state.selected_item.to_ref().clone(),
                     )
                 }
 
-                Err(_) => context.borrow_mut().publish(
-                    "edit_header_selector__cancel",
-                    |state: EditHeaderSelectorState| state.cursor,
-                ),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("edit_header_selector__cancel", *state.cursor.to_ref()),
             },
-            None => context.borrow_mut().publish(
-                "edit_header_selector__cancel",
-                |state: EditHeaderSelectorState| state.cursor,
-            ),
+            None => context
+                .borrow_mut()
+                .publish("edit_header_selector__cancel", *state.cursor.to_ref()),
         }
     }
 
@@ -273,27 +271,28 @@ impl EditHeaderSelector {
                     state.selected_item.set(header_json);
                     context.borrow_mut().publish(
                         "edit_header_selector__edit",
-                        |state: EditHeaderSelectorState| state.selected_item,
+                        state.selected_item.to_ref().clone(),
                     )
                 }
 
-                Err(_) => context.borrow_mut().publish(
-                    "edit_header_selector__cancel",
-                    |state: EditHeaderSelectorState| state.cursor,
-                ),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("edit_header_selector__cancel", *state.cursor.to_ref()),
             },
-            None => context.borrow_mut().publish(
-                "edit_header_selector__cancel",
-                |state: EditHeaderSelectorState| state.cursor,
-            ),
+            None => context
+                .borrow_mut()
+                .publish("edit_header_selector__cancel", *state.cursor.to_ref()),
         }
     }
 
-    fn add_header(&self, context: &mut RefCell<Context<'_, '_, EditHeaderSelectorState>>) {
-        context.borrow_mut().publish(
-            "edit_header_selector__add",
-            |state: EditHeaderSelectorState| state.cursor,
-        );
+    fn add_header(
+        &self,
+        context: &mut RefCell<Context<'_, '_, EditHeaderSelectorState>>,
+        state: &mut EditHeaderSelectorState,
+    ) {
+        context
+            .borrow_mut()
+            .publish("edit_header_selector__add", *state.cursor.to_ref());
     }
 }
 
@@ -433,7 +432,7 @@ impl Component for EditHeaderSelector {
             .by_attribute("id", "add_button")
             .first(|_, _| {
                 if mouse.left_up() {
-                    self.add_header(&mut context_ref);
+                    self.add_header(&mut context_ref, state);
                 }
             });
 
@@ -480,7 +479,7 @@ impl Component for EditHeaderSelector {
                 'k' => self.move_cursor_up(state),
                 'd' => self.delete_header(state, &mut context.into()),
                 'e' => self.edit_header(state, &mut context.into()),
-                'a' => self.add_header(&mut context.into()),
+                'a' => self.add_header(&mut context.into(), state),
                 _ => {}
             },
 
@@ -489,9 +488,7 @@ impl Component for EditHeaderSelector {
 
             KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("edit_header_selector__cancel", |state: Self::State| {
-                    state.cursor
-                })
+                context.publish("edit_header_selector__cancel", state.cursor.copy_value())
             }
 
             _ => {}

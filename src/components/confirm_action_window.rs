@@ -187,7 +187,7 @@ impl Component for ConfirmActionWindow {
     fn on_key(
         &mut self,
         key: KeyEvent,
-        _: &mut Self::State,
+        state: &mut Self::State,
         _: Children<'_, '_>,
         mut context: Context<'_, '_, Self::State>,
     ) {
@@ -268,9 +268,7 @@ impl Component for ConfirmActionWindow {
             },
 
             KeyCode::Esc => {
-                context.publish("confirm_action__cancel", |state: Self::State| {
-                    state.title.to_ref().clone()
-                });
+                context.publish("confirm_action__cancel", state.title.to_ref().clone());
             }
 
             _ => {}

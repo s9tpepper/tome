@@ -4,6 +4,7 @@ use std::{
     cmp::{max, min},
     collections::HashMap,
     rc::Rc,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use crate::{
@@ -18,6 +19,7 @@ use anathema::{
     runtime::Builder,
     state::{List, State, Value},
 };
+use log::info;
 
 // TODO: Refactor this selector window to reuse for syntax theme selector, endpoint selector, and
 // project window
@@ -181,7 +183,7 @@ impl SyntaxThemeSelector {
         });
 
         loop {
-            if state.window_list.is_empty() {
+            if !state.window_list.is_empty() {
                 state.window_list.pop_front();
             } else {
                 break;
@@ -192,37 +194,29 @@ impl SyntaxThemeSelector {
         let new_list_state = List::<SyntaxTheme>::empty();
         state.window_list = new_list_state.into();
 
+        let app_theme = state.app_theme.to_ref();
+        let bg = app_theme.overlay_background.to_ref();
+        let fg = app_theme.overlay_foreground.to_ref();
+
         new_items_list
             .into_iter()
             .enumerate()
             .for_each(|(index, mut syntax_theme)| {
                 let visible_index = selected_index.saturating_sub(first_index);
                 if index == visible_index {
-                    syntax_theme.row_fg_color = state
-                        .app_theme
-                        .to_ref()
-                        .overlay_background
-                        .to_ref()
-                        .clone()
-                        .into();
-                    syntax_theme.row_color = state
-                        .app_theme
-                        .to_ref()
-                        .overlay_foreground
-                        .to_ref()
-                        .clone()
-                        .into();
+                    // syntax_theme.row_fg_color = fg.clone().into();
+                    // syntax_theme.row_color = bg.clone().into();
 
                     theme_name = syntax_theme.name.to_ref().to_string();
                 } else {
-                    syntax_theme.row_fg_color =
-                        state.app_theme.to_ref().foreground.to_ref().clone().into();
-                    syntax_theme.row_color =
-                        state.app_theme.to_ref().background.to_ref().clone().into();
+                    // syntax_theme.row_fg_color = fg.clone().into();
+                    // syntax_theme.row_color = bg.clone().into();
                 }
 
                 state.window_list.push(syntax_theme);
             });
+
+        info!("update_list()");
 
         self.update_code_sample(context, &theme_name);
     }
@@ -232,6 +226,11 @@ impl SyntaxThemeSelector {
         context: &mut Context<'_, '_, SyntaxThemeSelectorState>,
         theme_name: &str,
     ) {
+        let now = SystemTime::now();
+        let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let timestamp_seconds = since_the_epoch.as_secs();
+        info!("update_code_sample() at: {timestamp_seconds:?}");
+
         let component_ids = self.component_ids.try_borrow();
         if component_ids.is_err() {
             return;
@@ -244,6 +243,11 @@ impl SyntaxThemeSelector {
         }
 
         let code_sample_id = code_sample_id.unwrap();
+
+        let now = SystemTime::now();
+        let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let timestamp_seconds = since_the_epoch.as_secs();
+        info!("sending SyntaxPreview from update_code_sample() at: {timestamp_seconds:?}");
 
         if let Ok(msg) = serde_json::to_string(&ResponseRendererMessages::SyntaxPreview(Some(
             theme_name.to_string(),
@@ -300,6 +304,14 @@ impl Component for SyntaxThemeSelector {
         //
         // self.update_list(first_index, last_index, selected_index, state, &mut context);
     }
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("syntax_theme_selector").focus();
+    }
 
     fn on_focus(
         &mut self,
@@ -307,6 +319,8 @@ impl Component for SyntaxThemeSelector {
         _: Children<'_, '_>,
         mut context: Context<'_, '_, Self::State>,
     ) {
+        info!("syntax_theme_selector::on_focus()");
+
         let current_syntax_theme = get_syntax_theme();
 
         state.selected_item.set(
@@ -317,7 +331,7 @@ impl Component for SyntaxThemeSelector {
 
         self.items_list = get_syntax_themes();
 
-        self.resize_window(state, &mut context);
+        // self.resize_window(state, &mut context);
 
         let current_last_index =
             min(*state.visible_rows.to_ref(), self.items_list.len() as u8).saturating_sub(1);
@@ -351,9 +365,7 @@ impl Component for SyntaxThemeSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("syntax_theme_selector__cancel", |state: Self::State| {
-                    state.cursor
-                })
+                context.publish("syntax_theme_selector__cancel", state.cursor.copy_value())
             }
 
             anathema::component::KeyCode::Enter => {
@@ -366,15 +378,14 @@ impl Component for SyntaxThemeSelector {
                         state
                             .selected_item
                             .set(theme.to_string().replace(".tmTheme", ""));
-                        context
-                            .publish("syntax_theme_selector__selection", |state: Self::State| {
-                                state.selected_item
-                            });
+                        context.publish(
+                            "syntax_theme_selector__selection",
+                            state.selected_item.to_ref().clone(),
+                        );
                     }
-                    None => context
-                        .publish("syntax_theme_selector__cancel", |state: Self::State| {
-                            state.cursor
-                        }),
+                    None => {
+                        context.publish("syntax_theme_selector__cancel", state.cursor.copy_value())
+                    }
                 }
             }
 

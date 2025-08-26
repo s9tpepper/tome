@@ -234,29 +234,27 @@ impl ProjectWindow {
                     state.selected_project.set(project_json);
                     context
                         .borrow_mut()
-                        .publish("rename_project", |state: ProjectWindowState| {
-                            state.selected_project
-                        })
+                        .publish("rename_project", state.selected_project.to_ref().clone())
                 }
 
                 Err(_) => context
                     .borrow_mut()
-                    .publish("project_window__cancel", |state: ProjectWindowState| {
-                        state.cursor
-                    }),
+                    .publish("project_window__cancel", *state.cursor.to_ref()),
             },
             None => context
                 .borrow_mut()
-                .publish("project_window__cancel", |state: ProjectWindowState| {
-                    state.cursor
-                }),
+                .publish("project_window__cancel", *state.cursor.to_ref()),
         }
     }
 
-    fn add_project(&self, context: &mut RefCell<Context<'_, '_, ProjectWindowState>>) {
+    fn add_project(
+        &self,
+        context: &mut RefCell<Context<'_, '_, ProjectWindowState>>,
+        state: &mut ProjectWindowState,
+    ) {
         context
             .borrow_mut()
-            .publish("add_new_project", |state: ProjectWindowState| state.cursor);
+            .publish("add_new_project", *state.cursor.to_ref());
     }
 
     fn delete_project(
@@ -271,24 +269,19 @@ impl ProjectWindow {
             Some(project) => match serde_json::to_string(project) {
                 Ok(project_json) => {
                     state.selected_project.set(project_json);
-                    context
-                        .borrow_mut()
-                        .publish("project_window__delete", |state: ProjectWindowState| {
-                            state.selected_project
-                        })
+                    context.borrow_mut().publish(
+                        "project_window__delete",
+                        state.selected_project.to_ref().clone(),
+                    )
                 }
 
                 Err(_) => context
                     .borrow_mut()
-                    .publish("project_window__cancel", |state: ProjectWindowState| {
-                        state.cursor
-                    }),
+                    .publish("project_window__cancel", *state.cursor.to_ref()),
             },
             None => context
                 .borrow_mut()
-                .publish("project_window__cancel", |state: ProjectWindowState| {
-                    state.cursor
-                }),
+                .publish("project_window__cancel", *state.cursor.to_ref()),
         }
     }
 }
@@ -421,7 +414,7 @@ impl Component for ProjectWindow {
                 'k' => self.move_cursor_up(state),
                 'd' => self.delete_project(state, &mut context.into()),
                 'r' => self.rename_project(state, &mut context.into()),
-                'a' => self.add_project(&mut context.into()),
+                'a' => self.add_project(&mut context.into(), state),
 
                 _ => {}
             },
@@ -431,7 +424,7 @@ impl Component for ProjectWindow {
 
             Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("project_window__cancel", |state: Self::State| state.cursor)
+                context.publish("project_window__cancel", *state.cursor.to_ref())
             }
 
             Enter => {
@@ -442,16 +435,14 @@ impl Component for ProjectWindow {
                     Some(project) => match serde_json::to_string(project) {
                         Ok(project_json) => {
                             state.selected_project.set(project_json);
-                            context.publish("project_window__selection", |state: Self::State| {
-                                state.selected_project
-                            });
+                            context.publish(
+                                "project_window__selection",
+                                state.selected_project.to_ref().clone(),
+                            );
                         }
-                        Err(_) => context
-                            .publish("project_window__cancel", |state: Self::State| state.cursor),
+                        Err(_) => context.publish("project_window__cancel", *state.cursor.to_ref()),
                     },
-                    None => {
-                        context.publish("project_window__cancel", |state: Self::State| state.cursor)
-                    }
+                    None => context.publish("project_window__cancel", *state.cursor.to_ref()),
                 }
             }
 
@@ -479,7 +470,7 @@ impl Component for ProjectWindow {
             .by_attribute("id", "add_button")
             .first(|_, _| {
                 if mouse.left_up() {
-                    self.add_project(&mut context_ref);
+                    self.add_project(&mut context_ref, state);
                 }
             });
 

@@ -1,6 +1,6 @@
-if state.display == "Dashboard"
-  @dashboard [id: "app"]
-
-
-if state.display == "Options"
-  @options [id: "options"]
+container [id: "app_layout"]
+  switch state.display
+    case "Dashboard":
+      @dashboard [id: "app"]
+    case "Options":
+      @options [id: "options"]

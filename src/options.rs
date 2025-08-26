@@ -3,6 +3,7 @@ use std::{
     io::BufReader,
 };
 
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::fs::get_app_dir;

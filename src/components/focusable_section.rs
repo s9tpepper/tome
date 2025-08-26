@@ -202,9 +202,7 @@ impl Component for FocusableSection {
                 let value = event.data::<String>();
 
                 state.transient_event_value.set(value.to_string());
-                context.publish(event.name(), |state: Self::State| {
-                    state.transient_event_value
-                });
+                context.publish(event.name(), state.transient_event_value.to_ref().clone());
             }
         }
     }

@@ -78,6 +78,15 @@ impl Component for MethodSelector {
         true
     }
 
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("method_selector").focus();
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,
@@ -112,17 +121,14 @@ impl Component for MethodSelector {
                     }
                 };
 
-                context.publish("method_selector__new", |state: Self::State| state.selection);
-                context.publish("method_selector__cancel", |state: Self::State| {
-                    state.selection
-                });
+                let selection = state.selection.to_ref().clone();
+                context.publish("method_selector__new", selection.clone());
+                context.publish("method_selector__cancel", selection.clone());
                 context.components.by_attribute("id", "app").focus()
             }
 
             KeyCode::Esc => {
-                context.publish("method_selector__cancel", |state: Self::State| {
-                    state.selection
-                });
+                context.publish("method_selector__cancel", "");
                 context.components.by_attribute("id", "app").focus()
             }
 

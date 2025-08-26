@@ -113,7 +113,7 @@ pub trait InputReceiver {
         state.cursor_position.set(position);
         state.cursor_char.set(" ".to_string());
 
-        context.publish("text_change", |state: InputState| state.input);
+        context.publish("text_change", state.input.to_ref().clone());
     }
 
     #[allow(dead_code)]
@@ -144,7 +144,7 @@ pub trait InputReceiver {
 
         state.border_color.set(state.border_color_focused.clone());
 
-        context.publish("textarea_focus", |state: InputState| state.focused);
+        context.publish("textarea_focus", *state.focused.to_ref());
     }
 
     #[allow(dead_code)]
@@ -164,7 +164,7 @@ pub trait InputReceiver {
 
         state.border_color.set(state.border_color_unfocused.clone());
 
-        context.publish("textarea_focus", |state: InputState| state.focused);
+        context.publish("textarea_focus", *state.focused.to_ref());
 
         // NOTE: This is causing lots of windows to lose focus for some reason
         // context.set_focus("id", "app");
@@ -232,7 +232,7 @@ pub trait InputReceiver {
                     .set(state.cursor_unselected_bg.to_ref().to_string());
                 state.focused.set(false);
 
-                context.publish("escape", |state: InputState| state.focused);
+                context.publish("escape", *state.focused.to_ref());
             }
 
             _ => {}
@@ -270,7 +270,7 @@ pub trait InputReceiver {
 
         state.cursor_char.set(cursor_char.to_string());
 
-        context.publish("text_change", |state: InputState| state.input)
+        context.publish("text_change", input.to_string())
     }
 
     fn delete(&self, state: &mut InputState, context: &mut Context<'_, '_, InputState>) {
@@ -293,7 +293,7 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(pos).collect::<String>());
 
-        context.publish("text_change", |state: InputState| state.input)
+        context.publish("text_change", input.to_string())
     }
 
     fn backspace(&mut self, state: &mut InputState, context: &mut Context<'_, '_, InputState>) {
@@ -320,7 +320,7 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(new_pos).collect::<String>());
 
-        context.publish("text_change", |state: InputState| state.input)
+        context.publish("text_change", input.to_string())
     }
 
     fn move_cursor_left(&self, state: &mut InputState) {

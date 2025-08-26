@@ -223,7 +223,7 @@ impl Component for AddProjectVariable {
     fn on_key(
         &mut self,
         key: component::KeyEvent,
-        _: &mut Self::State,
+        state: &mut Self::State,
         _: Children<'_, '_>,
         mut context: Context<'_, '_, Self::State>,
     ) {
@@ -242,21 +242,23 @@ impl Component for AddProjectVariable {
                     .by_attribute("id", "add_project_variable_private_value")
                     .focus(),
 
-                's' => context.publish("add_project_variable__submit", |state: Self::State| {
-                    state.variable
-                }),
+                's' => context.publish(
+                    "add_project_variable__submit",
+                    state.variable.to_ref().clone(),
+                ),
 
-                'c' => context.publish("add_project_variable__cancel", |state: Self::State| {
-                    state.variable
-                }),
+                'c' => context.publish(
+                    "add_project_variable__cancel",
+                    state.variable.to_ref().clone(),
+                ),
 
                 _ => {}
             },
 
-            component::KeyCode::Esc => context
-                .publish("add_project_variable__cancel", |state: Self::State| {
-                    state.cancel
-                }),
+            component::KeyCode::Esc => context.publish(
+                "add_project_variable__cancel",
+                state.cancel.to_ref().clone(),
+            ),
 
             _ => {}
         }
@@ -326,7 +328,17 @@ pub struct Variable {
     pub private: Value<String>,
 }
 
-#[derive(State)]
+impl Clone for Variable {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.to_ref().clone().into(),
+            public: self.public.to_ref().clone().into(),
+            private: self.private.to_ref().clone().into(),
+        }
+    }
+}
+
+#[derive(State, Clone)]
 struct Cancel;
 
 #[derive(State)]

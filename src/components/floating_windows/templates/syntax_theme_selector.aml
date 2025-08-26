@@ -1,6 +1,7 @@
 align [alignment: "center"]
   border [foreground: border_color, border_style: "╭─╮│╯─╰│", max_width: attributes.width]
     vstack [fill: " "]
+      text "hello"
       container [height: 1, background: state.app_theme.menu_opt_background, foreground: state.app_theme.menu_opt_foreground]
         expand
           hstack

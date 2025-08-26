@@ -302,9 +302,7 @@ impl Component for EditEndpointName {
             },
 
             anathema::component::KeyCode::Esc => {
-                context.publish("edit_endpoint_name__cancel", |state: Self::State| {
-                    state.name
-                });
+                context.publish("edit_endpoint_name__cancel", state.name.to_ref().clone());
                 state.unique_name_error.set("".to_string());
             }
 
@@ -386,11 +384,11 @@ impl EditEndpointName {
         state: &mut EditEndpointNameState,
         context: &mut RefCell<Context<'_, '_, EditEndpointNameState>>,
     ) {
-        state.specific_name_change = Maybe::some(SpecificNameChange {
+        let specific_name_change = SpecificNameChange {
             old_name: endpoint.name.to_string().into(),
             new_name: state.name.to_ref().to_string().into(),
-        })
-        .into();
+        };
+        state.specific_name_change = Maybe::some(specific_name_change.clone()).into();
 
         let Some(project_name) = &self.persisted_project_name else {
             return;
@@ -400,7 +398,7 @@ impl EditEndpointName {
             Ok(_) => {
                 context.borrow_mut().publish(
                     "edit_endpoint_name__specific_endpoint_rename",
-                    |state: EditEndpointNameState| state.specific_name_change,
+                    specific_name_change,
                 );
             }
             Err(_) => {
@@ -425,10 +423,9 @@ impl EditEndpointName {
         state: &mut EditEndpointNameState,
         context: &mut RefCell<Context<'_, '_, EditEndpointNameState>>,
     ) {
-        context.borrow_mut().publish(
-            "edit_endpoint_name__cancel",
-            |state: EditEndpointNameState| state.name,
-        );
+        context
+            .borrow_mut()
+            .publish("edit_endpoint_name__cancel", state.name.to_ref().clone());
         state.unique_name_error.set("".to_string());
     }
 
@@ -465,10 +462,9 @@ impl EditEndpointName {
                 info!("Did not find a persisted endpoint, editing new endpoint");
                 info!("Publishing edit_endpoint_name__submit");
 
-                context.borrow_mut().publish(
-                    "edit_endpoint_name__submit",
-                    |state: EditEndpointNameState| state.name,
-                );
+                context
+                    .borrow_mut()
+                    .publish("edit_endpoint_name__submit", state.name.to_ref().clone());
             }
         }
     }

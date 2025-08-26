@@ -159,7 +159,7 @@ pub trait InputReceiver {
         state.bg_color.set("white".to_string());
         state.focused.set(true);
 
-        context.publish("textarea_focus", |state: InputState| state.focused);
+        context.publish("textarea_focus", *state.focused.to_ref());
     }
 
     #[allow(dead_code)]
@@ -175,7 +175,7 @@ pub trait InputReceiver {
         state.focused.set(false);
 
         if !*state.focused.to_ref() {
-            context.publish("textarea_focus", |state: InputState| state.focused);
+            context.publish("textarea_focus", *state.focused.to_ref());
         }
     }
 
@@ -238,7 +238,7 @@ pub trait InputReceiver {
             KeyCode::Esc => {
                 context.components.by_attribute("id", "app").focus();
 
-                context.publish("textarea_focus", |state: InputState| state.focused);
+                context.publish("textarea_focus", *state.focused.to_ref());
             }
 
             _ => {}
@@ -276,7 +276,7 @@ pub trait InputReceiver {
 
         state.cursor_char.set(cursor_char.to_string());
 
-        context.publish("text_change", |state: InputState| state.input)
+        context.publish("text_change", input.clone())
     }
 
     fn delete(&self, state: &mut InputState, mut context: Context<'_, '_, InputState>) {
@@ -300,7 +300,7 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(pos).collect::<String>());
 
-        context.publish("text_change", |state: InputState| state.input)
+        context.publish("text_change", input.clone())
     }
 
     fn backspace(&mut self, state: &mut InputState, mut context: Context<'_, '_, InputState>) {
@@ -327,7 +327,7 @@ pub trait InputReceiver {
             .cursor_prefix
             .set(input.chars().take(new_pos).collect::<String>());
 
-        context.publish("text_change", |state: InputState| state.input)
+        context.publish("text_change", input.clone())
     }
 
     fn move_cursor_left(&self, state: &mut InputState) {

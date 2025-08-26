@@ -1,10 +1,11 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Children, ComponentId, Context},
+    component::{Children, Component, ComponentId, Context},
     runtime::Builder,
     state::{State, Value},
 };
+use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::templates::template;
@@ -13,6 +14,8 @@ use crate::templates::template;
 pub enum AppLayoutMessages {
     OpenOptions,
     OpenDashboard,
+    OptionsMounted,
+    DashboardMounted,
 }
 
 #[derive(Debug)]
@@ -37,6 +40,12 @@ impl State for AppDisplay {
 #[derive(anathema::state::State)]
 pub struct AppLayoutState {
     display: Value<AppDisplay>,
+
+    #[state_ignore]
+    dashboard_mounted: bool,
+
+    #[state_ignore]
+    options_mounted: bool,
 }
 
 pub struct AppLayoutComponent {
@@ -57,6 +66,8 @@ impl AppLayoutComponent {
             },
             AppLayoutState {
                 display: AppDisplay::Dashboard.into(),
+                dashboard_mounted: false,
+                options_mounted: false,
             },
         )?;
 
@@ -67,7 +78,7 @@ impl AppLayoutComponent {
     }
 }
 
-impl anathema::component::Component for AppLayoutComponent {
+impl Component for AppLayoutComponent {
     type State = AppLayoutState;
     type Message = String;
 
@@ -78,6 +89,15 @@ impl anathema::component::Component for AppLayoutComponent {
         mut context: Context<'_, '_, Self::State>,
     ) {
         context.components.by_attribute("id", "app").focus();
+    }
+
+    fn on_unmount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
+    ) {
+        info!("----- Dashboard unmounted");
     }
 
     fn on_message(
@@ -94,12 +114,26 @@ impl anathema::component::Component for AppLayoutComponent {
         match app_layout_message {
             AppLayoutMessages::OpenOptions => {
                 state.display.set(AppDisplay::Options);
+
+                if state.options_mounted {
+                    context.components.by_attribute("id", "options").focus();
+                }
+            }
+            AppLayoutMessages::OpenDashboard => {
+                state.display.set(AppDisplay::Dashboard);
+
+                if state.dashboard_mounted {
+                    context.components.by_name("dashboard").focus();
+                }
+            }
+
+            AppLayoutMessages::OptionsMounted => {
+                info!("AppLayoutMessages::OptionsMounted");
                 context.components.by_attribute("id", "options").focus();
             }
 
-            AppLayoutMessages::OpenDashboard => {
-                state.display.set(AppDisplay::Dashboard);
-                context.components.by_attribute("id", "app").focus();
+            AppLayoutMessages::DashboardMounted => {
+                context.components.by_name("dashboard").focus();
             }
         }
     }

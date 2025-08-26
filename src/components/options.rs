@@ -10,10 +10,11 @@ use crate::{
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anathema::{
-    component::{Children, Component, ComponentId, Context},
+    component::{Children, Component, ComponentId, Context, KeyCode, UserEvent},
     runtime::Builder,
     state::{State, Value},
 };
+use log::info;
 
 use crate::options::get_options;
 
@@ -56,9 +57,12 @@ impl From<Options> for OptionsState {
 
 impl OptionsViewState {
     pub fn new(options: Options) -> Self {
+        info!("making new OptionsViewState");
         let app_theme = get_app_theme_by_name(&options.app_theme_name);
         let options_state: OptionsState = options.into();
         let button_caps = get_button_caps();
+
+        info!("button_caps: {button_caps:?}");
 
         OptionsViewState {
             app_theme: app_theme.into(),
@@ -103,6 +107,8 @@ impl OptionsView {
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
         builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
+        info!("Registering OptionsView()");
+
         let options = get_options();
         let id = builder.component(
             "options",
@@ -140,6 +146,8 @@ impl OptionsView {
         state: &mut OptionsViewState,
         mut context: Context<'_, '_, OptionsViewState>,
     ) {
+        info!("open_theme_selector()");
+
         state
             .options_window
             .set(OptionsWindows::SyntaxThemeSelector);
@@ -258,6 +266,42 @@ impl Component for OptionsView {
         true
     }
 
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _children: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        info!("options::on_mount()");
+
+        // TODO: Get rid of all the serde_json serialize/deserialize for messages
+        let Ok(message) = serde_json::to_string(&AppLayoutMessages::OptionsMounted) else {
+            return;
+        };
+
+        context.components.by_name("app").send(message);
+
+        info!("options::on_mount()ed");
+    }
+
+    fn on_unmount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
+    ) {
+        info!("options::on_unmount()");
+    }
+
+    fn on_focus(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
+    ) {
+        info!("OptionsView received focus");
+    }
+
     fn on_key(
         &mut self,
         key: anathema::component::KeyEvent,
@@ -266,8 +310,7 @@ impl Component for OptionsView {
         context: Context<'_, '_, Self::State>,
     ) {
         match key.code {
-            #[allow(clippy::single_match)]
-            anathema::component::KeyCode::Char(char) => match char {
+            KeyCode::Char(char) => match char {
                 'b' => self.open_button_style_selector(state, context),
                 'x' => self.open_theme_selector(state, context),
                 'a' => self.open_app_theme_selector(state, context),
@@ -275,7 +318,7 @@ impl Component for OptionsView {
                 _ => {}
             },
 
-            anathema::component::KeyCode::Esc => self.go_back(context),
+            KeyCode::Esc => self.go_back(context),
 
             _ => {}
         }
@@ -283,7 +326,7 @@ impl Component for OptionsView {
 
     fn on_event(
         &mut self,
-        event: &mut anathema::component::UserEvent<'_>,
+        event: &mut UserEvent<'_>,
         state: &mut Self::State,
         _: Children<'_, '_>,
         mut context: Context<'_, '_, Self::State>,
@@ -325,8 +368,8 @@ impl Component for OptionsView {
 
                 let mut options = get_options();
 
-                let val = event.data::<String>().clone();
-                options.button_style = match val.to_string().as_str() {
+                let val = event.data::<String>();
+                options.button_style = match val.as_str() {
                     BUTTON_STYLE_ANGLED => ButtonStyle::Angled,
                     BUTTON_STYLE_SQUARED => ButtonStyle::Squared,
                     BUTTON_STYLE_ROUNDED => ButtonStyle::Rounded,

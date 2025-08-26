@@ -120,7 +120,7 @@ pub fn highlight<'a>(src: &'a str, ext: &str, name: Option<String>) -> (Box<[Lin
     let mut output = vec![];
 
     for line in LinesWithEndings::from(src) {
-        info!("Highlinting this slice: {line}");
+        // info!("Highlinting this slice: {line}");
 
         let mut head = h
             .highlight_line(line, &ps)

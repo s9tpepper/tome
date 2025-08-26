@@ -4,11 +4,12 @@ use anathema::{
     component::{Children, Component, Context, KeyCode, KeyEvent, MouseEvent},
     widgets::components::events::KeyState,
 };
+use log::info;
 
 use crate::{
     components::{
-        floating_windows::FloatingWindow, send_message, textarea::TextAreaMessages,
-        textinput::TextInputMessages,
+        app_layout::AppLayoutMessages, floating_windows::FloatingWindow, send_message,
+        textarea::TextAreaMessages, textinput::TextInputMessages,
     },
     options::get_button_caps,
 };
@@ -160,6 +161,8 @@ impl Component for DashboardComponent {
         _: Children<'_, '_>,
         mut context: Context<'_, '_, Self::State>,
     ) {
+        info!("Dashboard received focus");
+
         update_theme(state);
 
         match *state.main_display.to_ref() {
@@ -330,5 +333,28 @@ impl Component for DashboardComponent {
                     self.handle_y_press(state, &mut context_ref);
                 }
             });
+    }
+
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        // TODO: Get rid of all the serde_json serialize/deserialize for messages
+        let Ok(message) = serde_json::to_string(&AppLayoutMessages::DashboardMounted) else {
+            return;
+        };
+
+        context.components.by_name("app").send(message);
+    }
+
+    fn on_unmount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        _: Context<'_, '_, Self::State>,
+    ) {
+        info!("dashboard_component::on_unmount()");
     }
 }

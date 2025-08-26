@@ -10,6 +10,7 @@ use anathema::{
     runtime::Builder,
     state::{List, State, Value},
 };
+use log::info;
 
 use crate::{
     options::{get_button_style, BUTTON_STYLE_ANGLED, BUTTON_STYLE_ROUNDED, BUTTON_STYLE_SQUARED},
@@ -131,6 +132,31 @@ impl ButtonStyleSelector {
             },
         );
     }
+
+    fn init(&self, state: &mut ButtonStyleSelectorState) {
+        self.update_app_theme(state);
+
+        let current_button_style = get_button_style();
+
+        state
+            .window_list
+            .to_mut()
+            .iter_mut()
+            .for_each(|button_style_state| {
+                let btn_style = button_style_state.to_ref().name.to_ref().to_string();
+                if btn_style == current_button_style {
+                    button_style_state
+                        .to_mut()
+                        .row_color
+                        .set(SELECTED_PROJECT_ROW_COLOR.to_string());
+                } else {
+                    button_style_state
+                        .to_mut()
+                        .row_color
+                        .set(DEFAULT_PROJECT_ROW_COLOR.to_string());
+                }
+            });
+    }
 }
 
 impl Component for ButtonStyleSelector {
@@ -160,9 +186,7 @@ impl Component for ButtonStyleSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("button_style_selector__cancel", |state: Self::State| {
-                    state.cursor
-                })
+                context.publish("button_style_selector__cancel", state.cursor.copy_value())
             }
 
             anathema::component::KeyCode::Enter => {
@@ -176,15 +200,16 @@ impl Component for ButtonStyleSelector {
                             .selected_button_style
                             .set(button_style_state.to_ref().name.to_ref().to_string());
 
-                        context
-                            .publish("button_style_selector__selection", |state: Self::State| {
-                                state.selected_button_style
-                            });
+                        context.publish(
+                            "button_style_selector__selection",
+                            state.selected_button_style.to_ref().to_string(),
+                        );
+                        info!("Published: button_style_selector__selection");
                     }
-                    None => context
-                        .publish("button_style_selector__cancel", |state: Self::State| {
-                            state.cursor
-                        }),
+
+                    None => {
+                        context.publish("button_style_selector__cancel", state.cursor.copy_value())
+                    }
                 }
             }
 
@@ -198,27 +223,17 @@ impl Component for ButtonStyleSelector {
         _: Children<'_, '_>,
         _: Context<'_, '_, Self::State>,
     ) {
-        self.update_app_theme(state);
+        info!("button_style_selector::on_focus()");
 
-        let current_button_style = get_button_style();
+        self.init(state);
+    }
 
-        state
-            .window_list
-            .to_mut()
-            .iter_mut()
-            .for_each(|button_style_state| {
-                let btn_style = button_style_state.to_ref().name.to_ref().to_string();
-                if btn_style == current_button_style {
-                    button_style_state
-                        .to_mut()
-                        .row_color
-                        .set(SELECTED_PROJECT_ROW_COLOR.to_string());
-                } else {
-                    button_style_state
-                        .to_mut()
-                        .row_color
-                        .set(DEFAULT_PROJECT_ROW_COLOR.to_string());
-                }
-            });
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("button_style_selector").focus();
     }
 }

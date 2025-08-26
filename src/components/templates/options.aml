@@ -5,47 +5,49 @@ zstack [background: state.app_theme.background]
         vstack
           hstack
             text [foreground: state.app_theme.border_unfocused] "(A)pp Theme: "
-            text [bold: true] options.state.app_theme_name
+            text [bold: true] state.options.app_theme_name
           hstack
             text [foreground: state.app_theme.border_unfocused] "Synta(x) Highlight Theme: "
-            text [bold: true] options.syntax_theme
+            text [bold: true] state.options.syntax_theme
           hstack
             text [foreground: state.app_theme.border_unfocused] "(B)utton Style: "
-            text [bold: true] options.button_style
+            text [bold: true] state.options.button_style
+          text state.options_window
 
   vstack
     text "╭─"
-      span [bold: true, background: state.app_theme.background, foreground: state.app_theme.overlay_heading] button_cap_left
+      span [bold: true, background: state.app_theme.background, foreground: state.app_theme.overlay_heading] state.button_cap_left
       span [background: state.app_theme.overlay_heading, foreground: state.app_theme.overlay_submit_foreground] "Options"
-      span [bold: true, background: state.app_theme.background, foreground: state.app_theme.overlay_heading] button_cap_right
+      span [bold: true, background: state.app_theme.background, foreground: state.app_theme.overlay_heading] state.button_cap_right
 
-    if show_bottom_label
+    if attributes.show_bottom_label
       //spacer
       vstack
         spacer
         text [min_height: 1] "╰"
-          for val in bottom_label
+          for val in attributes.bottom_label
             span [foreground: state.app_theme.border_focused, background: "reset"] "─"
             span [foreground: state.app_theme.border_focused, background: "reset"] "["
             span [foreground: state.app_theme.border_focused, background: "black"] val
             span [foreground: state.app_theme.border_focused, background: "reset"] "]"
 
-if options_window == "SyntaxThemeSelector"
-  @syntax_theme_selector (
-    syntax_theme_selector__selection -> syntax_theme_selector__selection,
-    syntax_theme_selector__cancel -> syntax_theme_selector__cancel
-  ) [id: "syntax_theme_selector"]
 
-if options_window == "AppThemeSelector"
-  align [alignment: "center"]
-    @app_theme_selector (
-      app_theme_selector__selection -> app_theme_selector__selection,
-      app_theme_selector__cancel -> app_theme_selector__cancel
-    ) [id: "state.app_theme_selector"]
 
-if options_window == "ButtonStyleSelector"
-  align [alignment: "center"]
-    @button_style_selector (
-      button_style_selector__selection -> button_style_selector__selection,
-      button_style_selector__cancel -> button_style_selector__cancel
-    ) [id: "button_style_selector"]
+switch state.options_window
+  case "SyntaxThemeSelector":
+    @syntax_theme_selector (
+       syntax_theme_selector__selection -> syntax_theme_selector__selection,
+       syntax_theme_selector__cancel -> syntax_theme_selector__cancel
+     ) [id: "syntax_theme_selector"]
+  case "AppThemeSelector":
+    align [alignment: "center"]
+      @app_theme_selector (
+        app_theme_selector__selection -> app_theme_selector__selection,
+        app_theme_selector__cancel -> app_theme_selector__cancel
+      ) [id: "state.app_theme_selector"]
+  case "ButtonStyleSelector":
+    align [alignment: "center"]
+      @button_style_selector (
+        button_style_selector__selection -> button_style_selector__selection,
+        button_style_selector__cancel -> button_style_selector__cancel
+      ) [id: "button_style_selector"]

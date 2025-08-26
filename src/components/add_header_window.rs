@@ -92,15 +92,15 @@ impl AddHeaderWindow {
         state: &mut AddHeaderWindowState,
         context: &mut RefCell<Context<'_, '_, AddHeaderWindowState>>,
     ) {
+        let header = state.header.to_ref();
+        let new_header = NewHeader {
+            name: header.name.to_ref().clone().into(),
+            value: header.value.to_ref().clone().into(),
+        };
+
         context
             .borrow_mut()
-            .publish("add_header__submit", |state: AddHeaderWindowState| {
-                let header = state.header.to_ref();
-                NewHeader {
-                    name: header.name.to_ref().clone().into(),
-                    value: header.value.to_ref().clone().into(),
-                }
-            });
+            .publish("add_header__submit", new_header);
 
         state.active = false;
     }
@@ -330,18 +330,20 @@ impl Component for AddHeaderWindow {
                 let header_name = event.data::<String>();
                 state.header.to_mut().name.set(header_name.clone());
 
-                context.publish("add_header__name_update", |state: Self::State| {
-                    state.header.to_ref().name.to_ref().clone()
-                })
+                context.publish(
+                    "add_header__name_update",
+                    state.header.to_ref().name.to_ref().clone(),
+                )
             }
 
             "header_value_update" => {
                 let header_value = event.data::<String>();
                 state.header.to_mut().value.set(header_value.clone());
 
-                context.publish("add_header__value_update", |state: Self::State| {
-                    state.header.to_ref().value.to_ref().clone()
-                })
+                context.publish(
+                    "add_header__value_update",
+                    state.header.to_ref().value.to_ref().clone(),
+                )
             }
 
             "name_input_focus" | "value_input_focus" => {

@@ -5,6 +5,7 @@ use std::{
     fs::File,
     io::{BufReader, Read},
     rc::Rc,
+    time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
 use anathema::{
@@ -170,8 +171,11 @@ impl ResponseRenderer {
         self.viewport_height = size.height as usize;
 
         let mut buf: Vec<u8> = vec![];
+
+        info!("starting to read... {:?}", Instant::now());
         match response_reader.read_to_end(&mut buf) {
             Ok(_) => {
+                info!("finished reading. {:?}", Instant::now());
                 let response = String::from_utf8(buf).unwrap_or(String::from("oops"));
                 let lines = response.lines();
                 let response_lines: Vec<String> = lines.map(|s| s.to_string()).collect();
@@ -274,6 +278,11 @@ impl ResponseRenderer {
         viewable_response: String,
         theme: Option<String>,
     ) {
+        let now = SystemTime::now();
+        let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let timestamp_seconds = since_the_epoch.as_secs();
+
+        info!("Started setting response at {timestamp_seconds:?}");
         loop {
             if state.lines.is_empty() {
                 break;
@@ -345,6 +354,11 @@ impl ResponseRenderer {
         // });
 
         state.viewable_response.set(viewable_response);
+
+        let now = SystemTime::now();
+        let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let timestamp_seconds = since_the_epoch.as_secs();
+        info!("Finished setting response at {timestamp_seconds:?}");
     }
 
     fn update_size(
@@ -721,9 +735,7 @@ impl Component for ResponseRenderer {
             }
 
             _ => {
-                context.publish(event.name(), |state: Self::State| {
-                    state.transient_event_value
-                });
+                context.publish(event.name(), state.transient_event_value.to_ref().clone());
             }
         }
     }
@@ -899,6 +911,13 @@ impl Component for ResponseRenderer {
                 }
 
                 ResponseRendererMessages::SyntaxPreview(theme) => {
+                    let now = SystemTime::now();
+                    let since_the_epoch =
+                        now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+                    let timestamp_seconds = since_the_epoch.as_secs();
+
+                    info!("SyntaxPreview... {timestamp_seconds:?}");
+
                     if theme.is_none() {
                         return;
                     }

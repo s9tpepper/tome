@@ -248,19 +248,17 @@ impl EndpointsSelector {
                     state.selected_item.set(project_json);
                     context.borrow_mut().publish(
                         "endpoints_selector__delete",
-                        |state: EndpointsSelectorState| state.selected_item,
+                        state.selected_item.to_ref().clone(),
                     )
                 }
 
-                Err(_) => context.borrow_mut().publish(
-                    "endpoints_selector__cancel",
-                    |state: EndpointsSelectorState| state.cursor,
-                ),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("endpoints_selector__cancel", state.cursor.copy_value()),
             },
-            None => context.borrow_mut().publish(
-                "endpoints_selector__cancel",
-                |state: EndpointsSelectorState| state.cursor,
-            ),
+            None => context
+                .borrow_mut()
+                .publish("endpoints_selector__cancel", state.cursor.copy_value()),
         }
     }
 
@@ -278,20 +276,16 @@ impl EndpointsSelector {
                     state.selected_item.set(project_json);
                     context
                         .borrow_mut()
-                        .publish("rename_endpoint", |state: EndpointsSelectorState| {
-                            state.selected_item
-                        })
+                        .publish("rename_endpoint", state.selected_item.to_ref().clone())
                 }
 
-                Err(_) => context.borrow_mut().publish(
-                    "endpoints_selector__cancel",
-                    |state: EndpointsSelectorState| state.cursor,
-                ),
+                Err(_) => context
+                    .borrow_mut()
+                    .publish("endpoints_selector__cancel", state.cursor.copy_value()),
             },
-            None => context.borrow_mut().publish(
-                "endpoints_selector__cancel",
-                |state: EndpointsSelectorState| state.cursor,
-            ),
+            None => context
+                .borrow_mut()
+                .publish("endpoints_selector__cancel", state.cursor.copy_value()),
         }
     }
 }
@@ -434,9 +428,7 @@ impl Component for EndpointsSelector {
 
             Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("endpoints_selector__cancel", |state: Self::State| {
-                    state.cursor
-                })
+                context.publish("endpoints_selector__cancel", state.cursor.copy_value())
             }
 
             Enter => {
@@ -447,19 +439,18 @@ impl Component for EndpointsSelector {
                     Some(endpoint) => match serde_json::to_string(endpoint) {
                         Ok(endpoint_json) => {
                             state.selected_item.set(endpoint_json);
-                            context
-                                .publish("endpoints_selector__selection", |state: Self::State| {
-                                    state.selected_item
-                                });
+                            context.publish(
+                                "endpoints_selector__selection",
+                                state.selected_item.to_ref().clone(),
+                            );
                         }
-                        Err(_) => context
-                            .publish("endpoints_selector__cancel", |state: Self::State| {
-                                state.cursor
-                            }),
+                        Err(_) => {
+                            context.publish("endpoints_selector__cancel", state.cursor.copy_value())
+                        }
                     },
-                    None => context.publish("endpoints_selector__cancel", |state: Self::State| {
-                        state.cursor
-                    }),
+                    None => {
+                        context.publish("endpoints_selector__cancel", state.cursor.copy_value())
+                    }
                 }
             }
 

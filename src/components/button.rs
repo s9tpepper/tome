@@ -7,7 +7,10 @@ use anathema::{
     state::{State, Value},
 };
 
-use crate::theme::{get_app_theme, AppTheme};
+use crate::{
+    options::get_button_caps,
+    theme::{get_app_theme, AppTheme},
+};
 
 pub struct Button {
     #[allow(dead_code)]
@@ -17,12 +20,18 @@ pub struct Button {
 #[derive(State)]
 pub struct ButtonState {
     button_id: Value<String>,
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 }
 
 impl ButtonState {
     pub fn new(id: &str) -> Self {
+        let button_caps = get_button_caps();
+
         ButtonState {
             button_id: id.to_string().into(),
+            button_cap_left: button_caps.0.to_string().into(),
+            button_cap_right: button_caps.1.to_string().into(),
         }
     }
 }
@@ -34,7 +43,7 @@ impl Component for Button {
     fn on_mouse(
         &mut self,
         mouse: MouseEvent,
-        _: &mut Self::State,
+        state: &mut Self::State,
         mut children: Children<'_, '_>,
         context: Context<'_, '_, Self::State>,
     ) {
@@ -61,9 +70,7 @@ impl Component for Button {
                 if mouse.left_up() {
                     context_ref
                         .borrow_mut()
-                        .publish("click", |state: Self::State| {
-                            state.button_id.to_ref().clone()
-                        });
+                        .publish("click", state.button_id.to_ref().clone());
                 }
             });
     }

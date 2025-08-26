@@ -98,11 +98,11 @@ impl Component for Commands {
         match key.code {
             anathema::component::KeyCode::Char(char) => {
                 state.command.set(char);
-                context.publish("commands__selection", |state: Self::State| state.command);
+                context.publish("commands__selection", state.command.copy_value());
             }
 
             anathema::component::KeyCode::Esc => {
-                context.publish("commands__cancel", |state: Self::State| state.command);
+                context.publish("commands__cancel", state.command.copy_value());
             }
 
             _ => {}

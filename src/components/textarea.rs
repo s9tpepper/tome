@@ -363,15 +363,15 @@ fn backspace(
     update_cursor_after_move(state);
 
     let event_name = format!("{}_textchange", state.ident);
-    context.publish(&event_name, |state: TextAreaState| state.display_input);
+    context.publish(&event_name, state.display_input.to_ref().clone());
 }
 
 fn escape(state: &mut TextAreaState, mut context: Context<'_, '_, TextAreaState>) {
     context.components.by_attribute("id", "app").focus();
 
     let event_name = format!("{}_escape", state.ident);
-    context.publish(&event_name, |state: TextAreaState| state.cursor_char);
-    context.publish("textarea_focus", |state: TextAreaState| state.focused);
+    context.publish(&event_name, *state.cursor_char.to_ref());
+    context.publish("textarea_focus", *state.focused.to_ref());
 }
 
 // TODO: Add tests for the delete function
@@ -418,7 +418,7 @@ fn delete(
     update_cursor_after_move(state);
 
     let event_name = format!("{}_textchange", state.ident);
-    context.publish(&event_name, |state: TextAreaState| state.display_input);
+    context.publish(&event_name, state.display_input.to_ref().clone());
 }
 
 fn move_down(state: &mut TextAreaState, size: Size) {
@@ -629,7 +629,7 @@ fn handle_typing(
             scroll_into_view(element, state);
 
             let event_name = format!("{}_textchange", state.ident);
-            context.publish(&event_name, |state: TextAreaState| state.display_input);
+            context.publish(&event_name, state.display_input.to_ref().clone());
         });
 }
 

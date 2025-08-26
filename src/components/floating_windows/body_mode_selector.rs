@@ -89,6 +89,15 @@ impl Component for BodyModeSelector {
         true
     }
 
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("body_mode_selector").focus();
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,
@@ -127,19 +136,22 @@ impl Component for BodyModeSelector {
                     }
                 };
 
-                context.publish("body_mode_selector__selection", |state: Self::State| {
-                    state.selection
-                });
-                context.publish("body_mode_selector__cancel", |state: Self::State| {
-                    state.selection
-                });
+                context.publish(
+                    "body_mode_selector__selection",
+                    state.selection.to_ref().clone(),
+                );
+                context.publish(
+                    "body_mode_selector__cancel",
+                    state.selection.to_ref().clone(),
+                );
                 context.components.by_attribute("id", "app").focus()
             }
 
             KeyCode::Esc => {
-                context.publish("body_mode_selector__cancel", |state: Self::State| {
-                    state.selection
-                });
+                context.publish(
+                    "body_mode_selector__cancel",
+                    state.selection.to_ref().clone(),
+                );
                 context.components.by_attribute("id", "app").focus()
             }
 

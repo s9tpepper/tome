@@ -11,7 +11,7 @@ zstack
     text " Bod(y) Mode: ["
     container [id: "body_mode_display", width: 17, height: 1, fill: " "]
       align [width: 17, alignment: "center", height: 1]
-        text [text_align: "center", width: 11] state.endpoint.body_mode ":" state.endpoint.raw_type
+        text [text_align: "center", width: 11] attributes.endpoint.body_mode ":" attributes.endpoint.raw_type
     text "]─╮"
 
   vstack

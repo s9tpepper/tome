@@ -50,14 +50,15 @@ impl DashboardMessageHandler for EditProjectName {
         let event_name: String = event.name().to_string();
         match event_name.as_str() {
             "edit_project_name__specific_project_rename" => {
-                let specific_name_update = event.data::<SpecificNameUpdate>();
+                let specific_name_update = event.data::<SpecificNameChange>();
 
-                if *state.project.to_ref().name.to_ref() == specific_name_update.old_name {
+                if *state.project.to_ref().name.to_ref() == *specific_name_update.old_name.to_ref()
+                {
                     state
                         .project
                         .to_mut()
                         .name
-                        .set(specific_name_update.new_name.clone());
+                        .set(specific_name_update.new_name.to_ref().clone());
                 }
 
                 state.floating_window.set(FloatingWindow::None);
@@ -263,7 +264,7 @@ impl Component for EditProjectName {
                 _ => {}
             },
             anathema::component::KeyCode::Esc => {
-                context.publish("edit_project_name__cancel", |state: Self::State| state.name)
+                context.publish("edit_project_name__cancel", state.name.to_ref().clone())
             }
 
             _ => {}
@@ -352,9 +353,15 @@ impl EditProjectName {
 
         match rename_project(project, &state.name.to_ref()) {
             Ok(_) => {
+                let snc_ref = state.specific_name_change.to_ref();
+                let Some(snc_value) = snc_ref.get_ref() else {
+                    return;
+                };
+                let specific_name_change = snc_value.to_ref().clone();
+
                 context.publish(
                     "edit_project_name__specific_project_rename",
-                    |state: EditProjectNameState| state.specific_name_change,
+                    specific_name_change,
                 );
             }
             Err(_) => {
@@ -387,10 +394,9 @@ impl EditProjectName {
 
             None => {
                 info!("Publishing edit_project_name__submit event");
-                context.borrow_mut().publish(
-                    "edit_project_name__submit",
-                    |state: EditProjectNameState| state.name,
-                );
+                context
+                    .borrow_mut()
+                    .publish("edit_project_name__submit", state.name.to_ref().clone());
             }
         }
 
@@ -402,10 +408,9 @@ impl EditProjectName {
         state: &mut EditProjectNameState,
         context: &mut RefCell<Context<'_, '_, EditProjectNameState>>,
     ) {
-        context.borrow_mut().publish(
-            "edit_project_name__cancel",
-            |state: EditProjectNameState| state.name,
-        );
+        context
+            .borrow_mut()
+            .publish("edit_project_name__cancel", state.name.to_ref().clone());
 
         state.active = false;
     }
@@ -445,6 +450,15 @@ pub struct EditProjectNameState {
 pub struct SpecificNameChange {
     pub old_name: Value<String>,
     pub new_name: Value<String>,
+}
+
+impl Clone for SpecificNameChange {
+    fn clone(&self) -> Self {
+        Self {
+            old_name: self.old_name.to_ref().clone().into(),
+            new_name: self.new_name.to_ref().clone().into(),
+        }
+    }
 }
 
 fn update_theme(state: &mut EditProjectNameState) {

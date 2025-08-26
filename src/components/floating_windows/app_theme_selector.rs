@@ -208,9 +208,7 @@ impl Component for AppThemeSelector {
 
             anathema::component::KeyCode::Esc => {
                 // NOTE: This sends cursor to satisfy publish() but is not used
-                context.publish("app_theme_selector__cancel", |state: Self::State| {
-                    state.cursor
-                })
+                context.publish("app_theme_selector__cancel", *state.cursor.to_ref())
             }
 
             anathema::component::KeyCode::Enter => {
@@ -223,16 +221,17 @@ impl Component for AppThemeSelector {
                             .selected_app_theme
                             .set(app_theme_persisted.name.clone());
 
-                        context.publish("app_theme_selector__selection", |state: Self::State| {
-                            state.selected_app_theme
-                        });
+                        context.publish(
+                            "app_theme_selector__selection",
+                            state.selected_app_theme.to_ref().clone(),
+                        );
 
                         let app_theme = get_app_theme_by_name(&state.selected_app_theme.to_ref());
                         state.app_theme.set(app_theme);
                     }
-                    None => context.publish("app_theme_selector__cancel", |state: Self::State| {
-                        state.cursor
-                    }),
+                    None => {
+                        context.publish("app_theme_selector__cancel", state.cursor.copy_value())
+                    }
                 }
             }
 
