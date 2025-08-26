@@ -95,7 +95,7 @@ impl App {
         let _ = WriteLogger::init(
             LevelFilter::Info,
             Config::default(),
-            File::create("my_rust_binary.log").unwrap(),
+            File::create("tome.log").unwrap(),
         );
 
         info!("Logging has been enabled");
