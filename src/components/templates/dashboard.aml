@@ -297,7 +297,7 @@ zstack [background: state.app_theme.background]
           text " Error"
         container [width: 40]
           padding [padding: 1]
-            text [foreground: state.app_theme.menu_color_3, width: 40, wrap: "wrap"] error_message
+            text [foreground: state.app_theme.menu_color_3, width: 40, wrap: "wrap"] state.error_message
 
   if state.floating_window == "Message"
     align [alignment: "center"]
