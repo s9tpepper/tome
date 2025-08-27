@@ -9,7 +9,7 @@ align [alignment: "center"]
             vstack
               container [height: 3, max_height: 3]
                 zstack
-                  border [foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: state.minwidth, max_width: 60]
+                  border [foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: attributes.minwidth, max_width: 60]
                     expand [axis: "horizontal"]
                       @headernameinput (
                         text_change -> header_name_update,
@@ -19,7 +19,7 @@ align [alignment: "center"]
 
               container [height: 3, max_height: 3]
                 zstack
-                  border [foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: attributes.minwidth, max_width: 59]
+                  border [foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: attributes.minwidth, max_width: 60]
                     expand [axis: "horizontal"]
                       @headervalueinput (
                         text_change -> header_value_update,
@@ -41,7 +41,7 @@ align [alignment: "center"]
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.success_button_color] state.button_cap_right
             container [id: "cancel_button"]
               text [min_height: 1] ""
-                span [foreground: state.app.border_focused] "─"
+                span [foreground: state.app_theme.border_focused] "─"
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.cancel_button_color] state.button_cap_left
                 span [background: state.cancel_button_color, foreground: state.app_theme.overlay_cancel_foreground] "(C)ancel"
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.cancel_button_color] state.button_cap_right
