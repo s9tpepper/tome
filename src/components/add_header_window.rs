@@ -16,6 +16,7 @@ use anathema::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    options::get_button_caps,
     projects::{Header, HeaderState},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -120,23 +121,22 @@ impl AddHeaderWindow {
 
 #[derive(Default, State)]
 pub struct AddHeaderWindowState {
+    header: Value<NewHeader>,
+    unique_name_error: Value<String>,
+    success_button_color: Value<String>,
+    cancel_button_color: Value<String>,
+    app_theme: Value<AppTheme>,
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
+
     #[state_ignore]
     active: bool,
-
-    header: Value<NewHeader>,
-
-    app_theme: Value<AppTheme>,
-
-    #[state_ignore]
-    current_names: Vec<String>,
 
     #[state_ignore]
     current_name: String,
 
-    unique_name_error: Value<String>,
-
-    success_button_color: Value<String>,
-    cancel_button_color: Value<String>,
+    #[state_ignore]
+    current_names: Vec<String>,
 
     #[state_ignore]
     success_color_focused: String,
@@ -156,9 +156,14 @@ impl AddHeaderWindowState {
         let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
         let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
 
+        // TODO: Update these cap values when the options change
+        let (left, right) = get_button_caps();
+
         AddHeaderWindowState {
             active: false,
             app_theme: app_theme.into(),
+            button_cap_left: left.to_string().into(),
+            button_cap_right: right.to_string().into(),
 
             current_name: "".to_string(),
             current_names: vec![],
