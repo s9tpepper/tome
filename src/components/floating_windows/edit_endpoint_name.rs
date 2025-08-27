@@ -13,6 +13,7 @@ use crate::{
         dashboard::{DashboardMessageHandler, DashboardMessages},
         send_message,
     },
+    options::get_button_caps,
     projects::{rename_endpoint, PersistedEndpoint},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -316,12 +317,6 @@ impl EditEndpointName {
         ids: &Rc<RefCell<HashMap<String, ComponentId<String>>>>,
         builder: &mut Builder<()>,
     ) -> anyhow::Result<()> {
-        let app_theme = get_app_theme();
-
-        let submit_bg = app_theme.overlay_submit_background.to_ref().to_string();
-        let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
-        let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
-
         let id = builder.component(
             "edit_endpoint_name",
             template("floating_windows/templates/edit_endpoint_name"),
@@ -330,21 +325,7 @@ impl EditEndpointName {
                 persisted_endpoint: None,
                 component_ids: ids.clone(),
             },
-            EditEndpointNameState {
-                name: String::from("").into(),
-                app_theme: app_theme.into(),
-                current_names: vec![],
-                unique_name_error: String::from("").into(),
-
-                success_color_focused: submit_bg,
-                cancel_color_focused: cancel_bg,
-                button_color_unfocused: unfocused_bg.clone(),
-                success_button_color: unfocused_bg.clone().into(),
-                cancel_button_color: unfocused_bg.into(),
-
-                specific_name_change: None.into(),
-                active: false,
-            },
+            EditEndpointNameState::new(),
         )?;
 
         let mut ids_ref = ids.borrow_mut();
@@ -475,6 +456,8 @@ pub struct EditEndpointNameState {
     name: Value<String>,
     app_theme: Value<AppTheme>,
     unique_name_error: Value<String>,
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 
     #[state_ignore]
     current_names: Vec<String>,
@@ -495,4 +478,33 @@ pub struct EditEndpointNameState {
 
     #[state_ignore]
     active: bool,
+}
+
+impl EditEndpointNameState {
+    pub fn new() -> Self {
+        let app_theme = get_app_theme();
+        let submit_bg = app_theme.overlay_submit_background.to_ref().to_string();
+        let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
+        let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
+
+        let (left, right) = get_button_caps();
+
+        Self {
+            name: String::from("").into(),
+            app_theme: app_theme.into(),
+            current_names: vec![],
+            unique_name_error: String::from("").into(),
+
+            success_color_focused: submit_bg,
+            cancel_color_focused: cancel_bg,
+            button_color_unfocused: unfocused_bg.clone(),
+            success_button_color: unfocused_bg.clone().into(),
+            cancel_button_color: unfocused_bg.into(),
+
+            specific_name_change: None.into(),
+            active: false,
+            button_cap_left: left.to_string().into(),
+            button_cap_right: right.to_string().into(),
+        }
+    }
 }
