@@ -446,18 +446,25 @@ impl ResponseRenderer {
         self.scroll_response(state, new_offset);
 
         if !state.filter.to_ref().is_empty() {
-            let filter = state.filter.to_ref().to_string();
-            self.apply_response_filter(filter, state, context, children);
+            self.apply_response_filter(state, context, children);
         }
     }
 
     fn apply_response_filter(
         &mut self,
-        filter: String,
         state: &mut ResponseRendererState,
         context: Context<'_, '_, ResponseRendererState>,
         children: Children<'_, '_>,
     ) {
+        let filter = state.filter.to_ref().to_string();
+
+        if !state.filtering {
+            state.filtering = true;
+        } else if state.filtering {
+            state.filter_waiting = true;
+            return;
+        }
+
         info!("apply_response_filter");
         loop {
             if state.filter_indexes.is_empty() {
@@ -502,6 +509,10 @@ impl ResponseRenderer {
         }
     }
 
+    fn queue_filter(&mut self, state: &mut ResponseRendererState) {
+        state.filter_waiting = true;
+    }
+
     fn do_filter(
         &mut self,
         state: &mut ResponseRendererState,
@@ -518,6 +529,8 @@ impl ResponseRenderer {
         }
 
         self.apply_filter_highlights(state);
+
+        state.filtering = false;
     }
 
     fn apply_filter_highlights(&mut self, state: &mut ResponseRendererState) {
@@ -635,7 +648,7 @@ impl Span {
         let hex = self.original_background.to_ref().as_hex();
         match hex {
             Some(Hex { r, g, b }) => Hex { r, g, b },
-            None => Hex { r: 0, g: 0, b: 0 },
+            None => *self.background.to_ref(),
         }
     }
 
@@ -643,7 +656,7 @@ impl Span {
         let hex = self.original_foreground.to_ref().as_hex();
         match hex {
             Some(Hex { r, g, b }) => Hex { r, g, b },
-            None => Hex { r: 0, g: 0, b: 0 },
+            None => *self.foreground.to_ref(),
         }
     }
 }
@@ -676,6 +689,12 @@ pub struct ResponseRendererState {
 
     #[state_ignore]
     pub filter_input_focused: bool,
+
+    #[state_ignore]
+    pub filtering: bool,
+
+    #[state_ignore]
+    pub filter_waiting: bool,
 }
 
 impl ResponseRendererState {
@@ -706,6 +725,8 @@ impl ResponseRendererState {
             filter_indexes: List::from_iter(vec![]).into(),
             filter_total: 0.into(),
             filter_nav_index: 0.into(),
+            filtering: false,
+            filter_waiting: false,
         }
     }
 }
@@ -716,6 +737,18 @@ impl Component for ResponseRenderer {
 
     fn accept_focus(&self) -> bool {
         true
+    }
+
+    fn on_tick(
+        &mut self,
+        state: &mut Self::State,
+        children: Children<'_, '_>,
+        context: Context<'_, '_, Self::State>,
+        _dt: std::time::Duration,
+    ) {
+        if state.filter_waiting && !state.filtering {
+            self.apply_response_filter(state, context, children);
+        }
     }
 
     fn on_event(
@@ -730,7 +763,7 @@ impl Component for ResponseRenderer {
                 let value = event.data::<String>().clone();
                 info!("response_filter__input_update");
                 state.filter.set(value.clone());
-                self.apply_response_filter(value, state, context, children);
+                self.apply_response_filter(state, context, children);
 
                 info!("self.text_filter.total: {}", self.text_filter.total);
                 if self.text_filter.total > 0 {
@@ -871,8 +904,7 @@ impl Component for ResponseRenderer {
                         info!("Set focus to response_body_input");
 
                         if !state.filter.to_ref().is_empty() {
-                            let filter = state.filter.to_ref().to_string();
-                            self.apply_response_filter(filter, state, context, children);
+                            self.apply_response_filter(state, context, children);
                         }
                     }
 
@@ -1021,19 +1053,14 @@ fn highlight_matches(
 
             if let Some(ref mut display_line_value) = matched_display_line {
                 //info!("display line: {:?}", display_line_value.to_ref().spans.);
-                let r = display_line_value
+                let _r = display_line_value
                     .to_ref()
                     .spans
                     .to_ref()
                     .iter()
-                    .map(|span| {
-                        let s = span.to_ref().text.to_ref().to_string();
-                        info!("actual span: {s}");
-
-                        s
-                    })
+                    .map(|span| span.to_ref().text.to_ref().to_string())
                     .collect::<String>();
-                info!("span: {:?}", r);
+                // info!("span: {:?}", r);
 
                 let mut display_line = (*display_line_value).to_mut();
 
@@ -1044,7 +1071,7 @@ fn highlight_matches(
                     let last_ndx = index + filter.len();
                     for span_ndx in index..last_ndx {
                         if let Some(span) = spans.get_mut(span_ndx) {
-                            info!("span.to_ref().text: {:?}", span.to_ref().text.to_ref());
+                            //info!("span.to_ref().text: {:?}", span.to_ref().text.to_ref());
 
                             let mut s = span.to_mut();
                             let og_bg = Some(*s.background.to_ref());
