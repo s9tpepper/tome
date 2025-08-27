@@ -23,6 +23,9 @@ pub struct InputState {
     pub cursor_unselected_fg: Value<String>,
     pub cursor_unselected_bg: Value<String>,
 
+    pub button_cap_left: Value<String>,
+    pub button_cap_right: Value<String>,
+
     pub border_color: Value<String>,
 
     #[state_ignore]
@@ -32,7 +35,12 @@ pub struct InputState {
 }
 
 impl InputState {
-    pub fn new(fg_color: &str, bg_color: &str) -> Self {
+    pub fn new(
+        fg_color: &str,
+        bg_color: &str,
+        button_cap_left: &str,
+        button_cap_right: &str,
+    ) -> Self {
         let app_theme = get_app_theme();
 
         let border_unfocused = app_theme.border_unfocused.to_ref().to_string();
@@ -54,6 +62,8 @@ impl InputState {
             border_color: border_unfocused.clone().into(),
             border_color_focused: border_focused,
             border_color_unfocused: border_unfocused,
+            button_cap_left: button_cap_left.to_string().into(),
+            button_cap_right: button_cap_right.to_string().into(),
         }
     }
 }

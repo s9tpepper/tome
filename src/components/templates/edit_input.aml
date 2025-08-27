@@ -5,4 +5,4 @@ container [height: 1]
         text state.input
         text state.cursor_prefix
           span [foreground: state.fg_color, background: state.bg_color] state.cursor_char
-    text "╭─" state.label ":"
+    text "╭─" attributes.label ":"

@@ -9,6 +9,7 @@ use log::info;
 
 use crate::{
     messages::focus_messages::FocusChange,
+    options::{get_button_caps, get_options},
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
 };
 
@@ -39,9 +40,16 @@ impl EditInput {
     ) -> anyhow::Result<()> {
         let name: String = ident.into();
         let app_theme = get_app_theme();
+
+        // TODO: If the Options change then the caps
+        // need to be updated with the new character
+        let (left, right) = get_button_caps();
+
         let state = InputState::new(
             &app_theme.foreground.to_ref(),
             &app_theme.background.to_ref(),
+            left,
+            right,
         );
 
         let app_id = builder.component(

@@ -31,13 +31,13 @@ align [alignment: "center"]
             spacer
             container [id: "submit_button"]
               text [min_height: 1] ""
-                span [foreground: state.border_color] "─"
+                span [foreground: state.app_theme.border_focused] "─"
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.success_button_color] state.button_cap_left
                 span [background: state.success_button_color, foreground: state.app_theme.overlay_submit_foreground] "(S)ubmit"
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.success_button_color] state.button_cap_right
             container [id: "cancel_button"]
               text [min_height: 1] ""
-                span [foreground: state.border_color] "─"
+                span [foreground: state.app_theme.border_focused] "─"
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.cancel_button_color] state.button_cap_left
                 span [background: state.cancel_button_color, foreground: state.app_theme.overlay_cancel_foreground] "(C)ancel"
                 span [bold: true, background: state.app_theme.overlay_background, foreground: state.cancel_button_color] state.button_cap_right

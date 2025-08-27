@@ -13,6 +13,7 @@ use crate::{
         dashboard::{DashboardMessageHandler, DashboardMessages},
         send_message,
     },
+    options::get_button_caps,
     projects::{rename_project, PersistedProject},
     templates::template,
     theme::{get_app_theme, get_app_theme_persisted, AppTheme},
@@ -282,6 +283,7 @@ impl EditProjectName {
         let submit_bg = app_theme.overlay_submit_background.to_ref().to_string();
         let cancel_bg = app_theme.overlay_cancel_background.to_ref().to_string();
         let unfocused_bg = app_theme.border_unfocused.to_ref().to_string();
+        let (left, right) = get_button_caps();
 
         let id = builder.component(
             "edit_project_name",
@@ -298,6 +300,9 @@ impl EditProjectName {
                 button_color_unfocused: unfocused_bg.clone(),
                 success_button_color: unfocused_bg.clone().into(),
                 cancel_button_color: unfocused_bg.into(),
+
+                button_cap_left: left.to_string().into(),
+                button_cap_right: right.to_string().into(),
 
                 app_theme: app_theme.into(),
                 active: false,
@@ -428,6 +433,8 @@ pub struct EditProjectNameState {
     name: Value<String>,
     success_button_color: Value<String>,
     cancel_button_color: Value<String>,
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 
     specific_name_change: Value<Maybe<SpecificNameChange>>,
 
