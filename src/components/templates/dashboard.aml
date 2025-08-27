@@ -212,7 +212,7 @@ zstack [background: state.app_theme.background]
       edit_header_selector__delete -> edit_header_selector__delete,
       edit_header_selector__add -> edit_header_selector__add,
       edit_header_selector__edit -> edit_header_selector__edit
-    ) [id: "edit_header_selector", headers: state.request_headers]
+    ) [id: "edit_header_selector", headers: state.endpoint.request_headers]
 
   if state.floating_window == "Project"
     @project_selector (

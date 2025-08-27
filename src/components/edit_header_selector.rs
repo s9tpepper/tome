@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
+    options::get_button_caps,
     projects::{Header, HeaderState},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -42,11 +43,15 @@ pub struct EditHeaderSelectorState {
     count: Value<u8>,
     selected_item: Value<String>,
     app_theme: Value<AppTheme>,
+
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 }
 
 impl EditHeaderSelectorState {
     pub fn new() -> Self {
         let app_theme = get_app_theme();
+        let (left, right) = get_button_caps();
 
         EditHeaderSelectorState {
             active: false,
@@ -58,6 +63,8 @@ impl EditHeaderSelectorState {
             window_list: List::empty().into(),
             selected_item: "".to_string().into(),
             app_theme: app_theme.into(),
+            button_cap_left: left.to_string().into(),
+            button_cap_right: right.to_string().into(),
         }
     }
 }
@@ -266,19 +273,12 @@ impl EditHeaderSelector {
         let header = self.items_list.get(selected_index);
 
         match header {
-            Some(header) => match serde_json::to_string(header) {
-                Ok(header_json) => {
-                    state.selected_item.set(header_json);
-                    context.borrow_mut().publish(
-                        "edit_header_selector__edit",
-                        state.selected_item.to_ref().clone(),
-                    )
-                }
-
-                Err(_) => context
+            Some(header) => {
+                context
                     .borrow_mut()
-                    .publish("edit_header_selector__cancel", *state.cursor.to_ref()),
-            },
+                    .publish("edit_header_selector__edit", header.clone());
+            }
+
             None => context
                 .borrow_mut()
                 .publish("edit_header_selector__cancel", *state.cursor.to_ref()),
@@ -400,6 +400,15 @@ impl Component for EditHeaderSelector {
 
     fn accept_focus(&self) -> bool {
         true
+    }
+
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("edit_header_selector").focus();
     }
 
     fn on_focus(

@@ -663,10 +663,6 @@ impl DashboardComponent {
         state
             .floating_window
             .set(FloatingWindow::EditHeaderSelector);
-        context
-            .components
-            .by_attribute("id", "edit_header_selector")
-            .focus();
 
         let headers: Vec<Header> = state
             .endpoint
