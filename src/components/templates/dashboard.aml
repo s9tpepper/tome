@@ -244,7 +244,7 @@ zstack [background: state.app_theme.background]
         project_window__delete -> project_window__delete,
         rename_project -> rename_project,
         add_new_project -> add_new_project
-      ) [id: "project_selector"]
+      ) [id: "project_selector", project: state.project]
 
     case "ConfirmAction":
       @confirm_action_window (

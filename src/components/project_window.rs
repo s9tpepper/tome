@@ -18,6 +18,7 @@ use log::info;
 
 use crate::{
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
+    options::get_button_caps,
     projects::{get_projects, PersistedProject, Project},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -43,11 +44,14 @@ pub struct ProjectWindowState {
     project_count: Value<u8>,
     selected_project: Value<String>,
     app_theme: Value<AppTheme>,
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 }
 
 impl ProjectWindowState {
     pub fn new() -> Self {
         let app_theme = get_app_theme();
+        let (left, right) = get_button_caps();
 
         ProjectWindowState {
             active: false,
@@ -59,6 +63,8 @@ impl ProjectWindowState {
             window_list: List::empty().into(),
             selected_project: "".to_string().into(),
             app_theme: app_theme.into(),
+            button_cap_left: left.to_string().into(),
+            button_cap_right: right.to_string().into(),
         }
     }
 }
@@ -399,6 +405,15 @@ impl Component for ProjectWindow {
 
     fn accept_focus(&self) -> bool {
         true
+    }
+
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("project_selector").focus();
     }
 
     fn on_key(

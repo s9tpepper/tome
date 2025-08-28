@@ -4,10 +4,10 @@ align [alignment: "center"]
       container [fill: " ", height: 1, background: state.app_theme.overlay_heading, foreground: state.app_theme.overlay_foreground]
         expand
           hstack
-            text [bold: true] " Choose Project " state.current_project
+            text [bold: true] " Choose Project - current: " attributes.project.name
             spacer
             text "[(P)rojects: " state.project_count "]"
-      border [sides: ["left", "right", "bottom"], background: state.app_theme.overlay_background, foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 80]
+      border [sides: ["left", "right", "bottom"], background: state.app_theme.overlay_background, foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", max_width: 80]
         padding [padding: 1]
           vstack [height: 5, width: 80]
             for project in state.window_list
