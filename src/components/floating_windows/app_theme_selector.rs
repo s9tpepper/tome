@@ -189,6 +189,15 @@ impl Component for AppThemeSelector {
         true
     }
 
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("app_theme_selector").focus();
+    }
+
     fn on_key(
         &mut self,
         event: anathema::component::KeyEvent,

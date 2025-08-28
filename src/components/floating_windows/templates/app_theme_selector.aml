@@ -5,12 +5,12 @@ align [alignment: "center"]
         expand
           hstack
             text [bold: true] " App Theme"
-      border [sides: ["left", "bottom", "right"], background: state.app_theme.overlay_background, foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│", min_width: minwidth, max_width: 80]
+      border [sides: ["left", "bottom", "right"], background: state.app_theme.overlay_background, foreground: state.app_theme.border_focused, border_style: "╭─╮│╯─╰│",  max_width: 80]
         padding [padding: 1]
           vstack [min_height: 3]
 
             container [min_height: 5]
               vstack
-                for app_theme in window_list
-                  container [fill: ".", width: 80, foreground: state.app_theme.row_color]
-                    text state.app_theme.name
+                for app_theme in state.window_list
+                  container [fill: ".", width: 80, foreground: app_theme.row_color]
+                    text app_theme.name
