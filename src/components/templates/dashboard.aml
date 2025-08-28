@@ -68,7 +68,7 @@ zstack [background: state.app_theme.background]
                 @request_body_section (
                   send_request_click -> send_request_click_request_body,
                   show_request_headers -> show_request_headers,
-                ) [id: "request", border_color: state.app_theme.border_unfocused, target: "textarea", endpoint: state.endpoint]
+                ) [id: "request", border_color: state.app_theme.border_unfocused, target: "textarea", endpoint: state.endpoint, section_id: "request"]
 
           case "response_body":
             expand
@@ -192,118 +192,120 @@ zstack [background: state.app_theme.background]
               background: state.app_theme.background,
               button_id: "options_button"
             ]
-  if state.floating_window == "AddHeader"
-    @add_header_window (
-      add_header__submit->add_header__submit,
-      add_header__cancel->add_header__cancel,
-      add_header__name_update->add_header__name_update,
-      add_header__value_update->add_header__value_update
-    ) [id: "add_header_window", name: state.edit_header_name, value: state.edit_header_value]
+  switch state.floating_window
+    case "Method":
+      @method_selector (
+        method_selector__cancel->method_selector__cancel,
+        method_selector__new->method_selector__new
+      ) [id: "method_selector"]
 
-  if state.floating_window == "Method"
-    @method_selector (
-      method_selector__cancel->method_selector__cancel,
-      method_selector__new->method_selector__new
-    ) [id: "method_selector"]
+    case "AddHeader":
+      @add_header_window (
+        add_header__submit->add_header__submit,
+        add_header__cancel->add_header__cancel,
+        add_header__name_update->add_header__name_update,
+        add_header__value_update->add_header__value_update
+      ) [id: "add_header_window", name: state.edit_header_name, value: state.edit_header_value]
 
-  if state.floating_window == "EditHeaderSelector"
-    @edit_header_selector (
-      edit_header_selector__cancel -> edit_header_selector__cancel,
-      edit_header_selector__delete -> edit_header_selector__delete,
-      edit_header_selector__add -> edit_header_selector__add,
-      edit_header_selector__edit -> edit_header_selector__edit
-    ) [id: "edit_header_selector", headers: state.endpoint.request_headers]
+    case "EditHeaderSelector":
+      @edit_header_selector (
+        edit_header_selector__cancel -> edit_header_selector__cancel,
+        edit_header_selector__delete -> edit_header_selector__delete,
+        edit_header_selector__add -> edit_header_selector__add,
+        edit_header_selector__edit -> edit_header_selector__edit
+      ) [id: "edit_header_selector", headers: state.endpoint.request_headers]
 
-  if state.floating_window == "Project"
-    @project_selector (
-      project_window__cancel -> project_window__cancel,
-      project_window__selection -> project_window__selection,
-      project_window__delete -> project_window__delete,
-      rename_project -> rename_project,
-      add_new_project -> add_new_project
-    ) [id: "project_selector"]
+    case "ChangeEndpointName":
+      @edit_endpoint_name (
+        edit_endpoint_name__cancel -> edit_endpoint_name__cancel,
+        edit_endpoint_name__submit -> edit_endpoint_name__submit,
+        edit_endpoint_name__specific_endpoint_rename -> edit_endpoint_name__specific_endpoint_rename
+      ) [id: "edit_endpoint_name"]
 
-  if state.floating_window == "ConfirmAction"
-    @confirm_action_window (
-      confirm_action__cancel -> confirm_action__cancel
-    ) [id: "confirm_action_window"]
+    case "ChangeProjectName":
+      @edit_project_name (
+        edit_project_name__cancel -> edit_project_name__cancel,
+        edit_project_name__submit -> edit_project_name__submit,
+        edit_project_name__specific_project_rename -> edit_project_name__specific_project_rename
+      ) [id: "edit_project_name"]
 
-  if state.floating_window == "ChangeEndpointName"
-    @edit_endpoint_name (
-      edit_endpoint_name__cancel -> edit_endpoint_name__cancel,
-      edit_endpoint_name__submit -> edit_endpoint_name__submit,
-      edit_endpoint_name__specific_endpoint_rename -> edit_endpoint_name__specific_endpoint_rename
-    ) [id: "edit_endpoint_name"]
+    case "EndpointsSelector":
+      @endpoints_selector_window (
+        endpoints_selector__cancel -> endpoints_selector__cancel,
+        endpoints_selector__selection -> endpoints_selector__selection,
+        endpoints_selector__delete -> endpoints_selector__delete,
+        rename_endpoint -> rename_endpoint
+      ) [id: "endpoints_selector_window"]
 
-  if state.floating_window == "ChangeProjectName"
-    @edit_project_name (
-      edit_project_name__cancel -> edit_project_name__cancel,
-      edit_project_name__submit -> edit_project_name__submit,
-      edit_project_name__specific_project_rename -> edit_project_name__specific_project_rename
-    ) [id: "edit_project_name"]
+    case "Project":
+      @project_selector (
+        project_window__cancel -> project_window__cancel,
+        project_window__selection -> project_window__selection,
+        project_window__delete -> project_window__delete,
+        rename_project -> rename_project,
+        add_new_project -> add_new_project
+      ) [id: "project_selector"]
 
-  if state.floating_window == "EndpointsSelector"
-    @endpoints_selector_window (
-      endpoints_selector__cancel -> endpoints_selector__cancel,
-      endpoints_selector__selection -> endpoints_selector__selection,
-      endpoints_selector__delete -> endpoints_selector__delete,
-      rename_endpoint -> rename_endpoint
-    ) [id: "endpoints_selector_window"]
+    case "ConfirmAction":
+      @confirm_action_window (
+        confirm_action__cancel -> confirm_action__cancel
+      ) [id: "confirm_action_window"]
 
-  if state.floating_window == "Commands"
-    @commands_window (
-      commands__selection -> commands__selection,
-      commands__cancel -> commands__cancel
-    ) [id: "commands_window"]
 
-  if state.floating_window == "CodeGen"
-    @codegen_window (
-      codegen__selection -> codegen__selection,
-      codegen__cancel -> codegen__cancel
-    ) [id: "codegen_window"]
+    case "Commands":
+      @commands_window (
+        commands__selection -> commands__selection,
+        commands__cancel -> commands__cancel
+      ) [id: "commands_window"]
 
-  if state.floating_window == "PostmanFileSelector"
-    @postman_file_selector (
-      file_selector__cancel -> file_selector__cancel
-    ) [id: "postman_file_selector"]
+    case "CodeGen":
+      @codegen_window (
+        codegen__selection -> codegen__selection,
+        codegen__cancel -> codegen__cancel
+      ) [id: "codegen_window"]
 
-  if state.floating_window == "BodyModeSelector"
-    @body_mode_selector (
-      body_mode_selector__selection -> body_mode_selector__selection,
-      body_mode_selector__cancel -> body_mode_selector__cancel
-    ) [id: "body_mode_selector"]
+    case "PostmanFileSelector":
+      @postman_file_selector (
+        file_selector__cancel -> file_selector__cancel
+      ) [id: "postman_file_selector"]
 
-  if state.floating_window == "AddProjectVariable"
-    align [alignment: "center"]
-      @add_project_variable (
-        add_project_variable__submit -> add_project_variable__submit,
-        add_project_variable__cancel -> add_project_variable__cancel,
-      ) [id: "add_project_variable"]
+    case "BodyModeSelector":
+      @body_mode_selector (
+        body_mode_selector__selection -> body_mode_selector__selection,
+        body_mode_selector__cancel -> body_mode_selector__cancel
+      ) [id: "body_mode_selector"]
 
-  if state.floating_window == "ViewProjectVariables"
-    align [alignment: "center"]
-      @project_variables (
-        project_variables__cancel -> project_variables__cancel,
-        project_variables__selection -> project_variables__selection,
-        project_variables__delete -> project_variables__delete,
-        open_add_variable_window -> open_add_variable_window,
-        rename_variable -> rename_variable
-      ) [id: "project_variables"]
+    case "AddProjectVariable":
+      align [alignment: "center"]
+        @add_project_variable (
+          add_project_variable__submit -> add_project_variable__submit,
+          add_project_variable__cancel -> add_project_variable__cancel,
+        ) [id: "add_project_variable"]
 
-  if state.floating_window == "Error"
-    align [alignment: "center"]
-      vstack [fill: " ", background: state.app_theme.overlay_background]
-        container [width: 40, foreground: state.app_theme.overlay_background, background: state.app_theme.menu_color_3]
-          text " Error"
-        container [width: 40]
-          padding [padding: 1]
-            text [foreground: state.app_theme.menu_color_3, width: 40, wrap: "wrap"] state.error_message
+    case "ViewProjectVariables":
+      align [alignment: "center"]
+        @project_variables (
+          project_variables__cancel -> project_variables__cancel,
+          project_variables__selection -> project_variables__selection,
+          project_variables__delete -> project_variables__delete,
+          open_add_variable_window -> open_add_variable_window,
+          rename_variable -> rename_variable
+        ) [id: "project_variables"]
 
-  if state.floating_window == "Message"
-    align [alignment: "center"]
-      vstack [fill: " ", background: state.app_theme.overlay_background]
-        container [width: 40, foreground: state.app_theme.overlay_background, background: state.app_theme.menu_color_5]
-          text " " state.message_label
-        container [width: 40]
-          padding [padding: 1]
-            text [foreground: state.app_theme.menu_color_5, width: 40, wrap: "wrap"] state.message
+    case "Error":
+      align [alignment: "center"]
+        vstack [fill: " ", background: state.app_theme.overlay_background]
+          container [width: 40, foreground: state.app_theme.overlay_background, background: state.app_theme.menu_color_3]
+            text " Error"
+          container [width: 40]
+            padding [padding: 1]
+              text [foreground: state.app_theme.menu_color_3, width: 40, wrap: "wrap"] state.error_message
+
+    case "Message":
+      align [alignment: "center"]
+        vstack [fill: " ", background: state.app_theme.overlay_background]
+          container [width: 40, foreground: state.app_theme.overlay_background, background: state.app_theme.menu_color_5]
+            text " " state.message_label
+          container [width: 40]
+            padding [padding: 1]
+              text [foreground: state.app_theme.menu_color_5, width: 40, wrap: "wrap"] state.message
