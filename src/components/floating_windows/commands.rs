@@ -79,6 +79,15 @@ impl Component for Commands {
         true
     }
 
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context.components.by_name("commands_window").focus();
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,
@@ -102,7 +111,7 @@ impl Component for Commands {
             }
 
             anathema::component::KeyCode::Esc => {
-                context.publish("commands__cancel", state.command.copy_value());
+                context.publish("commands__cancel", None::<()>);
             }
 
             _ => {}
@@ -119,12 +128,12 @@ impl DashboardMessageHandler for Commands {
         _children: Children<'_, '_>,
         component_ids: Ref<'_, HashMap<String, ComponentId<String>>>,
     ) {
-        let value = event.data::<String>().clone();
+        let value = *event.data::<char>();
         let event_name: String = event.name().to_string();
 
         match event_name.as_str() {
-            "commands__selection" => match value.as_str() {
-                "a" => {
+            "commands__selection" => match value {
+                'a' => {
                     state
                         .floating_window
                         .set(FloatingWindow::AddProjectVariable);
@@ -147,7 +156,7 @@ impl DashboardMessageHandler for Commands {
                     );
                 }
 
-                "v" => {
+                'v' => {
                     state
                         .floating_window
                         .set(FloatingWindow::ViewProjectVariables);
@@ -183,7 +192,7 @@ impl DashboardMessageHandler for Commands {
                     );
                 }
 
-                "g" => {
+                'g' => {
                     state.floating_window.set(FloatingWindow::CodeGen);
                     context
                         .components
@@ -191,7 +200,7 @@ impl DashboardMessageHandler for Commands {
                         .focus();
                 }
 
-                "i" => {
+                'i' => {
                     state
                         .floating_window
                         .set(FloatingWindow::PostmanFileSelector);
@@ -201,7 +210,7 @@ impl DashboardMessageHandler for Commands {
                         .focus();
                 }
 
-                "e" => {
+                'e' => {
                     state.floating_window.set(FloatingWindow::CodeGen);
                     context
                         .components
