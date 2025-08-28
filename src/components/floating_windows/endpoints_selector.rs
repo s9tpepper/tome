@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     components::dashboard::{DashboardMessageHandler, DashboardState},
     messages::confirm_actions::{ConfirmAction, ConfirmDetails},
+    options::get_button_caps,
     projects::{Endpoint, PersistedEndpoint},
     templates::template,
     theme::{get_app_theme, AppTheme},
@@ -45,11 +46,15 @@ pub struct EndpointsSelectorState {
     count: Value<u8>,
     selected_item: Value<String>,
     app_theme: Value<AppTheme>,
+
+    button_cap_left: Value<String>,
+    button_cap_right: Value<String>,
 }
 
 impl EndpointsSelectorState {
     pub fn new() -> Self {
         let app_theme = get_app_theme();
+        let (left, right) = get_button_caps();
 
         EndpointsSelectorState {
             active: false,
@@ -61,6 +66,8 @@ impl EndpointsSelectorState {
             window_list: List::empty().into(),
             selected_item: "".to_string().into(),
             app_theme: app_theme.into(),
+            button_cap_left: left.to_string().into(),
+            button_cap_right: right.to_string().into(),
         }
     }
 }
@@ -354,6 +361,18 @@ impl Component for EndpointsSelector {
         true
     }
 
+    fn on_mount(
+        &mut self,
+        _: &mut Self::State,
+        _: Children<'_, '_>,
+        mut context: Context<'_, '_, Self::State>,
+    ) {
+        context
+            .components
+            .by_name("endpoints_selector_window")
+            .focus();
+    }
+
     fn on_focus(
         &mut self,
         state: &mut Self::State,
@@ -436,18 +455,9 @@ impl Component for EndpointsSelector {
                 let endpoint = self.items_list.get(selected_index);
 
                 match endpoint {
-                    Some(endpoint) => match serde_json::to_string(endpoint) {
-                        Ok(endpoint_json) => {
-                            state.selected_item.set(endpoint_json);
-                            context.publish(
-                                "endpoints_selector__selection",
-                                state.selected_item.to_ref().clone(),
-                            );
-                        }
-                        Err(_) => {
-                            context.publish("endpoints_selector__cancel", state.cursor.copy_value())
-                        }
-                    },
+                    Some(endpoint) => {
+                        context.publish("endpoints_selector__selection", endpoint.clone());
+                    }
                     None => {
                         context.publish("endpoints_selector__cancel", state.cursor.copy_value())
                     }
